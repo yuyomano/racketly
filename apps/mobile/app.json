@@ -1,0 +1,57 @@
+{
+  "expo": {
+    "name": "Racketly",
+    "slug": "racketly",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "icon": "./assets/icon.png",
+    "userInterfaceStyle": "automatic",
+    "splash": {
+      "image": "./assets/splash.png",
+      "resizeMode": "contain",
+      "backgroundColor": "#064e3b"
+    },
+    "assetBundlePatterns": ["**/*"],
+    "ios": {
+      "supportsTablet": false,
+      "bundleIdentifier": "app.racketly.mobile",
+      "infoPlist": {
+        "NSLocationWhenInUseUsageDescription": "Para encontrar clubs y pistas cerca de ti",
+        "NSCameraUsageDescription": "Para tomar fotos de perfil y publicar en la comunidad",
+        "NSPhotoLibraryUsageDescription": "Para seleccionar fotos de tu galería"
+      }
+    },
+    "android": {
+      "adaptiveIcon": {
+        "foregroundImage": "./assets/adaptive-icon.png",
+        "backgroundColor": "#064e3b"
+      },
+      "package": "app.racketly.mobile",
+      "permissions": [
+        "ACCESS_FINE_LOCATION",
+        "ACCESS_COARSE_LOCATION",
+        "CAMERA",
+        "READ_EXTERNAL_STORAGE"
+      ]
+    },
+    "web": {
+      "favicon": "./assets/favicon.png"
+    },
+    "plugins": [
+      "expo-location",
+      "expo-camera",
+      "expo-notifications",
+      "expo-secure-store",
+      [
+        "@stripe/stripe-react-native",
+        { "merchantIdentifier": "merchant.app.racketly", "enableGooglePay": true }
+      ]
+    ],
+    "scheme": "racketly",
+    "extra": {
+      "eas": {
+        "projectId": "03e475d5-377b-4ec6-9437-a09bc28a6420"
+      }
+    }
+  }
+}

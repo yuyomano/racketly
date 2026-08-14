@@ -1,0 +1,25 @@
+{
+  "Community": {
+    "title": "👥 Community",
+    "createPost": {
+      "placeholder": "What do you want to share with the community?",
+      "publish": "Post",
+      "errorPublish": "Couldn't publish the post",
+      "sports": {
+        "general": "General",
+        "padel": "🎾 Padel",
+        "pickleball": "🏓 Pickleball"
+      }
+    },
+    "feed": {
+      "emptyTitle": "No posts yet",
+      "emptyDescription": "Be the first to share something with the community.",
+      "anonymous": "Anonymous"
+    },
+    "comments": {
+      "emptyState": "Be the first to comment",
+      "placeholder": "Write a comment...",
+      "errorComment": "Couldn't post the comment"
+    }
+  }
+}

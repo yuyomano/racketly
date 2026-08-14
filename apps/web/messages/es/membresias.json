@@ -1,0 +1,145 @@
+{
+  "Membresias": {
+    "stats": {
+      "activePlans": "Planes activos",
+      "activeSubscribers": "Suscriptores activos",
+      "monthlyRevenueEstimate": "Ingreso mensual estimado"
+    },
+    "title": "Membresías",
+    "defaultClubName": "Club activo",
+    "createPlan": "Crear plan",
+    "errors": {
+      "loadPlansFailed": "No se pudieron cargar los planes",
+      "connectionError": "Error de conexión",
+      "cancelFailed": "No se pudo cancelar",
+      "markPaidFailed": "No se pudo marcar como pagado",
+      "genericPrefix": "Error: {message}"
+    },
+    "emptySelectClub": {
+      "title": "Selecciona un club",
+      "description": "Elige un club activo arriba para administrar sus membresías."
+    },
+    "paymentIssues": {
+      "summary": "{count, plural, one {# cobro} other {# cobros}} de {playerCount, plural, one {# socio} other {# socios}} sin resolver",
+      "explanation": "El cobro automático no se completó (el socio eligió pagar después, o el pago con Stripe falló). Márcalos como pagados aquí (todos de una vez o por separado) una vez confirmes el pago, o resuélvelos desde el tab de Reservas.",
+      "pendingCount": "{count, plural, one {# cobro pendiente} other {# cobros pendientes}}",
+      "payAllCashTooltip": "Marcar todo pagado en efectivo",
+      "payAllCardTooltip": "Marcar todo pagado con tarjeta",
+      "payAllCash": "💵 Pagar todo",
+      "payAllCard": "💳 Pagar todo",
+      "failedToMarkSome": "No se pudieron marcar {failed} de {total} cobro(s). Intenta de nuevo o resuélvelos por separado."
+    },
+    "cancelConfirm": "¿Cancelar la membresía de {name}? Seguirá activa hasta {date}, sin cobrar el siguiente período.",
+    "emptyPlans": {
+      "title": "Sin planes de membresía",
+      "description": "Crea un plan para que los jugadores puedan suscribirse (ej. N jugadas por día a precio fijo mensual)."
+    },
+    "plan": {
+      "active": "Activo",
+      "inactive": "Inactivo",
+      "perMonth": "/mes",
+      "sessionsPerDay": "{count, plural, one {jugada/día} other {jugadas/día}}",
+      "extraSuffix": "+ {amount} extra",
+      "subscribersCount": "{count} suscriptores",
+      "editTooltip": "Editar plan",
+      "toggleActiveTooltip": "Activar/desactivar plan"
+    },
+    "profitability": {
+      "heading": "Rentabilidad de las membresías",
+      "description": "Compara lo que paga cada socio contra el valor de pistas que consumió este mes (a precio normal, si no tuviera membresía). Un ratio alto significa que el plan está regalando más valor del que cobra.",
+      "aboveLabel": "Socios por encima de rentabilidad",
+      "aboveSub": "{above} de {total} juegan más de lo que pagan",
+      "belowLabel": "Socios por debajo de rentabilidad",
+      "belowSub": "{below} de {total} pagan más de lo que juegan",
+      "revenueVsValueLabel": "Ingreso por membresías vs. valor jugado",
+      "revenueVsValueSub": "{revenue} cobrados vs. {value} en pistas usadas",
+      "avgSessionsLabel": "Jugadas/mes (prom.)",
+      "avgValueLabel": "Valor usado (prom.)",
+      "planPriceLabel": "Precio del plan",
+      "ratioLabel": "Ratio uso/precio",
+      "netNegative": "El club está regalando {amount} más en pistas de lo que cobra en suscripciones este mes.",
+      "netPositive": "La suscripción cubre {amount} más de lo que los socios usaron en pistas este mes.",
+      "perMemberHeading": "Por socio, este mes",
+      "memberSummary": "{plan} · {sessions, plural, one {# jugada} other {# jugadas}} este mes · {value} en valor de pistas vs. {price} pagado"
+    },
+    "ratioVerdict": {
+      "noData": { "label": "Sin datos", "hint": "Plan gratuito o sin precio — no aplica." },
+      "veryBelow": { "label": "🔴 Muy por debajo del valor", "hint": "Está usando mucho más valor en pistas del que paga. Considera subir el precio o bajar las sesiones/día incluidas." },
+      "atLimit": { "label": "🟡 En el límite", "hint": "Extrae ligeramente más valor del que paga." },
+      "balanced": { "label": "🟢 Balanceado", "hint": "Uso saludable frente al precio del plan." },
+      "underused": { "label": "🔵 Poco usado", "hint": "Paga más de lo que juega — riesgo de que cancele si no le encuentra valor." }
+    },
+    "subscribers": {
+      "heading": "Suscriptores",
+      "addMember": "Agregar socio",
+      "empty": "Aún no hay socios suscritos.",
+      "courtesyBadge": "🎁 Cortesía",
+      "courtesyDefaultReason": "Cortesía",
+      "willCancelOn": "Se cancela el",
+      "nextChargeOn": "Próx. cobro:",
+      "statusWillCancel": "Cancelará",
+      "statusActive": "Activa",
+      "statusCancelled": "Cancelada",
+      "cancelTooltip": "Cancelar membresía"
+    },
+    "addMemberModal": {
+      "title": "Agregar socio",
+      "playerLabel": "Jugador *",
+      "searchPlaceholder": "Buscar por nombre o email…",
+      "searching": "Buscando…",
+      "planLabel": "Plan *",
+      "noActivePlans": "No hay planes activos — crea uno primero.",
+      "planOption": "{name} — {price}/mes",
+      "paymentLabel": "Pago",
+      "payNone": "Sin cobro",
+      "payCash": "💵 Efectivo",
+      "payCard": "💳 Tarjeta",
+      "paymentHint": "Se registrará el cobro de {amount} en el cuadre de caja.",
+      "courtesyReasonLabel": "Motivo de la cortesía (requerido)",
+      "courtesyReasonPlaceholder": "Ej: Profesora del club",
+      "courtesyReasonHint": "Generalmente los profesores del club tienen membresía de cortesía.",
+      "cancel": "Cancelar",
+      "save": "Agregar",
+      "saving": "Guardando…",
+      "errors": {
+        "choosePlayer": "Elige un jugador",
+        "choosePlan": "Elige un plan",
+        "courtesyReasonRequired": "Indica el motivo de la cortesía",
+        "addFailed": "Error al agregar el socio",
+        "connectionError": "Error de conexión"
+      }
+    },
+    "paymentIssueGroupModal": {
+      "pendingBadge": "{count, plural, one {# pendiente} other {# pendientes}}",
+      "courtNameFallback": "Reserva de cancha",
+      "statusFailed": "Fallido",
+      "statusPending": "Pendiente",
+      "close": "Cerrar",
+      "payAllCash": "💵 Pagar todo",
+      "payAllCard": "💳 Pagar todo"
+    },
+    "planModal": {
+      "editTitle": "Editar plan",
+      "createTitle": "Crear plan de membresía",
+      "nameLabel": "Nombre *",
+      "namePlaceholder": "Plan 1 jugada/día",
+      "descriptionLabel": "Descripción",
+      "descriptionPlaceholder": "1 sesión de pádel gratis por día",
+      "priceLabel": "Precio mensual *",
+      "currencyLabel": "Moneda",
+      "sessionsPerDayLabel": "Jugadas incluidas por día *",
+      "sessionsPerDayOption": "{count, plural, one {# jugada/día} other {# jugadas/día}}",
+      "extraSessionPriceLabel": "Precio por jugada extra (opcional)",
+      "extraSessionPriceHint": "Si el socio juega más veces de las incluidas ese día, se cobra este monto por sesión extra. Déjalo en 0 para cobrar el precio normal de la pista.",
+      "cancel": "Cancelar",
+      "save": "Guardar",
+      "saving": "Guardando…",
+      "errors": {
+        "nameRequired": "El nombre es requerido",
+        "priceNegative": "El precio no puede ser negativo",
+        "saveFailed": "Error al guardar",
+        "connectionError": "Error de conexión"
+      }
+    }
+  }
+}

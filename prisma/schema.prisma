@@ -1,0 +1,1324 @@
+// ─── Racketly — Prisma Schema ─────────────────────────────────────────────────
+// Versión: 1.0 | Mayo 2026
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// ═══════════════════════════════════════════════════════════════════════════════
+// ENUMS
+// ═══════════════════════════════════════════════════════════════════════════════
+
+enum Sport {
+  padel
+  pickleball
+  both
+}
+
+enum SubscriptionTier {
+  free
+  amateur
+  pro
+  instructor
+  club_starter
+  club_pro
+}
+
+enum PlayerCategory {
+  C4
+  C3
+  C2
+  C1
+  B3
+  B2
+  B1
+  A
+  Open
+}
+
+enum TournamentFormat {
+  round_robin
+  elimination
+  groups_bracket
+  swiss
+}
+
+// Modalidad de juego por partido — determina cuánto dura cada partido para poder
+// planificar el uso de pistas del torneo.
+enum MatchFormat {
+  best_of_3_full // 3 sets completos (tiebreak a 7 en cada set)
+  two_sets_super_tb // 2 sets; si hay empate 1-1 se juega super tie-break a 10 en vez de un 3er set
+  pro_set_8 // set único a 8 games, diferencia de 2, tiebreak en 8-8
+  pro_set_10 // set único a 10 games, diferencia de 2, tiebreak en 10-10
+  single_set_6 // set único a 6 games con tiebreak a 7 (formato rápido, típico de fase de grupos)
+  timed_30 // tiempo fijo: 30 minutos, gana quien tenga más games al terminar
+  timed_40 // tiempo fijo: 40 minutos, gana quien tenga más games al terminar
+}
+
+enum TournamentType {
+  pairs
+  teams
+  individual
+  mixed
+}
+
+enum TournamentGender {
+  masculino
+  femenino
+  mixto
+}
+
+enum TournamentStatus {
+  draft
+  open
+  in_progress
+  completed
+  cancelled
+}
+
+enum BookingStatus {
+  pending
+  confirmed
+  cancelled
+  completed
+  no_show
+}
+
+enum MembershipStatus {
+  active
+  cancelled
+  past_due
+  expired
+}
+
+enum BookingPricingType {
+  pay_per_use // sin membresía — paga precio completo de la pista
+  membership_included // sesión incluida en la membresía (precio 0 para el usuario)
+  membership_extra // membresía activa pero superó sesiones/día — cobra por jugador
+}
+
+enum PaymentStatus {
+  pending
+  paid
+  failed
+  refunded
+  courtesy
+}
+
+enum GuestPaymentLinkStatus {
+  pending
+  paid
+  expired
+  cancelled
+}
+
+enum PaymentProvider {
+  stripe
+  mercadopago
+}
+
+// Método real de cobro para efectos de cuadre de caja — distinto de PaymentProvider
+// (que es el riel electrónico). Los pagos hechos desde la app del jugador son siempre
+// 'card' (Stripe/Mercado Pago); los cobros hechos a mano desde el dashboard del club
+// (reserva pagada en el momento, o "Marcar pagado") pueden ser 'cash' o 'card'.
+enum PaymentMethod {
+  cash
+  card
+}
+
+enum MatchStatus {
+  scheduled
+  in_progress
+  completed
+  walkover
+  cancelled
+}
+
+enum MatchStage {
+  group
+  knockout
+}
+
+enum CancellationPolicy {
+  flexible
+  moderate
+  strict
+}
+
+enum CourseType {
+  video
+  presential
+  hybrid
+}
+
+enum CourseLevel {
+  beginner
+  intermediate
+  advanced
+  pro
+}
+
+enum PostType {
+  text
+  photo
+  video
+  reel
+  poll
+}
+
+enum GroupCategory {
+  technique
+  tactics
+  gear
+  clubs
+  competition
+  general
+}
+
+enum ClubAdminRole {
+  owner
+  admin
+}
+
+// ═══════════════════════════════════════════════════════════════════════════════
+// USUARIOS & PERFILES
+// ═══════════════════════════════════════════════════════════════════════════════
+
+model User {
+  id               String           @id @default(cuid())
+  email            String           @unique
+  phone            String?
+  firstName        String?
+  lastName         String?
+  documentType     String? // DNI, Pasaporte, CE, NIT
+  documentNumber   String?
+  birthDate        String? // cifrado (AES-256-GCM vía @racketly/utils encryptPII), no un Date real
+  passwordHash     String? // nullable para usuarios que se registran con Google
+  googleId         String?          @unique
+  avatarUrl        String? // foto de perfil de Google
+  subscriptionTier SubscriptionTier @default(free)
+  stripeCustomerId String?
+  pushToken        String? // Expo push token
+  createdAt        DateTime         @default(now())
+  updatedAt        DateTime         @updatedAt
+
+  // Relaciones
+  playerProfile       PlayerProfile?
+  accountInvite       AccountInvite?
+  instructorProfile   InstructorProfile?
+  clubOwned           Club[]
+  clubAdmins          ClubAdmin[]
+  bookings            Booking[]
+  posts               Post[]
+  comments            Comment[]
+  postLikes           PostLike[]
+  gearReviews         GearReview[]
+  enrollments         Enrollment[]
+  userBadges          UserBadge[]
+  userMissions        UserMission[]
+  matchRequests       MatchRequest[]
+  matchApplications   MatchApplication[]
+  notifications       Notification[]
+  follows             Follow[]             @relation("follower")
+  followers           Follow[]             @relation("following")
+  groupMembers        GroupMember[]
+  reputationsGiven    PlayerReputation[]   @relation("reviewer")
+  reputationsReceived PlayerReputation[]   @relation("reviewed")
+  refereeMatches      Match[]              @relation("referee")
+  clubMemberships     UserClubMembership[]
+  credits             UserCredit[]
+  classBookings       ClassBooking[]
+  professorProfiles   ClubProfessor[]
+  refreshTokens       RefreshToken[]
+
+  @@map("users")
+}
+
+// Refresh tokens emitidos, para poder revocarlos individualmente (logout real) y
+// detectar reuso de un token ya rotado. Nunca se guarda el token crudo — solo su hash.
+model RefreshToken {
+  id        String    @id @default(cuid())
+  userId    String
+  tokenHash String    @unique
+  expiresAt DateTime
+  revokedAt DateTime?
+  createdAt DateTime  @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@map("refresh_tokens")
+}
+
+model PlayerProfile {
+  userId        String         @id
+  displayName   String
+  avatarUrl     String?
+  bio           String?
+  sport         Sport          @default(padel)
+  country       String
+  city          String
+  latitude      Float?
+  longitude     Float?
+  eloPadel      Int            @default(1000)
+  eloPickleball Int            @default(1000)
+  category      PlayerCategory @default(C4)
+  xpPoints      Int            @default(0)
+  level         Int            @default(1)
+
+  user                   User                    @relation(fields: [userId], references: [id], onDelete: Cascade)
+  eloHistory             EloHistory[]
+  matchesAsP1            Match[]                 @relation("player1")
+  matchesAsP1Partner     Match[]                 @relation("player1partner")
+  matchesAsP2            Match[]                 @relation("player2")
+  matchesAsP2Partner     Match[]                 @relation("player2partner")
+  matchesWon             Match[]                 @relation("winner")
+  tournamentParticipants TournamentParticipant[]
+
+  @@map("player_profiles")
+}
+
+model InstructorProfile {
+  userId         String   @id
+  displayName    String
+  avatarUrl      String?
+  bio            String?
+  verified       Boolean  @default(false)
+  certifications String[] @default([])
+  specialty      String[] @default([])
+  sport          Sport    @default(padel)
+  country        String
+  city           String
+  hourlyRate     Float
+  currency       String   @default("USD")
+  ratingAvg      Float    @default(0)
+  totalReviews   Int      @default(0)
+
+  user     User                @relation(fields: [userId], references: [id], onDelete: Cascade)
+  courses  Course[]
+  sessions InstructorSession[]
+
+  @@map("instructor_profiles")
+}
+
+// ═══════════════════════════════════════════════════════════════════════════════
+// CLUBS & CANCHAS
+// ═══════════════════════════════════════════════════════════════════════════════
+
+model Club {
+  id                 String             @id @default(cuid())
+  ownerId            String
+  name               String
+  description        String?
+  country            String
+  city               String
+  address            String
+  latitude           Float
+  longitude          Float
+  photos             String[]           @default([])
+  subscriptionTier   SubscriptionTier   @default(club_starter)
+  verified           Boolean            @default(false)
+  isActive           Boolean            @default(true)
+  contactEmail       String?
+  phone              String?
+  website            String?
+  sports             Sport[]            @default([padel])
+  amenities          String[]           @default([])
+  cancellationPolicy CancellationPolicy @default(flexible)
+  currency           String             @default("USD")
+  bookingHorizonDays Int                @default(14)
+  slotGenerationHour Int                @default(6) // hora local (0-23) a la que corre la generación automática diaria de slots
+  timezone           String             @default("UTC") // IANA (ej. "America/Santo_Domingo") — usada para interpretar en hora local las franjas horarias de eventos (TournamentEvent.schedulingWindows)
+  paymentWarningMinutesBefore Int       @default(5) // minutos antes del cutoff de pago (15 min, fijo) para avisar al jugador
+  rosterWarningHoursBefore    Int       @default(6) // horas antes del deadline de roster (24h, fijo) para avisar al jugador
+  ratingAvg          Float              @default(0)
+  totalReviews       Int                @default(0)
+  createdAt          DateTime           @default(now())
+  updatedAt          DateTime           @updatedAt
+
+  owner            User                    @relation(fields: [ownerId], references: [id])
+  admins           ClubAdmin[]
+  invitations      ClubInvitation[]
+  courts           Court[]
+  tournaments      Tournament[]
+  tournamentEvents TournamentEvent[]
+  sponsorships     TournamentSponsorship[]
+  membershipPlans  ClubMembershipPlan[]
+  memberships      UserClubMembership[]
+  userCredits      UserCredit[]
+  peakHourRules    PeakHourRule[]
+  payments         Payment[]
+  professors       ClubProfessor[]
+  classSlots       ClassSlot[]
+
+  @@map("clubs")
+}
+
+// ═══════════════════════════════════════════════════════════════════════════════
+// HORARIOS PICO (por club, por día de la semana — puede haber varios bloques/día)
+// ═══════════════════════════════════════════════════════════════════════════════
+
+model PeakHourRule {
+  id        String   @id @default(cuid())
+  clubId    String
+  dayOfWeek Int // 0=domingo … 6=sábado
+  startTime String // "HH:mm"
+  endTime   String // "HH:mm"
+  createdAt DateTime @default(now())
+
+  club Club @relation(fields: [clubId], references: [id], onDelete: Cascade)
+
+  @@index([clubId, dayOfWeek])
+  @@map("peak_hour_rules")
+}
+
+model ExchangeRate {
+  id        String   @id @default(cuid())
+  from      String
+  to        String   @default("USD")
+  rate      Float
+  source    String   @default("manual")
+  updatedAt DateTime @updatedAt
+
+  @@unique([from, to])
+  @@map("exchange_rates")
+}
+
+model ClubAdmin {
+  id        String        @id @default(cuid())
+  userId    String
+  clubId    String
+  role      ClubAdminRole @default(admin)
+  createdAt DateTime      @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  club Club @relation(fields: [clubId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, clubId])
+  @@map("club_admins")
+}
+
+model ClubInvitation {
+  id        String        @id @default(cuid())
+  clubId    String
+  email     String
+  role      ClubAdminRole @default(admin)
+  token     String        @unique @default(cuid())
+  expiresAt DateTime
+  createdAt DateTime      @default(now())
+  invitedBy String
+
+  club Club @relation(fields: [clubId], references: [id], onDelete: Cascade)
+
+  @@unique([clubId, email])
+  @@map("club_invitations")
+}
+
+model AccountInvite {
+  id         String    @id @default(cuid())
+  userId     String    @unique
+  token      String    @unique @default(cuid())
+  invitedBy  String
+  expiresAt  DateTime
+  createdAt  DateTime  @default(now())
+  acceptedAt DateTime?
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("account_invites")
+}
+
+model Court {
+  id               String   @id @default(cuid())
+  clubId           String
+  name             String
+  sport            Sport
+  surface          String
+  isIndoor         Boolean  @default(true)
+  hasLighting      Boolean  @default(false)
+  capacity         Int      @default(4)
+  isActive         Boolean  @default(true)
+  photos           String[] @default([])
+  sponsorId        String?
+  // Precios por defecto para slots generados
+  basePrice        Float    @default(0)
+  peakPrice        Float    @default(0)
+  currency         String   @default("USD")
+  // Horarios de operación (con soporte de intervalos de 30 min)
+  openTimeWeekday  String   @default("07:00")
+  closeTimeWeekday String   @default("23:00")
+  openTimeWeekend  String   @default("07:00")
+  closeTimeWeekend String   @default("23:00")
+  slotDuration     Int      @default(60)
+
+  club              Club               @relation(fields: [clubId], references: [id], onDelete: Cascade)
+  timeSlots         TimeSlot[]
+  matches           Match[]
+  classSlots        ClassSlot[]
+  sponsor           Sponsor?           @relation(fields: [sponsorId], references: [id])
+  maintenanceBlocks MaintenanceBlock[]
+
+  @@map("courts")
+}
+
+// Bloqueo de una pista por mantenimiento durante un rango de fecha/hora (independiente de los
+// TimeSlot ya generados: se chequea por solapamiento de rango, igual que ClassSlot, así que
+// bloquea también fechas futuras aún no generadas). Se elimina la fila para levantar el bloqueo.
+model MaintenanceBlock {
+  id          String   @id @default(cuid())
+  courtId     String
+  startAt     DateTime
+  endAt       DateTime
+  description String
+  createdBy   String? // userId del admin que lo creó
+  createdAt   DateTime @default(now())
+
+  court Court @relation(fields: [courtId], references: [id], onDelete: Cascade)
+
+  @@index([courtId, startAt, endAt])
+  @@map("maintenance_blocks")
+}
+
+model TimeSlot {
+  id             String  @id @default(cuid())
+  courtId        String
+  date           String // YYYY-MM-DD
+  startTime      String // HH:mm
+  endTime        String // HH:mm
+  basePrice      Float
+  peakPrice      Float
+  pricePerPlayer Float? // precio por jugador (para membresías extra o pay-per-use tipo Playtomic)
+  currency       String  @default("USD")
+  isPeak         Boolean @default(false)
+  sponsorId      String?
+
+  // Bloqueo manual por admin
+  isBlocked        Boolean   @default(false)
+  blockedReason    String?
+  blockedForUserId String? // jugador para quien se reserva el slot (opcional)
+  blockedAt        DateTime?
+  blockedExpiresAt DateTime? // auto-expira 1 día después del bloqueo
+
+  court    Court     @relation(fields: [courtId], references: [id], onDelete: Cascade)
+  bookings Booking[]
+  sponsor  Sponsor?  @relation(fields: [sponsorId], references: [id])
+
+  @@unique([courtId, date, startTime])
+  @@map("time_slots")
+}
+
+// ═══════════════════════════════════════════════════════════════════════════════
+// RESERVAS
+// ═══════════════════════════════════════════════════════════════════════════════
+
+model Booking {
+  id              String          @id @default(cuid())
+  slotId          String
+  userId          String
+  status          BookingStatus   @default(pending)
+  players         Json            @default("[]") // BookingPlayer[]
+  amountPaid      Float
+  currency        String          @default("USD")
+  paymentProvider PaymentProvider @default(stripe)
+  paymentStatus   PaymentStatus   @default(pending)
+  paymentId       String?
+  qrCode          String?
+  qrExpiresAt     DateTime?
+  cancelledAt     DateTime?
+  refundAmount    Float?
+  createdAt       DateTime        @default(now())
+  updatedAt       DateTime        @updatedAt
+
+  // Idempotencia de los avisos previos a cancelación automática — evita reenviar el
+  // mismo aviso en cada corrida del cron (cada 5 / 30 min).
+  paymentWarningNotifiedAt DateTime?
+  rosterWarningNotifiedAt  DateTime?
+
+  pricingType  BookingPricingType @default(pay_per_use)
+  membershipId String? // referencia a la membresía activa que cubrió esta sesión
+
+  slot              TimeSlot            @relation(fields: [slotId], references: [id])
+  user              User                @relation(fields: [userId], references: [id])
+  membership        UserClubMembership? @relation(fields: [membershipId], references: [id])
+  matches           Match[]
+  guestPaymentLinks GuestPaymentLink[]
+
+  @@map("bookings")
+}
+
+// Link de pago para un jugador invitado (sin cuenta) de una reserva. El invitado paga con
+// tarjeta desde una página pública sin login (token en la URL es la credencial); al confirmarse
+// el PaymentIntent con Stripe, se marca pagado el jugador correspondiente en Booking.players[]
+// (matcheado por playerGuestId) y se registra en Payment para que aparezca en Caja.
+model GuestPaymentLink {
+  id              String                 @id @default(cuid())
+  token           String                 @unique @default(cuid())
+  bookingId       String
+  playerGuestId   String // matchea players[].guestId
+  playerName      String
+  amount          Float
+  currency        String
+  status          GuestPaymentLinkStatus @default(pending)
+  paymentIntentId String?
+  expiresAt       DateTime
+  paidAt          DateTime?
+  createdAt       DateTime               @default(now())
+
+  booking Booking @relation(fields: [bookingId], references: [id], onDelete: Cascade)
+
+  @@index([bookingId])
+  @@map("guest_payment_links")
+}
+
+// ═══════════════════════════════════════════════════════════════════════════════
+// COBROS (cuadre de caja)
+// ═══════════════════════════════════════════════════════════════════════════════
+// Registro append-only de cada cobro real (dinero que efectivamente entra al club),
+// separado del bookkeeping de amountPaid/paymentStatus en Booking. Existe para que el
+// reporte de caja pueda agrupar por método (cash/card) y por FECHA DE COBRO (paidAt) —
+// que es la que importa para el cuadre diario, no la fecha de la reserva/membresía que
+// el pago cubre. Cada cobro presencial desde el dashboard (reserva pagada en el
+// momento, "Marcar pagado") crea una fila aquí; los pagos hechos desde la app del
+// jugador son siempre method='card'.
+model Payment {
+  id                      String        @id @default(cuid())
+  clubId                  String
+  bookingId               String?
+  classBookingId          String?
+  membershipId            String?
+  tournamentParticipantId String?
+  playerUserId            String?
+  playerName              String?
+  amount                  Float
+  currency                String
+  method                  PaymentMethod
+  paidAt                  DateTime      @default(now())
+  createdAt               DateTime      @default(now())
+
+  club                  Club                   @relation(fields: [clubId], references: [id])
+  classBooking          ClassBooking?          @relation(fields: [classBookingId], references: [id])
+  tournamentParticipant TournamentParticipant? @relation(fields: [tournamentParticipantId], references: [id])
+
+  @@index([clubId, paidAt])
+  @@map("payments")
+}
+
+// ═══════════════════════════════════════════════════════════════════════════════
+// CLASES CON PROFESORES (del club, atados a un jugador registrado; o externos,
+// sin cuenta de usuario — instructores invitados que no juegan en el club)
+// ═══════════════════════════════════════════════════════════════════════════════
+
+model ClubProfessor {
+  id         String   @id @default(cuid())
+  clubId     String
+  userId     String? // jugador registrado detrás del profesor — requerido cuando isExternal=false
+  name       String
+  avatarUrl  String?
+  bio        String?
+  phone      String?
+  sport      Sport    @default(padel)
+  isExternal Boolean  @default(false)
+  hourlyRate Float
+  currency   String   @default("USD")
+  isActive   Boolean  @default(true)
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  club       Club        @relation(fields: [clubId], references: [id])
+  user       User?       @relation(fields: [userId], references: [id])
+  classSlots ClassSlot[]
+
+  @@index([clubId])
+  @@map("club_professors")
+}
+
+model ClassSlot {
+  id              String   @id @default(cuid())
+  clubId          String
+  professorId     String
+  courtId         String?
+  date            String // YYYY-MM-DD
+  startTime       String // HH:mm
+  durationMinutes Int      @default(60)
+  maxStudents     Int      @default(1)
+  price           Float
+  currency        String   @default("USD")
+  status          String   @default("open") // open | cancelled
+  notes           String?
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  club      Club           @relation(fields: [clubId], references: [id])
+  professor ClubProfessor  @relation(fields: [professorId], references: [id])
+  court     Court?         @relation(fields: [courtId], references: [id])
+  bookings  ClassBooking[]
+
+  @@index([clubId, date])
+  @@map("class_slots")
+}
+
+model ClassBooking {
+  id            String         @id @default(cuid())
+  classSlotId   String
+  studentUserId String
+  studentName   String
+  amountOwed    Float
+  amountPaid    Float          @default(0)
+  paymentStatus PaymentStatus  @default(pending)
+  paymentMethod PaymentMethod?
+  paidAt        DateTime?
+  status        String         @default("active") // active | cancelled
+  createdAt     DateTime       @default(now())
+
+  classSlot ClassSlot @relation(fields: [classSlotId], references: [id])
+  student   User      @relation(fields: [studentUserId], references: [id])
+  payments  Payment[]
+
+  @@index([classSlotId])
+  @@map("class_bookings")
+}
+
+// ═══════════════════════════════════════════════════════════════════════════════
+// CRÉDITOS DE USUARIO
+// ═══════════════════════════════════════════════════════════════════════════════
+
+model UserCredit {
+  id        String    @id @default(cuid())
+  userId    String
+  clubId    String
+  amount    Float
+  currency  String    @default("COP")
+  reason    String // ej. "Cancelación reserva", "Cambio de jugador", "Cortesía admin"
+  bookingId String? // reserva original que generó el crédito
+  status    String    @default("available") // available | used
+  usedAt    DateTime?
+  createdAt DateTime  @default(now())
+
+  user User @relation(fields: [userId], references: [id])
+  club Club @relation(fields: [clubId], references: [id])
+
+  @@map("user_credits")
+}
+
+// ═══════════════════════════════════════════════════════════════════════════════
+// MEMBRESÍAS DE CLUB
+// ═══════════════════════════════════════════════════════════════════════════════
+
+model ClubMembershipPlan {
+  id                String   @id @default(cuid())
+  clubId            String
+  name              String // "Membresía Mensual", "Membresía Pro"
+  description       String?
+  price             Float // precio mensual
+  currency          String   @default("COP")
+  sessionsPerDay    Int      @default(1) // sesiones gratuitas por día
+  priceExtraSession Float    @default(0) // precio por sesión extra (0 = usa pricePerPlayer del slot)
+  isActive          Boolean  @default(true)
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+
+  club        Club                 @relation(fields: [clubId], references: [id], onDelete: Cascade)
+  subscribers UserClubMembership[]
+
+  @@map("club_membership_plans")
+}
+
+model UserClubMembership {
+  id                   String           @id @default(cuid())
+  userId               String
+  planId               String
+  clubId               String
+  status               MembershipStatus @default(active)
+  startDate            DateTime         @default(now())
+  nextBillingDate      DateTime
+  cancelledAt          DateTime?
+  cancelAtPeriodEnd    Boolean          @default(false) // true = el socio canceló, pero sigue "active" (con sus beneficios) hasta nextBillingDate
+  isCourtesy           Boolean          @default(false) // membresía sin cobro (ej. profesores del club) — requiere courtesyReason
+  courtesyReason       String? // motivo de la cortesía, igual que en reservas (Booking.players[].courtesyReason)
+  stripeSubscriptionId String? // para el cobro recurrente con Stripe
+  createdAt            DateTime         @default(now())
+  updatedAt            DateTime         @updatedAt
+
+  user     User               @relation(fields: [userId], references: [id])
+  plan     ClubMembershipPlan @relation(fields: [planId], references: [id])
+  club     Club               @relation(fields: [clubId], references: [id])
+  bookings Booking[]
+
+  @@unique([userId, clubId, status]) // un usuario solo puede tener una membresía activa por club
+  @@map("user_club_memberships")
+}
+
+// ═══════════════════════════════════════════════════════════════════════════════
+// TORNEOS & PARTIDOS
+// ═══════════════════════════════════════════════════════════════════════════════
+
+enum TournamentEventStatus {
+  draft
+  scheduled
+  in_progress
+  completed
+  cancelled
+}
+
+// Agrupa varios Tournament (una categoría/género cada uno) bajo un mismo evento —
+// ej. "Fin de semana de aniversario" con 6 torneos corriendo en paralelo sobre las
+// mismas pistas del club. Permite coordinar el horario entre todos ellos en vez de
+// agendar cada torneo de forma aislada (ver POST /api/tournament-events/:id/schedule).
+model TournamentEvent {
+  id                String                @id @default(cuid())
+  clubId            String
+  organizerId       String
+  name              String
+  description       String?
+  startDate         DateTime
+  endDate           DateTime
+  // Horario de apertura/cierre por día del evento — el scheduler (POST .../schedule)
+  // no agenda partidos fuera de estas franjas. Formato: [{ date: "2026-08-07", openTime:
+  // "18:00", closeTime: "22:00" }, ...] (openTime/closeTime en hora local del club, HH:MM).
+  // Si es null, el scheduler agenda en tiempo continuo sin respetar días (comportamiento legacy).
+  schedulingWindows Json?
+  status            TournamentEventStatus @default(draft)
+  createdAt         DateTime              @default(now())
+  updatedAt         DateTime              @updatedAt
+
+  club        Club         @relation(fields: [clubId], references: [id])
+  tournaments Tournament[]
+
+  @@map("tournament_events")
+}
+
+model Tournament {
+  id                   String           @id @default(cuid())
+  clubId               String?
+  eventId              String? // opcional: agrupa este torneo con otros del mismo fin de semana/evento
+  organizerId          String
+  name                 String
+  description          String?
+  sport                Sport
+  format               TournamentFormat @default(elimination)
+  matchFormat          MatchFormat      @default(best_of_3_full) // modalidad general: usada en fase de grupos/round-robin y como fallback de cualquier ronda eliminatoria sin modalidad propia
+  matchFormatOverrides Json? // modalidad específica por ronda eliminatoria, ej. { "round_of_16": "pro_set_8", "quarterfinal": "two_sets_super_tb", "semifinal": "best_of_3_full", "final": "best_of_3_full" }
+  minRestMinutes       Int              @default(30) // descanso mínimo entre partidos de la misma pareja, usado por el scheduler automático
+  type                 TournamentType   @default(pairs)
+  genderCategory       TournamentGender @default(mixto)
+  category             PlayerCategory
+  maxParticipants      Int
+  currentParticipants  Int              @default(0)
+  reservedSlots        Int              @default(0) // cupos de jugadores reservados por el club, no disponibles para inscripción pública
+  entryFee             Float            @default(0)
+  currency             String           @default("USD")
+  prizeInfo            String?
+  rules                String?
+  location             String
+  registrationStart    DateTime
+  registrationEnd      DateTime
+  startDate            DateTime
+  endDate              DateTime
+  status               TournamentStatus @default(draft)
+  sponsorId            String?
+  sponsorLogoUrl       String?
+  createdAt            DateTime         @default(now())
+
+  club         Club?                   @relation(fields: [clubId], references: [id])
+  event        TournamentEvent?        @relation(fields: [eventId], references: [id])
+  participants TournamentParticipant[]
+  matches      Match[]
+  sponsorships TournamentSponsorship[]
+
+  @@map("tournaments")
+}
+
+model TournamentParticipant {
+  id             String         @id @default(cuid())
+  tournamentId   String
+  playerId       String
+  partnerId      String?
+  teamName       String?
+  paymentStatus  PaymentStatus  @default(pending)
+  courtesyReason String?
+  amountOwed     Float          @default(0) // copiado de Tournament.entryFee al inscribirse
+  amountPaid     Float          @default(0)
+  paymentMethod  PaymentMethod?
+  paidAt         DateTime?
+  groupNumber    Int? // asignado al iniciar un torneo de formato groups_bracket
+  registeredAt   DateTime       @default(now())
+
+  tournament Tournament    @relation(fields: [tournamentId], references: [id])
+  player     PlayerProfile @relation(fields: [playerId], references: [userId])
+  payments   Payment[]
+
+  @@unique([tournamentId, playerId])
+  @@map("tournament_participants")
+}
+
+model Match {
+  id               String      @id @default(cuid())
+  tournamentId     String? // null para partidos casuales (creados desde una reserva, sin torneo)
+  bookingId        String? // reserva de la que salió este partido casual (null para partidos de torneo)
+  sport            Sport       @default(padel) // determina qué campo de ELO del jugador se actualiza
+  round            Int?
+  stage            MatchStage  @default(knockout) // group = fase de grupos; knockout = eliminación
+  groupNumber      Int? // solo cuando stage = group
+  courtId          String?
+  player1Id        String?
+  player1PartnerId String? // compañero de dobles del player1 — solo se usa en partidos casuales; en torneos la pareja sale de TournamentParticipant
+  player2Id        String?
+  player2PartnerId String? // compañero de dobles del player2
+  refereeId        String?
+  scheduledAt      DateTime?
+  startedAt        DateTime?
+  finishedAt       DateTime?
+  score            Json        @default("[]") // SetScore[]
+  winnerId         String?
+  winningSide      Int? // 1 o 2 — lado ganador (funciona tanto para singles como dobles)
+  status           MatchStatus @default(scheduled)
+  isLive           Boolean     @default(false)
+  createdAt        DateTime    @default(now())
+
+  // Confirmación del resultado (solo partidos casuales, estilo Playtomic): el ELO no se
+  // aplica hasta que el rival confirma, o hasta que pasa `autoConfirmAt` sin objeción.
+  reportedById     String? // quién reportó el resultado (no puede confirmarlo él mismo)
+  scoreConfirmed   Boolean   @default(false)
+  scoreConfirmedAt DateTime?
+  autoConfirmAt    DateTime? // deadline para aceptación tácita si nadie objeta
+
+  tournament     Tournament?    @relation(fields: [tournamentId], references: [id])
+  booking        Booking?       @relation(fields: [bookingId], references: [id])
+  court          Court?         @relation(fields: [courtId], references: [id])
+  player1        PlayerProfile? @relation("player1", fields: [player1Id], references: [userId])
+  player1Partner PlayerProfile? @relation("player1partner", fields: [player1PartnerId], references: [userId])
+  player2        PlayerProfile? @relation("player2", fields: [player2Id], references: [userId])
+  player2Partner PlayerProfile? @relation("player2partner", fields: [player2PartnerId], references: [userId])
+  winner         PlayerProfile? @relation("winner", fields: [winnerId], references: [userId])
+  referee        User?          @relation("referee", fields: [refereeId], references: [id])
+  eloHistory     EloHistory[]
+
+  @@map("matches")
+}
+
+model EloHistory {
+  id        String   @id @default(cuid())
+  playerId  String
+  matchId   String?
+  sport     Sport    @default(padel)
+  eloBefore Int
+  eloAfter  Int
+  delta     Int
+  createdAt DateTime @default(now())
+
+  player PlayerProfile @relation(fields: [playerId], references: [userId])
+  match  Match?        @relation(fields: [matchId], references: [id])
+
+  @@map("elo_history")
+}
+
+// ═══════════════════════════════════════════════════════════════════════════════
+// FIND A PARTNER
+// ═══════════════════════════════════════════════════════════════════════════════
+
+model MatchRequest {
+  id             String         @id @default(cuid())
+  requesterId    String
+  sport          Sport
+  levelMin       PlayerCategory
+  levelMax       PlayerCategory
+  city           String
+  maxDistanceKm  Int            @default(20)
+  preferredDate  String?
+  timePreference String?
+  courtId        String?
+  message        String?
+  status         String         @default("open") // open | matched | expired | cancelled
+  expiresAt      DateTime
+  createdAt      DateTime       @default(now())
+
+  requester    User               @relation(fields: [requesterId], references: [id])
+  applications MatchApplication[]
+
+  @@map("match_requests")
+}
+
+model MatchApplication {
+  id          String    @id @default(cuid())
+  requestId   String
+  applicantId String
+  message     String?
+  status      String    @default("pending") // pending | accepted | rejected
+  respondedAt DateTime?
+  createdAt   DateTime  @default(now())
+
+  request   MatchRequest @relation(fields: [requestId], references: [id])
+  applicant User         @relation(fields: [applicantId], references: [id])
+
+  @@unique([requestId, applicantId])
+  @@map("match_applications")
+}
+
+model PlayerReputation {
+  id         String   @id @default(cuid())
+  reviewerId String
+  reviewedId String
+  matchId    String?
+  rating     Int // 1-5
+  onTime     Boolean  @default(true)
+  fairPlay   Boolean  @default(true)
+  comment    String?
+  createdAt  DateTime @default(now())
+
+  reviewer User @relation("reviewer", fields: [reviewerId], references: [id])
+  reviewed User @relation("reviewed", fields: [reviewedId], references: [id])
+
+  @@unique([reviewerId, reviewedId, matchId])
+  @@map("player_reputations")
+}
+
+// ═══════════════════════════════════════════════════════════════════════════════
+// COMUNIDAD
+// ═══════════════════════════════════════════════════════════════════════════════
+
+model Post {
+  id            String   @id @default(cuid())
+  authorId      String
+  type          PostType @default(text)
+  content       String
+  mediaUrls     String[] @default([])
+  sportTag      Sport?
+  groupId       String?
+  likesCount    Int      @default(0)
+  commentsCount Int      @default(0)
+  isPremium     Boolean  @default(false)
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  author   User       @relation(fields: [authorId], references: [id])
+  group    Group?     @relation(fields: [groupId], references: [id])
+  comments Comment[]
+  likes    PostLike[]
+
+  @@map("posts")
+}
+
+model PostLike {
+  postId    String
+  userId    String
+  createdAt DateTime @default(now())
+
+  post Post @relation(fields: [postId], references: [id], onDelete: Cascade)
+  user User @relation(fields: [userId], references: [id])
+
+  @@id([postId, userId])
+  @@map("post_likes")
+}
+
+model Comment {
+  id         String   @id @default(cuid())
+  postId     String
+  authorId   String
+  content    String
+  likesCount Int      @default(0)
+  parentId   String?
+  createdAt  DateTime @default(now())
+
+  post    Post      @relation(fields: [postId], references: [id], onDelete: Cascade)
+  author  User      @relation(fields: [authorId], references: [id])
+  parent  Comment?  @relation("replies", fields: [parentId], references: [id])
+  replies Comment[] @relation("replies")
+
+  @@map("comments")
+}
+
+model Group {
+  id          String        @id @default(cuid())
+  name        String
+  description String?
+  category    GroupCategory @default(general)
+  sport       Sport?
+  memberCount Int           @default(0)
+  isPrivate   Boolean       @default(false)
+  coverUrl    String?
+  createdAt   DateTime      @default(now())
+
+  posts   Post[]
+  members GroupMember[]
+
+  @@map("groups")
+}
+
+model GroupMember {
+  groupId  String
+  userId   String
+  joinedAt DateTime @default(now())
+  role     String   @default("member") // member | moderator | admin
+
+  group Group @relation(fields: [groupId], references: [id])
+  user  User  @relation(fields: [userId], references: [id])
+
+  @@id([groupId, userId])
+  @@map("group_members")
+}
+
+model Follow {
+  followerId    String
+  followingId   String
+  followingType String   @default("user") // user | club | group
+  createdAt     DateTime @default(now())
+
+  follower  User @relation("follower", fields: [followerId], references: [id])
+  following User @relation("following", fields: [followingId], references: [id])
+
+  @@id([followerId, followingId])
+  @@map("follows")
+}
+
+model GearReview {
+  id               String   @id @default(cuid())
+  reviewerId       String
+  brand            String
+  model            String
+  sport            Sport
+  rating           Int
+  reviewText       String
+  photos           String[] @default([])
+  verifiedPurchase Boolean  @default(false)
+  createdAt        DateTime @default(now())
+
+  reviewer User @relation(fields: [reviewerId], references: [id])
+
+  @@map("gear_reviews")
+}
+
+// ═══════════════════════════════════════════════════════════════════════════════
+// ACADEMIA
+// ═══════════════════════════════════════════════════════════════════════════════
+
+model Course {
+  id            String      @id @default(cuid())
+  instructorId  String
+  title         String
+  description   String
+  sport         Sport
+  level         CourseLevel @default(beginner)
+  type          CourseType  @default(video)
+  price         Float       @default(0)
+  currency      String      @default("USD")
+  isPremium     Boolean     @default(false)
+  thumbnailUrl  String?
+  durationHours Float       @default(0)
+  language      String      @default("es")
+  ratingAvg     Float       @default(0)
+  totalReviews  Int         @default(0)
+  isPublished   Boolean     @default(false)
+  createdAt     DateTime    @default(now())
+  updatedAt     DateTime    @updatedAt
+
+  instructor  InstructorProfile @relation(fields: [instructorId], references: [userId])
+  lessons     Lesson[]
+  enrollments Enrollment[]
+
+  @@map("courses")
+}
+
+model Lesson {
+  id                   String  @id @default(cuid())
+  courseId             String
+  title                String
+  orderIndex           Int
+  muxAssetId           String?
+  muxPlaybackId        String?
+  videoDurationSeconds Int     @default(0)
+  isFreePreview        Boolean @default(false)
+  description          String?
+
+  course Course @relation(fields: [courseId], references: [id], onDelete: Cascade)
+
+  @@map("lessons")
+}
+
+model Enrollment {
+  id              String    @id @default(cuid())
+  userId          String
+  courseId        String
+  progressPercent Int       @default(0)
+  lastLessonId    String?
+  completedAt     DateTime?
+  enrolledAt      DateTime  @default(now())
+
+  user   User   @relation(fields: [userId], references: [id])
+  course Course @relation(fields: [courseId], references: [id])
+
+  @@unique([userId, courseId])
+  @@map("enrollments")
+}
+
+model InstructorSession {
+  id                  String      @id @default(cuid())
+  instructorId        String
+  title               String
+  sport               Sport
+  level               CourseLevel @default(beginner)
+  clubId              String?
+  locationDescription String
+  date                String // YYYY-MM-DD
+  startTime           String // HH:mm
+  durationMinutes     Int         @default(60)
+  maxStudents         Int         @default(4)
+  pricePerPerson      Float
+  currency            String      @default("USD")
+  bookedCount         Int         @default(0)
+  status              String      @default("open")
+  createdAt           DateTime    @default(now())
+
+  instructor InstructorProfile @relation(fields: [instructorId], references: [userId])
+
+  @@map("instructor_sessions")
+}
+
+// ═══════════════════════════════════════════════════════════════════════════════
+// GAMIFICACIÓN
+// ═══════════════════════════════════════════════════════════════════════════════
+
+model Badge {
+  id             String @id @default(cuid())
+  code           String @unique
+  name           String
+  description    String
+  iconUrl        String
+  conditionType  String
+  conditionValue Int
+  xpReward       Int    @default(0)
+  sport          Sport?
+
+  userBadges UserBadge[]
+  missions   Mission[]
+
+  @@map("badges")
+}
+
+model UserBadge {
+  userId   String
+  badgeId  String
+  earnedAt DateTime @default(now())
+  notified Boolean  @default(false)
+
+  user  User  @relation(fields: [userId], references: [id])
+  badge Badge @relation(fields: [badgeId], references: [id])
+
+  @@id([userId, badgeId])
+  @@map("user_badges")
+}
+
+model Mission {
+  id          String    @id @default(cuid())
+  title       String
+  description String
+  sport       Sport?
+  xpReward    Int
+  badgeId     String?
+  startDate   DateTime?
+  endDate     DateTime?
+  isRecurring Boolean   @default(false)
+
+  badge        Badge?        @relation(fields: [badgeId], references: [id])
+  userMissions UserMission[]
+
+  @@map("missions")
+}
+
+model UserMission {
+  userId      String
+  missionId   String
+  progress    Int       @default(0)
+  completedAt DateTime?
+  createdAt   DateTime  @default(now())
+
+  user    User    @relation(fields: [userId], references: [id])
+  mission Mission @relation(fields: [missionId], references: [id])
+
+  @@id([userId, missionId])
+  @@map("user_missions")
+}
+
+// ═══════════════════════════════════════════════════════════════════════════════
+// NOTIFICACIONES
+// ═══════════════════════════════════════════════════════════════════════════════
+
+model Notification {
+  id        String   @id @default(cuid())
+  userId    String
+  type      String
+  title     String
+  body      String
+  data      Json?
+  isRead    Boolean  @default(false)
+  createdAt DateTime @default(now())
+
+  user User @relation(fields: [userId], references: [id])
+
+  @@map("notifications")
+}
+
+// ═══════════════════════════════════════════════════════════════════════════════
+// ADS & PATROCINIOS
+// ═══════════════════════════════════════════════════════════════════════════════
+
+model Sponsor {
+  id           String   @id @default(cuid())
+  brandName    String
+  logoUrl      String?
+  contactEmail String
+  country      String?
+  sportFocus   Sport[]  @default([])
+  createdAt    DateTime @default(now())
+
+  campaigns              AdCampaign[]
+  courts                 Court[]
+  timeSlots              TimeSlot[]
+  tournamentSponsorships TournamentSponsorship[]
+
+  @@map("sponsors")
+}
+
+model AdCampaign {
+  id             String          @id @default(cuid())
+  sponsorId      String
+  type           String // banner | tournament | court | notification
+  targetSport    Sport?
+  targetCategory PlayerCategory?
+  targetCountry  String?
+  budget         Float
+  cpmRate        Float           @default(0)
+  imageUrl       String?
+  linkUrl        String?
+  startDate      DateTime
+  endDate        DateTime
+  status         String          @default("active")
+  impressions    Int             @default(0)
+  clicks         Int             @default(0)
+  createdAt      DateTime        @default(now())
+
+  sponsor Sponsor @relation(fields: [sponsorId], references: [id])
+
+  @@map("ad_campaigns")
+}
+
+model TournamentSponsorship {
+  tournamentId String
+  sponsorId    String
+  clubId       String?
+  packageType  String
+  amount       Float
+  deliverables Json?
+  createdAt    DateTime @default(now())
+
+  tournament Tournament @relation(fields: [tournamentId], references: [id])
+  sponsor    Sponsor    @relation(fields: [sponsorId], references: [id])
+  club       Club?      @relation(fields: [clubId], references: [id])
+
+  @@id([tournamentId, sponsorId])
+  @@map("tournament_sponsorships")
+}

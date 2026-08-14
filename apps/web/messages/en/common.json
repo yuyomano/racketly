@@ -1,0 +1,69 @@
+{
+  "Nav": {
+    "overview": "Overview",
+    "reservas": "Bookings",
+    "jugadores": "Players",
+    "pistas": "Courts",
+    "torneos": "Tournaments",
+    "clases": "Classes",
+    "membresias": "Memberships",
+    "caja": "Cash register",
+    "misClubs": "My Clubs",
+    "estadisticas": "Statistics",
+    "admins": "Admins"
+  },
+  "Common": {
+    "language": "Language",
+    "errorBoundary": {
+      "title": "Something went wrong",
+      "description": "An unexpected error occurred. You can try again or go back home.",
+      "retry": "Retry",
+      "goToOverview": "Go to Overview",
+      "goToBooking": "Go to Booking",
+      "goHome": "Go home"
+    }
+  },
+  "DashboardLayout": {
+    "clubDashboard": "Club Dashboard",
+    "clubActivo": "Active club",
+    "cerrarSesion": "Log out",
+    "abrirMenu": "Open menu",
+    "administrasClubs": "You manage {count, plural, one {# club} other {# clubs}}",
+    "sinClubs": "No clubs assigned"
+  },
+  "Overview": {
+    "bookingStatus": {
+      "confirmed": "Confirmed",
+      "pending": "Pending payment",
+      "completed": "Completed",
+      "cancelled": "Cancelled"
+    },
+    "errorCargando": "Error loading stats",
+    "errorVerifica": "Check that the services are running.",
+    "errorSelecciona": "Select a club from the left panel.",
+    "selectClubEmpty": "Select a club from the left panel to see stats.",
+    "statReservasHoy": "Bookings today",
+    "statSubSlots": "out of {count} available slots",
+    "statIngresos": "Revenue, 7 days ({currency})",
+    "statSubReservasConfirmadas": "{count} confirmed bookings",
+    "statOcupacionMedia": "Average occupancy",
+    "statSubPistasActivas": "{count} active courts",
+    "statReservasTotales": "Total bookings",
+    "statSubCanceladasPendientes": "{cancelled} cancelled · {pending} pending",
+    "chartReservasConfirmadas": "Confirmed bookings — last 7 days",
+    "chartIngresos": "Revenue (thousands {currency}) — last 7 days",
+    "ocupacionPorPistaHoy": "Occupancy by court — today",
+    "noPistasHoy": "No courts with slots today",
+    "reservasDeHoy": "Today's bookings",
+    "verTodas": "View all",
+    "claseCon": "Class with {name}",
+    "sinAlumnosAun": "No students yet",
+    "editarClase": "Edit class",
+    "editarReserva": "Edit booking",
+    "noReservasHoy": "No bookings for today",
+    "resumenPeriodo": "Period summary",
+    "reservasConfirmadas": "Confirmed bookings",
+    "ingresosGenerados": "Revenue generated",
+    "reservasCanceladas": "Cancelled bookings"
+  }
+}

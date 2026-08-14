@@ -1,0 +1,153 @@
+# ─── Racketly — Docker Compose (Producción) ──────────────────────────────────
+# A diferencia de docker-compose.yml (solo dev, con secretos hardcodeados y sin
+# TLS), este compose:
+#   - No incluye postgres/redis como contenedores — usa un proveedor gestionado
+#     externo (ver DATABASE_URL/REDIS_URL en cada .env.production). Si preferís
+#     correrlos en el mismo servidor, agregalos aquí con volúmenes persistentes.
+#   - Enruta TODO el tráfico real a través del api-gateway Express (services/
+#     api-gateway), igual que en dev — no duplica routing logic en el proxy.
+#   - Usa Caddy como terminador TLS: obtiene y renueva certificados Let's
+#     Encrypt automáticamente, sin pasos manuales de certbot.
+#
+# Requisitos antes de levantar esto:
+#   1. DNS: racketly.club y api.racketly.club apuntando a la IP pública del
+#      servidor (A records). Caddy no puede emitir el certificado sin esto.
+#   2. Completar los TODO en cada services/*/.env.production y en
+#      apps/web/.env.production.local (ver checklist de secretos de producción).
+#   3. Puertos 80 y 443 abiertos en el firewall del servidor (necesarios para el
+#      challenge HTTP-01 de Let's Encrypt y para servir HTTPS).
+#
+# Uso (el --env-file es necesario para que ${NEXT_PUBLIC_GOOGLE_CLIENT_ID} y
+# ${NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY} de abajo tomen los valores reales del
+# archivo que ya armamos en apps/web/.env.production.local):
+#   docker compose -f infra/docker/docker-compose.prod.yml \
+#     --env-file apps/web/.env.production.local up -d --build
+
+services:
+
+  auth-service:
+    build:
+      context: ../..
+      dockerfile: infra/docker/Dockerfile.service
+      args:
+        SERVICE_NAME: auth-service
+    container_name: racketly-auth
+    restart: unless-stopped
+    env_file: ../../services/auth-service/.env.production
+
+  booking-service:
+    build:
+      context: ../..
+      dockerfile: infra/docker/Dockerfile.service
+      args:
+        SERVICE_NAME: booking-service
+    container_name: racketly-booking
+    restart: unless-stopped
+    env_file: ../../services/booking-service/.env.production
+
+  tournament-service:
+    build:
+      context: ../..
+      dockerfile: infra/docker/Dockerfile.service
+      args:
+        SERVICE_NAME: tournament-service
+    container_name: racketly-tournament
+    restart: unless-stopped
+    env_file: ../../services/tournament-service/.env.production
+
+  community-service:
+    build:
+      context: ../..
+      dockerfile: infra/docker/Dockerfile.service
+      args:
+        SERVICE_NAME: community-service
+    container_name: racketly-community
+    restart: unless-stopped
+    env_file: ../../services/community-service/.env.production
+
+  academy-service:
+    build:
+      context: ../..
+      dockerfile: infra/docker/Dockerfile.service
+      args:
+        SERVICE_NAME: academy-service
+    container_name: racketly-academy
+    restart: unless-stopped
+    env_file: ../../services/academy-service/.env.production
+
+  notification-service:
+    build:
+      context: ../..
+      dockerfile: infra/docker/Dockerfile.service
+      args:
+        SERVICE_NAME: notification-service
+    container_name: racketly-notification
+    restart: unless-stopped
+    env_file: ../../services/notification-service/.env.production
+
+  api-gateway:
+    build:
+      context: ../..
+      dockerfile: infra/docker/Dockerfile.service
+      args:
+        SERVICE_NAME: api-gateway
+    container_name: racketly-gateway
+    restart: unless-stopped
+    env_file: ../../services/api-gateway/.env.production
+    environment:
+      # Dentro de la red de Docker Compose, cada servicio es resoluble por el
+      # nombre del container — sobrescribe los localhost:PORT del .env.production.
+      AUTH_SERVICE_URL: http://auth-service:3001
+      BOOKING_SERVICE_URL: http://booking-service:3002
+      TOURNAMENT_SERVICE_URL: http://tournament-service:3003
+      COMMUNITY_SERVICE_URL: http://community-service:3004
+      ACADEMY_SERVICE_URL: http://academy-service:3005
+      NOTIFICATION_SERVICE_URL: http://notification-service:3006
+    depends_on:
+      - auth-service
+      - booking-service
+      - tournament-service
+      - community-service
+      - academy-service
+      - notification-service
+
+  web:
+    build:
+      context: ../..
+      dockerfile: apps/web/Dockerfile
+      args:
+        NEXT_PUBLIC_GOOGLE_CLIENT_ID: ${NEXT_PUBLIC_GOOGLE_CLIENT_ID}
+        NEXT_PUBLIC_GATEWAY_URL: https://api.racketly.club
+        NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY: ${NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY}
+        API_GATEWAY_URL: http://api-gateway:3000
+    container_name: racketly-web
+    restart: unless-stopped
+    environment:
+      # middleware.ts lee esto en runtime (además del build-arg de arriba, que
+      # queda baked en las rewrites de next.config.ts) — deben coincidir.
+      API_GATEWAY_URL: http://api-gateway:3000
+      NODE_ENV: production
+    depends_on:
+      - api-gateway
+
+  # ─── Reverse proxy + TLS automático (Let's Encrypt) ──────────────────────────
+  caddy:
+    image: caddy:2-alpine
+    container_name: racketly-caddy
+    restart: unless-stopped
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./Caddyfile:/etc/caddy/Caddyfile:ro
+      - caddy_data:/data
+      - caddy_config:/config
+    depends_on:
+      - web
+      - api-gateway
+
+volumes:
+  caddy_data:
+    name: racketly_caddy_data
+  caddy_config:
+    name: racketly_caddy_config

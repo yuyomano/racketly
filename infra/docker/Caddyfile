@@ -1,0 +1,30 @@
+# ─── Racketly — Caddyfile (TLS automático vía Let's Encrypt) ────────────────
+# Caddy obtiene y renueva los certificados solo con que el DNS de estos dos
+# dominios apunte a la IP pública del servidor y los puertos 80/443 estén
+# abiertos — no requiere correr certbot ni gestionar renovación a mano.
+
+racketly.club {
+	reverse_proxy web:3010
+
+	encode gzip
+
+	header {
+		Strict-Transport-Security "max-age=15552000; includeSubDomains"
+		X-Frame-Options "DENY"
+		X-Content-Type-Options "nosniff"
+		Referrer-Policy "no-referrer-when-downgrade"
+	}
+}
+
+api.racketly.club {
+	reverse_proxy api-gateway:3000
+
+	encode gzip
+
+	header {
+		Strict-Transport-Security "max-age=15552000; includeSubDomains"
+		X-Frame-Options "DENY"
+		X-Content-Type-Options "nosniff"
+		Referrer-Policy "no-referrer-when-downgrade"
+	}
+}

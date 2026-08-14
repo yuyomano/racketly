@@ -1,0 +1,10 @@
+{
+  "AppNav": {
+    "booking": "Book",
+    "tournaments": "Tournaments",
+    "academy": "Academy",
+    "community": "Community",
+    "profile": "Profile",
+    "logout": "Log out"
+  }
+}

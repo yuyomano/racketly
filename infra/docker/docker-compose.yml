@@ -1,0 +1,200 @@
+version: '3.9'
+
+# ─── Racketly — Docker Compose (Desarrollo) ──────────────────────────────────
+
+services:
+
+  # ─── Infrastructure ─────────────────────────────────────────────────────────
+
+  postgres:
+    image: postgres:16-alpine
+    container_name: racketly-postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: racketly
+      POSTGRES_PASSWORD: racketly_dev_pass
+      POSTGRES_DB: racketly
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U racketly"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  redis:
+    image: redis:7-alpine
+    container_name: racketly-redis
+    restart: unless-stopped
+    command: redis-server --maxmemory 256mb --maxmemory-policy allkeys-lru
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # ─── Services ────────────────────────────────────────────────────────────────
+
+  auth-service:
+    build:
+      context: ../..
+      dockerfile: infra/docker/Dockerfile.service
+      args:
+        SERVICE_NAME: auth-service
+    container_name: racketly-auth
+    restart: unless-stopped
+    ports:
+      - "3001:3001"
+    environment:
+      PORT: 3001
+      NODE_ENV: development
+      DATABASE_URL: postgresql://racketly:racketly_dev_pass@postgres:5432/racketly
+      JWT_SECRET: dev_jwt_secret_change_in_prod
+      JWT_REFRESH_SECRET: dev_jwt_refresh_secret_change_in_prod
+      ALLOWED_ORIGINS: http://localhost:3000,http://localhost:8081
+    depends_on:
+      postgres:
+        condition: service_healthy
+    volumes:
+      - ../../services/auth-service/src:/app/services/auth-service/src:ro
+
+  booking-service:
+    build:
+      context: ../..
+      dockerfile: infra/docker/Dockerfile.service
+      args:
+        SERVICE_NAME: booking-service
+    container_name: racketly-booking
+    restart: unless-stopped
+    ports:
+      - "3002:3002"
+    environment:
+      PORT: 3002
+      NODE_ENV: development
+      DATABASE_URL: postgresql://racketly:racketly_dev_pass@postgres:5432/racketly
+      REDIS_HOST: redis
+      REDIS_PORT: 6379
+      STRIPE_SECRET_KEY: ${STRIPE_SECRET_KEY:-sk_test_placeholder}
+      STRIPE_WEBHOOK_SECRET: ${STRIPE_WEBHOOK_SECRET:-whsec_placeholder}
+      ALLOWED_ORIGINS: http://localhost:3000,http://localhost:8081
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+
+  tournament-service:
+    build:
+      context: ../..
+      dockerfile: infra/docker/Dockerfile.service
+      args:
+        SERVICE_NAME: tournament-service
+    container_name: racketly-tournament
+    restart: unless-stopped
+    ports:
+      - "3003:3003"
+    environment:
+      PORT: 3003
+      NODE_ENV: development
+      DATABASE_URL: postgresql://racketly:racketly_dev_pass@postgres:5432/racketly
+      ALLOWED_ORIGINS: http://localhost:3000,http://localhost:8081
+    depends_on:
+      postgres:
+        condition: service_healthy
+
+  community-service:
+    build:
+      context: ../..
+      dockerfile: infra/docker/Dockerfile.service
+      args:
+        SERVICE_NAME: community-service
+    container_name: racketly-community
+    restart: unless-stopped
+    ports:
+      - "3004:3004"
+    environment:
+      PORT: 3004
+      NODE_ENV: development
+      DATABASE_URL: postgresql://racketly:racketly_dev_pass@postgres:5432/racketly
+      AWS_REGION: us-east-1
+      AWS_S3_BUCKET: ${AWS_S3_BUCKET:-racketly-dev}
+      AWS_ACCESS_KEY_ID: ${AWS_ACCESS_KEY_ID:-dev}
+      AWS_SECRET_ACCESS_KEY: ${AWS_SECRET_ACCESS_KEY:-dev}
+      ALLOWED_ORIGINS: http://localhost:3000,http://localhost:8081
+    depends_on:
+      postgres:
+        condition: service_healthy
+
+  academy-service:
+    build:
+      context: ../..
+      dockerfile: infra/docker/Dockerfile.service
+      args:
+        SERVICE_NAME: academy-service
+    container_name: racketly-academy
+    restart: unless-stopped
+    ports:
+      - "3005:3005"
+    environment:
+      PORT: 3005
+      NODE_ENV: development
+      DATABASE_URL: postgresql://racketly:racketly_dev_pass@postgres:5432/racketly
+      MUX_TOKEN_ID: ${MUX_TOKEN_ID:-placeholder}
+      MUX_TOKEN_SECRET: ${MUX_TOKEN_SECRET:-placeholder}
+      ALLOWED_ORIGINS: http://localhost:3000,http://localhost:8081
+    depends_on:
+      postgres:
+        condition: service_healthy
+
+  notification-service:
+    build:
+      context: ../..
+      dockerfile: infra/docker/Dockerfile.service
+      args:
+        SERVICE_NAME: notification-service
+    container_name: racketly-notification
+    restart: unless-stopped
+    ports:
+      - "3006:3006"
+    environment:
+      PORT: 3006
+      NODE_ENV: development
+      DATABASE_URL: postgresql://racketly:racketly_dev_pass@postgres:5432/racketly
+      REDIS_HOST: redis
+      REDIS_PORT: 6379
+      SENDGRID_API_KEY: ${SENDGRID_API_KEY:-placeholder}
+      FIREBASE_SERVICE_ACCOUNT: ${FIREBASE_SERVICE_ACCOUNT:-{}}
+    depends_on:
+      redis:
+        condition: service_healthy
+
+  # ─── API Gateway ─────────────────────────────────────────────────────────────
+
+  api-gateway:
+    image: nginx:alpine
+    container_name: racketly-gateway
+    restart: unless-stopped
+    ports:
+      - "4000:80"
+    volumes:
+      - ../docker/nginx.conf:/etc/nginx/nginx.conf:ro
+    depends_on:
+      - auth-service
+      - booking-service
+      - tournament-service
+      - community-service
+      - academy-service
+
+# ─── Volumes ──────────────────────────────────────────────────────────────────
+
+volumes:
+  postgres_data:
+    name: racketly_postgres_data
+  redis_data:
+    name: racketly_redis_data

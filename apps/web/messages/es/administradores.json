@@ -1,0 +1,31 @@
+{
+  "Administradores": {
+    "pageTitle": "Administradores del club",
+    "roleOwner": "Owner",
+    "roleAdmin": "Admin",
+    "invite": {
+      "title": "Invitar administrador",
+      "description": "Se generará un enlace de invitación válido por 7 días.",
+      "emailPlaceholder": "email@ejemplo.com",
+      "submitting": "Enviando...",
+      "submit": "Invitar",
+      "genericError": "Error al enviar invitación",
+      "connectionError": "Error de conexión",
+      "successMessage": "Invitación enviada a {email}"
+    },
+    "removeAdminConfirm": "¿Remover este administrador del club?",
+    "pendingInvitations": {
+      "title": "Invitaciones pendientes ({count})",
+      "expired": "Expirada",
+      "expiresOn": "Expira {date}",
+      "cancelTooltip": "Cancelar invitación"
+    },
+    "team": {
+      "title": "Equipo actual ({count})",
+      "emptyTitle": "No hay administradores registrados",
+      "you": "(tú)",
+      "removeTooltip": "Remover admin"
+    },
+    "adminNotice": "Solo el <strong>owner</strong> del club puede invitar y remover administradores."
+  }
+}

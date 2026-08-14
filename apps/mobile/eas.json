@@ -1,0 +1,27 @@
+{
+  "cli": {
+    "version": ">= 21.8.0",
+    "appVersionSource": "remote"
+  },
+  "build": {
+    "development": {
+      "developmentClient": true,
+      "distribution": "internal"
+    },
+    "preview": {
+      "distribution": "internal"
+    },
+    "production": {
+      "autoIncrement": true,
+      "env": {
+        "EXPO_PUBLIC_API_URL": "https://api.racketly.club",
+        "EXPO_PUBLIC_GOOGLE_CLIENT_ID": "400514052229-4f38jgictthotda475f04dpo5jv4mhsp.apps.googleusercontent.com",
+        "EXPO_PUBLIC_GOOGLE_ANDROID_CLIENT_ID": "400514052229-b11ihf13fpq33jm63fu9iung4ud1t7ls.apps.googleusercontent.com",
+        "EXPO_PUBLIC_GOOGLE_IOS_CLIENT_ID": "400514052229-2lcjn2elg0uebfr7n9a59e65gnb50dod.apps.googleusercontent.com"
+      }
+    }
+  },
+  "submit": {
+    "production": {}
+  }
+}

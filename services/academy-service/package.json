@@ -1,0 +1,28 @@
+{
+  "name": "@racketly/academy-service",
+  "version": "0.0.1",
+  "private": true,
+  "scripts": {
+    "dev": "tsx watch src/index.ts",
+    "build": "tsc",
+    "start": "node dist/index.js"
+  },
+  "dependencies": {
+    "@racketly/shared-types": "*",
+    "@prisma/client": "*",
+    "express": "^4.21.0",
+    "cors": "^2.8.5",
+    "helmet": "^8.0.0",
+    "@mux/mux-node": "^8.0.0",
+    "zod": "^3.23.0",
+    "morgan": "^1.10.0",
+    "dotenv": "^16.4.0"
+  },
+  "devDependencies": {
+    "typescript": "*",
+    "ts-node-dev": "^2.0.0",
+    "@types/express": "^4.17.21",
+    "@types/morgan": "^1.9.9"
+  }
+}
+

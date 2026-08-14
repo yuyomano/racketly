@@ -1,0 +1,50 @@
+{
+  "Booking": {
+    "search": {
+      "title": "Book a court",
+      "subtitle": "Choose a club to see available time slots",
+      "myBookings": "My bookings",
+      "searchPlaceholder": "Search by name or city…",
+      "sportAll": "All",
+      "sportPadel": "Padel",
+      "sportPickleball": "Pickleball",
+      "loadError": "Couldn't load the list of clubs.",
+      "fetchError": "Error searching clubs",
+      "emptyTitle": "No clubs found",
+      "emptyDescription": "Try a different name, city, or sport.",
+      "recentlyBooked": "You've played here",
+      "courtsCount": "{count, plural, one {# court} other {# courts}}"
+    },
+    "clubDetail": {
+      "backToClubs": "Back to clubs",
+      "confirmedTitle": "Booking confirmed!",
+      "viewMyBookings": "View my bookings",
+      "bookAnother": "Book another",
+      "noActiveCourts": "This club has no active courts",
+      "noSlots": "No time slots generated for this day.",
+      "confirmBooking": "Confirm booking",
+      "bookingConfirmedToast": "Booking confirmed",
+      "fetchAvailabilityError": "Error loading availability",
+      "bookError": "Couldn't complete the booking"
+    },
+    "mine": {
+      "backToClubs": "Back to clubs",
+      "title": "My bookings",
+      "tabUpcoming": "Upcoming",
+      "tabPast": "Past",
+      "statusPending": "Pending",
+      "statusConfirmed": "Confirmed",
+      "statusCancelled": "Cancelled",
+      "statusCompleted": "Played",
+      "guestBadge": "Guest",
+      "emptyUpcomingTitle": "You have no upcoming bookings",
+      "emptyPastTitle": "You have no past bookings",
+      "emptyUpcomingDescription": "Book a court to see it here.",
+      "searchClubs": "Search clubs",
+      "cancelButton": "Cancel",
+      "cancelledToast": "Booking cancelled",
+      "fetchError": "Error loading your bookings",
+      "cancelError": "Couldn't cancel the booking"
+    }
+  }
+}

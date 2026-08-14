@@ -1,0 +1,40 @@
+{
+  "version": "0.0.1",
+  "configurations": [
+    {
+      "name": "gateway",
+      "runtimeExecutable": "npm",
+      "runtimeArgs": ["run", "dev", "--prefix", "services/api-gateway"],
+      "port": 3000,
+      "autoPort": false
+    },
+    {
+      "name": "auth-service",
+      "runtimeExecutable": "npm",
+      "runtimeArgs": ["run", "dev", "--prefix", "services/auth-service"],
+      "port": 3001,
+      "autoPort": false
+    },
+    {
+      "name": "booking-service",
+      "runtimeExecutable": "npm",
+      "runtimeArgs": ["run", "dev", "--prefix", "services/booking-service"],
+      "port": 3002,
+      "autoPort": false
+    },
+    {
+      "name": "tournament-service",
+      "runtimeExecutable": "npm",
+      "runtimeArgs": ["run", "dev", "--prefix", "services/tournament-service"],
+      "port": 3003,
+      "autoPort": false
+    },
+    {
+      "name": "web",
+      "runtimeExecutable": "npm",
+      "runtimeArgs": ["run", "dev", "--prefix", "apps/web"],
+      "port": 3010,
+      "autoPort": false
+    }
+  ]
+}

@@ -1,0 +1,59 @@
+{
+  "name": "racketly",
+  "version": "0.0.1",
+  "private": true,
+  "description": "Racketly — Plataforma todo-en-uno para pádel y pickleball",
+  "workspaces": [
+    "apps/*",
+    "packages/*",
+    "services/*"
+  ],
+  "scripts": {
+    "dev": "turbo run dev",
+    "dev:local": "npx concurrently --kill-others-on-fail --prefix-colors \"bgBlue,bgGreen,bgYellow,bgMagenta,bgCyan,bgRed,bgWhite,bgBlack\" --names \"GATEWAY,AUTH,BOOKING,TOURNAMENT,COMMUNITY,ACADEMY,NOTIFY,WEB\" \"npm run dev --workspace=services/api-gateway\" \"npm run dev --workspace=services/auth-service\" \"npm run dev --workspace=services/booking-service\" \"npm run dev --workspace=services/tournament-service\" \"npm run dev --workspace=services/community-service\" \"npm run dev --workspace=services/academy-service\" \"npm run dev --workspace=services/notification-service\" \"npm run dev --workspace=apps/web\"",
+    "build": "turbo run build",
+    "test": "turbo run test",
+    "lint": "turbo run lint",
+    "format": "prettier --write \"**/*.{ts,tsx,js,jsx,json,md}\"",
+    "db:generate": "prisma generate",
+    "db:migrate": "prisma migrate dev",
+    "db:studio": "prisma studio",
+    "db:seed": "ts-node --project tsconfig.base.json prisma/seed.ts",
+    "docker:dev": "docker-compose -f infra/docker/docker-compose.yml up",
+    "docker:down": "docker-compose -f infra/docker/docker-compose.yml down",
+    "docker:build": "docker-compose -f infra/docker/docker-compose.yml build"
+  },
+  "devDependencies": {
+    "@types/bcryptjs": "^2.4.6",
+    "@types/node": "^22.0.0",
+    "bcryptjs": "^2.4.3",
+    "eslint": "^9.0.0",
+    "prettier": "^3.3.0",
+    "prisma": "^6.0.0",
+    "ts-node": "^10.9.2",
+    "tsx": "^4.23.1",
+    "turbo": "^2.3.0",
+    "typescript": "^5.7.0"
+  },
+  "dependencies": {
+    "@prisma/client": "^6.0.0",
+    "promise": "^8.3.0",
+    "react": "19.1.0",
+    "react-dom": "19.1.0"
+  },
+  "overrides": {
+    "react": "19.1.0",
+    "react-dom": "19.1.0",
+    "@types/react": "^19.1.0",
+    "@types/react-dom": "^19.1.0",
+    "qs": "^6.15.3",
+    "morgan": "^1.11.0",
+    "body-parser": "^1.20.6",
+    "sharp": "^0.35.3"
+  },
+  "engines": {
+    "node": ">=20.0.0",
+    "npm": ">=10.0.0"
+  },
+  "packageManager": "npm@11.12.1"
+}

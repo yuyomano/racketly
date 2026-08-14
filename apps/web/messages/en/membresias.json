@@ -1,0 +1,145 @@
+{
+  "Membresias": {
+    "stats": {
+      "activePlans": "Active plans",
+      "activeSubscribers": "Active subscribers",
+      "monthlyRevenueEstimate": "Estimated monthly revenue"
+    },
+    "title": "Memberships",
+    "defaultClubName": "Active club",
+    "createPlan": "Create plan",
+    "errors": {
+      "loadPlansFailed": "Couldn't load plans",
+      "connectionError": "Connection error",
+      "cancelFailed": "Couldn't cancel",
+      "markPaidFailed": "Couldn't mark as paid",
+      "genericPrefix": "Error: {message}"
+    },
+    "emptySelectClub": {
+      "title": "Select a club",
+      "description": "Choose an active club above to manage its memberships."
+    },
+    "paymentIssues": {
+      "summary": "{count, plural, one {# charge} other {# charges}} from {playerCount, plural, one {# member} other {# members}} unresolved",
+      "explanation": "The automatic charge didn't go through (the member chose to pay later, or the Stripe payment failed). Mark them as paid here (all at once or one by one) once you confirm payment, or resolve them from the Bookings tab.",
+      "pendingCount": "{count, plural, one {# pending charge} other {# pending charges}}",
+      "payAllCashTooltip": "Mark all as paid in cash",
+      "payAllCardTooltip": "Mark all as paid by card",
+      "payAllCash": "💵 Pay all",
+      "payAllCard": "💳 Pay all",
+      "failedToMarkSome": "Couldn't mark {failed} of {total} charge(s). Try again or resolve them individually."
+    },
+    "cancelConfirm": "Cancel {name}'s membership? It will stay active until {date}, without charging the next period.",
+    "emptyPlans": {
+      "title": "No membership plans",
+      "description": "Create a plan so players can subscribe (e.g. N sessions per day for a fixed monthly price)."
+    },
+    "plan": {
+      "active": "Active",
+      "inactive": "Inactive",
+      "perMonth": "/mo",
+      "sessionsPerDay": "{count, plural, one {session/day} other {sessions/day}}",
+      "extraSuffix": "+ {amount} extra",
+      "subscribersCount": "{count} subscribers",
+      "editTooltip": "Edit plan",
+      "toggleActiveTooltip": "Activate/deactivate plan"
+    },
+    "profitability": {
+      "heading": "Membership profitability",
+      "description": "Compares what each member pays against the value of court time they used this month (at regular price, as if they had no membership). A high ratio means the plan is giving away more value than it charges for.",
+      "aboveLabel": "Members above profitability",
+      "aboveSub": "{above} of {total} play more than they pay for",
+      "belowLabel": "Members below profitability",
+      "belowSub": "{below} of {total} pay more than they play",
+      "revenueVsValueLabel": "Membership revenue vs. value played",
+      "revenueVsValueSub": "{revenue} charged vs. {value} in courts used",
+      "avgSessionsLabel": "Sessions/month (avg.)",
+      "avgValueLabel": "Value used (avg.)",
+      "planPriceLabel": "Plan price",
+      "ratioLabel": "Usage/price ratio",
+      "netNegative": "The club is giving away {amount} more in court time than it charges in subscriptions this month.",
+      "netPositive": "The subscription covers {amount} more than members used in court time this month.",
+      "perMemberHeading": "By member, this month",
+      "memberSummary": "{plan} · {sessions, plural, one {# session} other {# sessions}} this month · {value} in court value vs. {price} paid"
+    },
+    "ratioVerdict": {
+      "noData": { "label": "No data", "hint": "Free or unpriced plan — not applicable." },
+      "veryBelow": { "label": "🔴 Well below value", "hint": "Using much more court value than they pay for. Consider raising the price or lowering included sessions/day." },
+      "atLimit": { "label": "🟡 At the limit", "hint": "Getting slightly more value than they pay for." },
+      "balanced": { "label": "🟢 Balanced", "hint": "Healthy usage relative to the plan price." },
+      "underused": { "label": "🔵 Underused", "hint": "Paying more than they play — risk of cancelling if they don't find value in it." }
+    },
+    "subscribers": {
+      "heading": "Subscribers",
+      "addMember": "Add member",
+      "empty": "No subscribed members yet.",
+      "courtesyBadge": "🎁 Courtesy",
+      "courtesyDefaultReason": "Courtesy",
+      "willCancelOn": "Cancels on",
+      "nextChargeOn": "Next charge:",
+      "statusWillCancel": "Will cancel",
+      "statusActive": "Active",
+      "statusCancelled": "Cancelled",
+      "cancelTooltip": "Cancel membership"
+    },
+    "addMemberModal": {
+      "title": "Add member",
+      "playerLabel": "Player *",
+      "searchPlaceholder": "Search by name or email…",
+      "searching": "Searching…",
+      "planLabel": "Plan *",
+      "noActivePlans": "No active plans — create one first.",
+      "planOption": "{name} — {price}/mo",
+      "paymentLabel": "Payment",
+      "payNone": "No charge",
+      "payCash": "💵 Cash",
+      "payCard": "💳 Card",
+      "paymentHint": "The charge of {amount} will be recorded in the cash register.",
+      "courtesyReasonLabel": "Courtesy reason (required)",
+      "courtesyReasonPlaceholder": "E.g.: Club instructor",
+      "courtesyReasonHint": "Club instructors usually get a courtesy membership.",
+      "cancel": "Cancel",
+      "save": "Add",
+      "saving": "Saving…",
+      "errors": {
+        "choosePlayer": "Choose a player",
+        "choosePlan": "Choose a plan",
+        "courtesyReasonRequired": "Enter the courtesy reason",
+        "addFailed": "Couldn't add the member",
+        "connectionError": "Connection error"
+      }
+    },
+    "paymentIssueGroupModal": {
+      "pendingBadge": "{count, plural, one {# pending} other {# pending}}",
+      "courtNameFallback": "Court booking",
+      "statusFailed": "Failed",
+      "statusPending": "Pending",
+      "close": "Close",
+      "payAllCash": "💵 Pay all",
+      "payAllCard": "💳 Pay all"
+    },
+    "planModal": {
+      "editTitle": "Edit plan",
+      "createTitle": "Create membership plan",
+      "nameLabel": "Name *",
+      "namePlaceholder": "1 session/day plan",
+      "descriptionLabel": "Description",
+      "descriptionPlaceholder": "1 free padel session per day",
+      "priceLabel": "Monthly price *",
+      "currencyLabel": "Currency",
+      "sessionsPerDayLabel": "Sessions included per day *",
+      "sessionsPerDayOption": "{count, plural, one {# session/day} other {# sessions/day}}",
+      "extraSessionPriceLabel": "Price per extra session (optional)",
+      "extraSessionPriceHint": "If the member plays more times than included that day, this amount is charged per extra session. Leave it at 0 to charge the normal court price.",
+      "cancel": "Cancel",
+      "save": "Save",
+      "saving": "Saving…",
+      "errors": {
+        "nameRequired": "Name is required",
+        "priceNegative": "Price can't be negative",
+        "saveFailed": "Couldn't save",
+        "connectionError": "Connection error"
+      }
+    }
+  }
+}

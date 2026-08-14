@@ -1,0 +1,10 @@
+{
+  "AppNav": {
+    "booking": "Reservar",
+    "tournaments": "Torneos",
+    "academy": "Academia",
+    "community": "Comunidad",
+    "profile": "Perfil",
+    "logout": "Salir"
+  }
+}

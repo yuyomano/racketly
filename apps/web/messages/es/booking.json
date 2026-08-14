@@ -1,0 +1,50 @@
+{
+  "Booking": {
+    "search": {
+      "title": "Reservar cancha",
+      "subtitle": "Elige un club para ver horarios disponibles",
+      "myBookings": "Mis reservas",
+      "searchPlaceholder": "Buscar por nombre o ciudad…",
+      "sportAll": "Todos",
+      "sportPadel": "Pádel",
+      "sportPickleball": "Pickleball",
+      "loadError": "No se pudo cargar la lista de clubes.",
+      "fetchError": "Error al buscar clubes",
+      "emptyTitle": "No encontramos clubes",
+      "emptyDescription": "Prueba con otro nombre, ciudad o deporte.",
+      "recentlyBooked": "Jugaste aquí",
+      "courtsCount": "{count, plural, one {# pista} other {# pistas}}"
+    },
+    "clubDetail": {
+      "backToClubs": "Volver a clubes",
+      "confirmedTitle": "¡Reserva confirmada!",
+      "viewMyBookings": "Ver mis reservas",
+      "bookAnother": "Reservar otra",
+      "noActiveCourts": "Este club no tiene pistas activas",
+      "noSlots": "Sin horarios generados para este día.",
+      "confirmBooking": "Confirmar reserva",
+      "bookingConfirmedToast": "Reserva confirmada",
+      "fetchAvailabilityError": "Error al cargar disponibilidad",
+      "bookError": "No se pudo reservar"
+    },
+    "mine": {
+      "backToClubs": "Volver a clubes",
+      "title": "Mis reservas",
+      "tabUpcoming": "Próximas",
+      "tabPast": "Pasadas",
+      "statusPending": "Pendiente",
+      "statusConfirmed": "Confirmada",
+      "statusCancelled": "Cancelada",
+      "statusCompleted": "Jugada",
+      "guestBadge": "Invitado",
+      "emptyUpcomingTitle": "No tienes reservas próximas",
+      "emptyPastTitle": "No tienes reservas pasadas",
+      "emptyUpcomingDescription": "Reserva una cancha para verla aquí.",
+      "searchClubs": "Buscar clubes",
+      "cancelButton": "Cancelar",
+      "cancelledToast": "Reserva cancelada",
+      "fetchError": "Error al cargar tus reservas",
+      "cancelError": "No se pudo cancelar"
+    }
+  }
+}

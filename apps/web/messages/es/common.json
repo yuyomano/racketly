@@ -1,0 +1,69 @@
+{
+  "Nav": {
+    "overview": "Overview",
+    "reservas": "Reservas",
+    "jugadores": "Jugadores",
+    "pistas": "Pistas",
+    "torneos": "Torneos",
+    "clases": "Clases",
+    "membresias": "Membresías",
+    "caja": "Caja",
+    "misClubs": "Mis Clubs",
+    "estadisticas": "Estadísticas",
+    "admins": "Admins"
+  },
+  "Common": {
+    "language": "Idioma",
+    "errorBoundary": {
+      "title": "Algo salió mal",
+      "description": "Ocurrió un error inesperado. Puedes intentar de nuevo o volver al inicio.",
+      "retry": "Reintentar",
+      "goToOverview": "Ir al Overview",
+      "goToBooking": "Ir a Reservar",
+      "goHome": "Ir al inicio"
+    }
+  },
+  "DashboardLayout": {
+    "clubDashboard": "Club Dashboard",
+    "clubActivo": "Club activo",
+    "cerrarSesion": "Cerrar sesión",
+    "abrirMenu": "Abrir menú",
+    "administrasClubs": "Administras {count, plural, one {# club} other {# clubs}}",
+    "sinClubs": "Sin clubs asignados"
+  },
+  "Overview": {
+    "bookingStatus": {
+      "confirmed": "Confirmada",
+      "pending": "Pendiente pago",
+      "completed": "Completada",
+      "cancelled": "Cancelada"
+    },
+    "errorCargando": "Error cargando estadísticas",
+    "errorVerifica": "Verifica que los servicios estén corriendo.",
+    "errorSelecciona": "Selecciona un club en el panel izquierdo.",
+    "selectClubEmpty": "Selecciona un club en el panel izquierdo para ver estadísticas.",
+    "statReservasHoy": "Reservas hoy",
+    "statSubSlots": "de {count} slots disponibles",
+    "statIngresos": "Ingresos 7 días ({currency})",
+    "statSubReservasConfirmadas": "{count} reservas confirmadas",
+    "statOcupacionMedia": "Ocupación media",
+    "statSubPistasActivas": "{count} pistas activas",
+    "statReservasTotales": "Reservas totales",
+    "statSubCanceladasPendientes": "{cancelled} canceladas · {pending} pendientes",
+    "chartReservasConfirmadas": "Reservas confirmadas — últimos 7 días",
+    "chartIngresos": "Ingresos (miles {currency}) — últimos 7 días",
+    "ocupacionPorPistaHoy": "Ocupación por pista — hoy",
+    "noPistasHoy": "No hay pistas con slots hoy",
+    "reservasDeHoy": "Reservas de hoy",
+    "verTodas": "Ver todas",
+    "claseCon": "Clase con {name}",
+    "sinAlumnosAun": "Sin alumnos aún",
+    "editarClase": "Editar clase",
+    "editarReserva": "Editar reserva",
+    "noReservasHoy": "No hay reservas para hoy",
+    "resumenPeriodo": "Resumen del período",
+    "reservasConfirmadas": "Reservas confirmadas",
+    "ingresosGenerados": "Ingresos generados",
+    "reservasCanceladas": "Reservas canceladas"
+  }
+}

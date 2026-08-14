@@ -1,0 +1,48 @@
+{
+  "Profile": {
+    "errors": {
+      "loadFailed": "Failed to load profile",
+      "saveFailed": "Couldn't save changes"
+    },
+    "toast": {
+      "updated": "Profile updated"
+    },
+    "editButton": "Edit",
+    "categoryBadge": "Category {category}",
+    "sports": {
+      "padel": "Padel",
+      "pickleball": "Pickleball",
+      "both": "Both"
+    },
+    "form": {
+      "nameLabel": "Name",
+      "bioLabel": "Bio",
+      "countryLabel": "Country",
+      "cityLabel": "City",
+      "sportLabel": "Sport",
+      "cancel": "Cancel",
+      "save": "Save"
+    },
+    "countries": {
+      "DO": "Dominican Republic",
+      "CO": "Colombia",
+      "MX": "Mexico",
+      "ES": "Spain",
+      "AR": "Argentina",
+      "US": "United States"
+    },
+    "stats": {
+      "eloPadel": "Padel ELO",
+      "eloPickleball": "Pickleball ELO",
+      "level": "Level {level}",
+      "xpProgress": "{current} / {total} XP"
+    },
+    "matches": {
+      "title": "Matches",
+      "played": "Played",
+      "won": "Won",
+      "lost": "Lost",
+      "winRate": "Win rate"
+    }
+  }
+}

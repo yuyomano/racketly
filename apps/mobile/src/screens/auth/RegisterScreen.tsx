@@ -22,6 +22,8 @@ const schema = z.object({
   password: z.string().min(6, 'Mínimo 6 caracteres'),
   confirmPassword: z.string(),
   sport: z.enum(['padel', 'pickleball', 'both']),
+  city: z.string().min(2, 'Ingresa tu ciudad'),
+  country: z.string().min(2, 'Elige tu país'),
 }).refine((d) => d.password === d.confirmPassword, {
   message: 'Las contraseñas no coinciden',
   path: ['confirmPassword'],
@@ -34,17 +36,30 @@ const SPORTS = [
   { value: 'both',       label: '⚡ Ambos' },
 ] as const
 
+// Mismo catálogo que EditProfileScreen — mantenerlos en sync si se agrega un país.
+const COUNTRY_OPTIONS = [
+  { value: 'CO', label: 'Colombia 🇨🇴' },
+  { value: 'ES', label: 'España 🇪🇸' },
+  { value: 'MX', label: 'México 🇲🇽' },
+  { value: 'AR', label: 'Argentina 🇦🇷' },
+  { value: 'US', label: 'Estados Unidos 🇺🇸' },
+  { value: 'CL', label: 'Chile 🇨🇱' },
+  { value: 'PE', label: 'Perú 🇵🇪' },
+]
+
 export function RegisterScreen({ navigation }: { navigation: any }) {
   const [isLoading, setIsLoading] = useState(false)
   const [googleLoading, setGoogleLoading] = useState(false)
+  const [showCountryPicker, setShowCountryPicker] = useState(false)
   const { setAuth } = useAuthStore()
 
   const { control, handleSubmit, watch, formState: { errors } } = useForm<FormData>({
     resolver: zodResolver(schema),
-    defaultValues: { sport: 'padel' },
+    defaultValues: { sport: 'padel', country: 'CO' },
   })
 
   const selectedSport = watch('sport')
+  const selectedCountry = watch('country')
 
   const [_request, response, promptAsync] = Google.useAuthRequest({
     clientId:        process.env.EXPO_PUBLIC_GOOGLE_CLIENT_ID,
@@ -80,6 +95,8 @@ export function RegisterScreen({ navigation }: { navigation: any }) {
         password: data.password,
         displayName: data.displayName,
         sport: data.sport,
+        city: data.city,
+        country: data.country,
       })
       const { user, accessToken, refreshToken } = res.data.data
       await setAuth(user, accessToken, refreshToken)
@@ -198,6 +215,52 @@ export function RegisterScreen({ navigation }: { navigation: any }) {
             </View>
           )} />
 
+          {/* Ciudad */}
+          <Controller control={control} name="city" render={({ field: { onChange, value } }) => (
+            <View style={styles.field}>
+              <Text style={styles.label}>Ciudad</Text>
+              <TextInput
+                style={[styles.input, errors.city && styles.inputError]}
+                placeholder="Ej: Bogotá"
+                placeholderTextColor="#9ca3af"
+                value={value} onChangeText={onChange}
+              />
+              {errors.city && <Text style={styles.error}>{errors.city.message}</Text>}
+            </View>
+          )} />
+
+          {/* País */}
+          <Controller control={control} name="country" render={({ field: { onChange } }) => {
+            const selected = COUNTRY_OPTIONS.find((c) => c.value === selectedCountry)
+            return (
+              <View style={styles.field}>
+                <Text style={styles.label}>País</Text>
+                <TouchableOpacity
+                  style={styles.selector}
+                  onPress={() => setShowCountryPicker(!showCountryPicker)}
+                >
+                  <Text style={styles.selectorText}>{selected?.label ?? selectedCountry}</Text>
+                  <Text style={styles.selectorArrow}>{showCountryPicker ? '▲' : '▼'}</Text>
+                </TouchableOpacity>
+                {showCountryPicker && (
+                  <View style={styles.pickerList}>
+                    {COUNTRY_OPTIONS.map((c) => (
+                      <TouchableOpacity
+                        key={c.value}
+                        style={[styles.pickerItem, selectedCountry === c.value && styles.pickerItemActive]}
+                        onPress={() => { onChange(c.value); setShowCountryPicker(false) }}
+                      >
+                        <Text style={[styles.pickerItemText, selectedCountry === c.value && styles.pickerItemTextActive]}>
+                          {c.label}
+                        </Text>
+                      </TouchableOpacity>
+                    ))}
+                  </View>
+                )}
+              </View>
+            )
+          }} />
+
           {/* Deporte */}
           <Controller control={control} name="sport" render={({ field: { onChange } }) => (
             <View style={styles.field}>
@@ -266,6 +329,21 @@ const styles = StyleSheet.create({
   input: { borderWidth: 1.5, borderColor: colors.gray200, borderRadius: radius.md, paddingHorizontal: spacing.lg, paddingVertical: spacing.md, fontSize: fontSize.base, color: colors.textPrimary },
   inputError: { borderColor: colors.red500 },
   error: { fontSize: fontSize.xs, color: colors.red500 },
+  selector: {
+    backgroundColor: colors.white, borderRadius: radius.md, padding: spacing.lg,
+    borderWidth: 1.5, borderColor: colors.gray200,
+    flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center',
+  },
+  selectorText: { fontSize: fontSize.base, color: colors.textPrimary },
+  selectorArrow: { fontSize: fontSize.xs, color: colors.gray400 },
+  pickerList: {
+    backgroundColor: colors.white, borderRadius: radius.md, marginTop: 4,
+    borderWidth: 1.5, borderColor: colors.gray200, overflow: 'hidden',
+  },
+  pickerItem: { padding: spacing.lg, borderBottomWidth: 1, borderBottomColor: colors.gray100 },
+  pickerItemActive: { backgroundColor: colors.primary50 },
+  pickerItemText: { fontSize: fontSize.base, color: colors.gray700 },
+  pickerItemTextActive: { color: colors.primary600, fontWeight: '700' },
   sportRow: { flexDirection: 'row', gap: spacing.sm },
   sportBtn: { flex: 1, paddingVertical: spacing.md - 2, borderRadius: radius.md, borderWidth: 1.5, borderColor: colors.gray200, alignItems: 'center' },
   sportBtnActive: { backgroundColor: colors.primary600, borderColor: colors.primary600 },

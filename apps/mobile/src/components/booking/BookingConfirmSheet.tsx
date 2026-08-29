@@ -8,6 +8,7 @@ import { useAuthStore } from '../../store/auth.store'
 import { colors, radius, spacing, fontSize } from '../../theme'
 import { sportLabel } from '../../constants/sportIcons'
 import { SportIcon } from '../ui/SportIcons'
+import { Button } from '../ui/Button'
 import type { Slot } from './BookingPickerOptimized'
 
 function formatTime(time: string) {
@@ -55,13 +56,11 @@ export function BookingConfirmSheet({
     enabled: !!user?.id && !!club,
   })
 
-  if (!slot || !club) return null
-
-  const slotBasePrice = slot.isPeak ? slot.peakPrice : slot.basePrice
-  const capacity = slot.court.capacity || 4
+  const slotBasePrice = slot ? (slot.isPeak ? slot.peakPrice : slot.basePrice) : 0
+  const capacity = slot?.court.capacity || 4
   const pricing = pricingData ?? {
     pricingType: 'pay_per_use', price: slotBasePrice, pricePerPlayer: slotBasePrice / capacity,
-    membershipPlan: null, currency: slot.currency,
+    membershipPlan: null, currency: slot?.currency,
   }
   const isMembershipIncluded = pricing.pricingType === 'membership_included'
   const isMembershipExtra = pricing.pricingType === 'membership_extra'
@@ -72,9 +71,9 @@ export function BookingConfirmSheet({
   const mutation = useMutation({
     mutationFn: () =>
       bookingsApi.create({
-        slotId: slot.id,
+        slotId: slot!.id,
         userId: user!.id,
-        clubId: club.id,
+        clubId: club!.id,
         ownerName: user?.profile?.displayName || user?.email?.split('@')[0] || 'Jugador',
         ownerPay: true,
         currency: pricing.currency,
@@ -103,6 +102,10 @@ export function BookingConfirmSheet({
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error).catch(() => {})
     },
   })
+
+  // Guard después de todos los hooks (nunca antes) — un return temprano entre hooks
+  // rompe las Reglas de Hooks apenas slot/club dejan de ser null en un re-render.
+  if (!slot || !club) return null
 
   function confirmTap() {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium).catch(() => {})
@@ -164,15 +167,9 @@ export function BookingConfirmSheet({
                 <Ionicons name="chevron-forward" size={14} color={colors.primary700} />
               </TouchableOpacity>
 
-              <TouchableOpacity
-                style={[styles.confirmBtn, mutation.isPending && styles.confirmBtnDisabled]}
-                onPress={confirmTap}
-                disabled={mutation.isPending || pricingLoading}
-              >
-                {mutation.isPending
-                  ? <ActivityIndicator color={colors.white} />
-                  : <Text style={styles.confirmBtnText}>{isMembershipIncluded ? 'Confirmar reserva ✅' : 'Reservar ahora 🎾'}</Text>}
-              </TouchableOpacity>
+              <Button onPress={confirmTap} loading={mutation.isPending} disabled={pricingLoading} style={styles.confirmBtn}>
+                {isMembershipIncluded ? 'Confirmar reserva ✅' : 'Reservar ahora 🎾'}
+              </Button>
 
               {mutation.isError && (
                 <Text style={styles.errorText}>No se pudo completar la reserva. Intenta de nuevo.</Text>
@@ -201,9 +198,7 @@ const styles = StyleSheet.create({
   priceAmount: { fontSize: fontSize['2xl'], fontWeight: '900', color: colors.white, marginTop: 4 },
   addPlayersLink: { flexDirection: 'row', alignItems: 'center', gap: 6, justifyContent: 'center', marginTop: spacing.lg, paddingVertical: 8 },
   addPlayersLinkText: { fontSize: fontSize.sm, color: colors.primary700, fontWeight: '700' },
-  confirmBtn: { backgroundColor: colors.primary600, borderRadius: radius.lg, paddingVertical: 16, alignItems: 'center', marginTop: spacing.sm },
-  confirmBtnDisabled: { opacity: 0.7 },
-  confirmBtnText: { color: colors.white, fontSize: fontSize.base, fontWeight: '800' },
+  confirmBtn: { borderRadius: radius.lg, marginTop: spacing.sm },
   errorText: { color: colors.red600, fontSize: fontSize.xs, textAlign: 'center', marginTop: spacing.sm },
   successBox: { alignItems: 'center', paddingVertical: spacing['3xl'] },
   successIcon: { width: 64, height: 64, borderRadius: 32, backgroundColor: colors.primary500, alignItems: 'center', justifyContent: 'center', marginBottom: spacing.lg },

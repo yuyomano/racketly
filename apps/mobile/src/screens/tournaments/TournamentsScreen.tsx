@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react'
-import { View, Text, FlatList, TouchableOpacity, StyleSheet, ActivityIndicator } from 'react-native'
+import { View, Text, FlatList, TouchableOpacity, StyleSheet } from 'react-native'
 import { useQuery } from '@tanstack/react-query'
 import * as Location from 'expo-location'
 import { Ionicons } from '@expo/vector-icons'
@@ -9,6 +9,9 @@ import type { Tournament } from '@racketly/shared-types'
 import { formatDate } from '@racketly/utils'
 import { Badge } from '../../components/ui/Badge'
 import { EmptyState } from '../../components/ui/EmptyState'
+import { ScreenHeader } from '../../components/ui/ScreenHeader'
+import { Skeleton } from '../../components/ui/Skeleton'
+import { Button } from '../../components/ui/Button'
 import { colors } from '../../theme'
 import { sportLabel } from '../../constants/sportIcons'
 import { SportIcon } from '../../components/ui/SportIcons'
@@ -48,10 +51,7 @@ export function TournamentsScreen({ navigation }: { navigation: any }) {
 
   return (
     <View style={styles.container}>
-      {/* Header */}
-      <View style={styles.header}>
-        <Text style={styles.title}>🏆 Torneos y Ligas</Text>
-        <Text style={styles.subtitle}>Cerca de ti o en clubes donde jugaste (últimos 3 meses)</Text>
+      <ScreenHeader title="🏆 Torneos y Ligas" subtitle="Cerca de ti o en clubes donde jugaste (últimos 3 meses)">
         {/* Accesos rápidos */}
         <View style={styles.quickActions}>
           <TouchableOpacity
@@ -76,7 +76,7 @@ export function TournamentsScreen({ navigation }: { navigation: any }) {
             <Text style={styles.quickBtnText}>En Vivo</Text>
           </TouchableOpacity>
         </View>
-      </View>
+      </ScreenHeader>
 
       {/* Filters */}
       <View style={styles.filters}>
@@ -94,7 +94,18 @@ export function TournamentsScreen({ navigation }: { navigation: any }) {
       </View>
 
       {isLoading ? (
-        <ActivityIndicator size="large" color="#059669" style={{ marginTop: 40 }} />
+        <View style={{ padding: 16, gap: 12 }}>
+          {[0, 1, 2].map((i) => (
+            <View key={i} style={styles.card}>
+              <View style={{ flexDirection: 'row', gap: 8, marginBottom: 12 }}>
+                <Skeleton style={{ width: 60, height: 20, borderRadius: 10 }} />
+                <Skeleton style={{ width: 50, height: 20, borderRadius: 10 }} />
+              </View>
+              <Skeleton style={{ width: '70%', height: 16, marginBottom: 8 }} />
+              <Skeleton style={{ width: '45%', height: 13 }} />
+            </View>
+          ))}
+        </View>
       ) : (
         <FlatList
           data={data}
@@ -144,19 +155,15 @@ export function TournamentsScreen({ navigation }: { navigation: any }) {
       )}
 
       {/* FAB */}
-      <TouchableOpacity style={styles.fab} onPress={() => navigation.navigate('CreateTournament')}>
-        <Ionicons name="add" size={16} color={colors.white} />
-        <Text style={styles.fabText}>Crear torneo</Text>
-      </TouchableOpacity>
+      <Button onPress={() => navigation.navigate('CreateTournament')} style={styles.fab}>
+        <Ionicons name="add" size={16} color={colors.white} /> Crear torneo
+      </Button>
     </View>
   )
 }
 
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: '#f9fafb' },
-  header: { backgroundColor: '#064e3b', paddingTop: 60, paddingBottom: 16, paddingHorizontal: 20 },
-  title: { color: '#fff', fontSize: 22, fontWeight: '900' },
-  subtitle: { color: '#6ee7b7', fontSize: 12, marginTop: 2, marginBottom: 12 },
   quickActions: { flexDirection: 'row', gap: 8 },
   quickBtn: { flex: 1, flexDirection: 'row', gap: 4, backgroundColor: 'rgba(255,255,255,0.15)', borderRadius: 12, paddingVertical: 8, paddingHorizontal: 4, alignItems: 'center', justifyContent: 'center' },
   quickBtnLive: { backgroundColor: 'rgba(220,38,38,0.3)' },
@@ -186,9 +193,7 @@ const styles = StyleSheet.create({
   empty: { alignItems: 'center', paddingTop: 60 },
   emptyText: { fontSize: 15, color: '#9ca3af' },
   fab: {
-    position: 'absolute', bottom: 24, right: 24, flexDirection: 'row', gap: 6, alignItems: 'center',
-    backgroundColor: '#059669', paddingHorizontal: 20, paddingVertical: 12,
-    borderRadius: 30, shadowColor: '#059669', shadowOpacity: 0.4, shadowRadius: 12, elevation: 6,
+    position: 'absolute', bottom: 24, right: 24, paddingHorizontal: 20, paddingVertical: 12,
+    borderRadius: 30, shadowColor: colors.primary600, shadowOpacity: 0.4, shadowRadius: 12, elevation: 6,
   },
-  fabText: { color: '#fff', fontWeight: '700', fontSize: 14 },
 })

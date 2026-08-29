@@ -6,15 +6,18 @@ import {
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { tournamentsApi, usersApi } from '../../services/api'
 import { useAuthStore } from '../../store/auth.store'
-import { BackButton } from '../../components/ui/BackButton'
+import { ScreenHeader } from '../../components/ui/ScreenHeader'
 import { SportIcon } from '../../components/ui/SportIcons'
+import { Button } from '../../components/ui/Button'
+import { EmptyState } from '../../components/ui/EmptyState'
+import { colors } from '../../theme'
 import { MATCH_FORMAT_LABELS, KNOCKOUT_STAGE_KEYS, KNOCKOUT_STAGE_LABELS, type MatchFormatOverrides } from '@racketly/utils'
 const STATUS_CONFIG: Record<string, { label: string; bg: string; color: string }> = {
   draft:       { label: 'Próximamente',      bg: '#dbeafe', color: '#1e40af' },
-  open:        { label: 'Inscripción abierta', bg: '#d1fae5', color: '#065f46' },
-  in_progress: { label: 'En curso',          bg: '#fef3c7', color: '#92400e' },
-  completed:   { label: 'Finalizado',        bg: '#f3f4f6', color: '#6b7280' },
-  cancelled:   { label: 'Cancelado',         bg: '#fee2e2', color: '#991b1b' },
+  open:        { label: 'Inscripción abierta', bg: colors.primary100, color: colors.primary800 },
+  in_progress: { label: 'En curso',          bg: colors.amber100, color: '#92400e' },
+  completed:   { label: 'Finalizado',        bg: colors.gray100, color: colors.gray500 },
+  cancelled:   { label: 'Cancelado',         bg: colors.red100, color: '#991b1b' },
 }
 const CATEGORY_LABELS: Record<string, string> = {
   C4: '4ª categoría', C3: '3ª categoría', C2: '2ª categoría',
@@ -294,9 +297,7 @@ export function TournamentDetailScreen({ route, navigation }: { route: any; navi
 
   return (
     <View style={styles.container}>
-      {/* Hero */}
-      <View style={styles.hero}>
-        <View style={styles.backBtn}><BackButton onPress={() => navigation.goBack()} /></View>
+      <ScreenHeader onBack={() => navigation.goBack()} style={styles.hero}>
         <View style={styles.heroContent}>
           <View style={styles.sportEmoji}><SportIcon sport={t.sport} size={30} color="#fff" /></View>
           <View style={{ flex: 1 }}>
@@ -307,7 +308,7 @@ export function TournamentDetailScreen({ route, navigation }: { route: any; navi
             <Text style={[styles.statusText, { color: status.color }]}>{status.label}</Text>
           </View>
         </View>
-      </View>
+      </ScreenHeader>
 
       {/* Tabs */}
       <View style={styles.tabs}>
@@ -433,7 +434,7 @@ export function TournamentDetailScreen({ route, navigation }: { route: any; navi
         {tab === 'players' && (
           <View style={styles.section}>
             {playerPairs.length === 0 ? (
-              <Text style={styles.emptyText}>Aún no hay inscritos.</Text>
+              <EmptyState icon="people-outline" title="Aún no hay inscritos" />
             ) : (
               playerPairs.map((p: any, i: number) => (
                 <View key={p.id} style={styles.playerRow}>
@@ -488,15 +489,14 @@ export function TournamentDetailScreen({ route, navigation }: { route: any; navi
               {spotsLeft > 0 ? `${spotsLeft} plazas disponibles` : 'Torneo completo'}
             </Text>
           </View>
-          <TouchableOpacity
-            style={[styles.ctaBtn, (spotsLeft <= 0 || registerMutation.isPending) && styles.ctaBtnDisabled]}
+          <Button
             onPress={() => requiresPair ? setShowPartnerPicker(true) : registerMutation.mutate(undefined)}
-            disabled={spotsLeft <= 0 || registerMutation.isPending}
+            loading={registerMutation.isPending}
+            disabled={spotsLeft <= 0}
+            style={styles.ctaBtn}
           >
-            <Text style={styles.ctaBtnText}>
-              {registerMutation.isPending ? 'Inscribiendo...' : spotsLeft > 0 ? '✅ Inscribirse' : 'Sin plazas'}
-            </Text>
-          </TouchableOpacity>
+            {spotsLeft > 0 ? '✅ Inscribirse' : 'Sin plazas'}
+          </Button>
         </View>
       )}
 
@@ -548,130 +548,126 @@ function StatCard({ icon, label, value }: { icon: string; label: string; value: 
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#f9fafb' },
-  hero: {
-    backgroundColor: '#064e3b', paddingTop: 56, paddingBottom: 20, paddingHorizontal: 16,
-  },
-  backBtn: { marginBottom: 12 },
-  backText: { color: '#6ee7b7', fontSize: 24, fontWeight: '300' },
+  container: { flex: 1, backgroundColor: colors.gray50 },
+  hero: { paddingBottom: 20 },
   heroContent: { flexDirection: 'row', alignItems: 'flex-start', gap: 12 },
   sportEmoji: { marginTop: 2 },
-  heroTitle: { fontSize: 20, fontWeight: '800', color: '#fff', lineHeight: 26 },
-  heroClub: { fontSize: 13, color: '#6ee7b7', marginTop: 2 },
+  heroTitle: { fontSize: 20, fontWeight: '800', color: colors.white, lineHeight: 26 },
+  heroClub: { fontSize: 13, color: colors.primary300, marginTop: 2 },
   statusBadge: { paddingHorizontal: 10, paddingVertical: 4, borderRadius: 20, marginTop: 4 },
   statusText: { fontSize: 11, fontWeight: '700' },
-  tabs: { flexDirection: 'row', backgroundColor: '#fff', borderBottomWidth: 1, borderBottomColor: '#e5e7eb' },
+  tabs: { flexDirection: 'row', backgroundColor: colors.white, borderBottomWidth: 1, borderBottomColor: colors.gray200 },
   tab: { flex: 1, paddingVertical: 13, alignItems: 'center' },
-  tabActive: { borderBottomWidth: 2.5, borderBottomColor: '#059669' },
-  tabText: { fontSize: 12, fontWeight: '600', color: '#9ca3af' },
-  tabTextActive: { color: '#059669' },
+  tabActive: { borderBottomWidth: 2.5, borderBottomColor: colors.primary600 },
+  tabText: { fontSize: 12, fontWeight: '600', color: colors.gray400 },
+  tabTextActive: { color: colors.primary600 },
   section: { padding: 16, gap: 12 },
-  emptyText: { fontSize: 13, color: '#9ca3af', textAlign: 'center', paddingVertical: 20 },
+  emptyText: { fontSize: 13, color: colors.gray400, textAlign: 'center', paddingVertical: 20 },
   statsGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: 10 },
   statCard: {
-    flex: 1, minWidth: '44%', backgroundColor: '#fff', borderRadius: 14,
+    flex: 1, minWidth: '44%', backgroundColor: colors.white, borderRadius: 14,
     padding: 14, alignItems: 'center',
     shadowColor: '#000', shadowOpacity: 0.04, shadowRadius: 6, elevation: 2,
   },
   statIcon: { fontSize: 20, marginBottom: 4 },
-  statValue: { fontSize: 15, fontWeight: '800', color: '#111827' },
-  statLabel: { fontSize: 11, color: '#9ca3af', marginTop: 2 },
+  statValue: { fontSize: 15, fontWeight: '800', color: colors.gray900 },
+  statLabel: { fontSize: 11, color: colors.gray400, marginTop: 2 },
   infoCard: {
-    backgroundColor: '#fff', borderRadius: 14, padding: 14,
+    backgroundColor: colors.white, borderRadius: 14, padding: 14,
     flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center',
     shadowColor: '#000', shadowOpacity: 0.04, shadowRadius: 6, elevation: 2,
   },
-  infoLabel: { fontSize: 14, color: '#6b7280', fontWeight: '600' },
-  infoValue: { fontSize: 14, color: '#111827', fontWeight: '700' },
-  infoOverride: { fontSize: 12, color: '#6b7280' },
+  infoLabel: { fontSize: 14, color: colors.gray500, fontWeight: '600' },
+  infoValue: { fontSize: 14, color: colors.gray900, fontWeight: '700' },
+  infoOverride: { fontSize: 12, color: colors.gray500 },
   descCard: {
-    backgroundColor: '#fff', borderRadius: 14, padding: 16,
+    backgroundColor: colors.white, borderRadius: 14, padding: 16,
     shadowColor: '#000', shadowOpacity: 0.04, shadowRadius: 6, elevation: 2,
   },
-  descText: { fontSize: 14, color: '#374151', lineHeight: 22 },
+  descText: { fontSize: 14, color: colors.gray700, lineHeight: 22 },
   prizesCard: {
-    backgroundColor: '#fff', borderRadius: 14, padding: 16,
+    backgroundColor: colors.white, borderRadius: 14, padding: 16,
     shadowColor: '#000', shadowOpacity: 0.04, shadowRadius: 6, elevation: 2,
   },
-  prizesTitle: { fontSize: 15, fontWeight: '800', color: '#111827', marginBottom: 12 },
+  prizesTitle: { fontSize: 15, fontWeight: '800', color: colors.gray900, marginBottom: 12 },
   playerRow: {
-    backgroundColor: '#fff', borderRadius: 14, padding: 14,
+    backgroundColor: colors.white, borderRadius: 14, padding: 14,
     flexDirection: 'row', alignItems: 'center', gap: 12,
     shadowColor: '#000', shadowOpacity: 0.04, shadowRadius: 6, elevation: 2,
   },
-  playerSeed: { fontSize: 14, fontWeight: '800', color: '#9ca3af', width: 28 },
-  playerName: { fontSize: 14, fontWeight: '700', color: '#111827' },
-  playerCat: { fontSize: 12, color: '#6b7280', marginTop: 2 },
-  playerRecord: { fontSize: 12, fontWeight: '700', color: '#059669' },
+  playerSeed: { fontSize: 14, fontWeight: '800', color: colors.gray400, width: 28 },
+  playerName: { fontSize: 14, fontWeight: '700', color: colors.gray900 },
+  playerCat: { fontSize: 12, color: colors.gray500, marginTop: 2 },
+  playerRecord: { fontSize: 12, fontWeight: '700', color: colors.primary600 },
   ctaContainer: {
     position: 'absolute', bottom: 0, left: 0, right: 0,
-    backgroundColor: '#fff', paddingHorizontal: 16, paddingBottom: 34, paddingTop: 12,
-    borderTopWidth: 1, borderTopColor: '#e5e7eb',
+    backgroundColor: colors.white, paddingHorizontal: 16, paddingBottom: 34, paddingTop: 12,
+    borderTopWidth: 1, borderTopColor: colors.gray200,
   },
   ctaSpotsRow: { alignItems: 'center', marginBottom: 8 },
-  ctaSpotsText: { fontSize: 13, color: '#6b7280', fontWeight: '600' },
-  ctaBtn: { backgroundColor: '#059669', borderRadius: 14, paddingVertical: 16, alignItems: 'center' },
-  ctaBtnDisabled: { backgroundColor: '#d1d5db' },
-  ctaBtnDanger: { backgroundColor: '#dc2626' },
-  ctaBtnText: { color: '#fff', fontSize: 16, fontWeight: '800' },
+  ctaSpotsText: { fontSize: 13, color: colors.gray500, fontWeight: '600' },
+  ctaBtn: { backgroundColor: colors.primary600, borderRadius: 14, paddingVertical: 16, alignItems: 'center' },
+  ctaBtnDisabled: { backgroundColor: colors.gray300 },
+  ctaBtnDanger: { backgroundColor: colors.red600 },
+  ctaBtnText: { color: colors.white, fontSize: 16, fontWeight: '800' },
 })
 
 const partnerModal = StyleSheet.create({
   overlay: { flex: 1, backgroundColor: 'rgba(0,0,0,0.5)', justifyContent: 'flex-end' },
-  sheet: { backgroundColor: '#fff', borderTopLeftRadius: 24, borderTopRightRadius: 24, padding: 20, paddingBottom: 34 },
-  title: { fontSize: 17, fontWeight: '800', color: '#111827' },
-  subtitle: { fontSize: 12, color: '#6b7280', marginTop: 4, marginBottom: 14 },
-  input: { borderWidth: 1, borderColor: '#e5e7eb', borderRadius: 12, paddingHorizontal: 14, paddingVertical: 10, fontSize: 14 },
-  resultRow: { paddingVertical: 10, borderBottomWidth: 1, borderBottomColor: '#f3f4f6' },
-  resultName: { fontSize: 14, fontWeight: '700', color: '#111827' },
-  resultEmail: { fontSize: 12, color: '#9ca3af', marginTop: 1 },
-  soloBtn: { marginTop: 14, paddingVertical: 14, borderRadius: 12, borderWidth: 1, borderColor: '#059669', alignItems: 'center' },
-  soloBtnText: { color: '#059669', fontWeight: '700', fontSize: 14 },
+  sheet: { backgroundColor: colors.white, borderTopLeftRadius: 24, borderTopRightRadius: 24, padding: 20, paddingBottom: 34 },
+  title: { fontSize: 17, fontWeight: '800', color: colors.gray900 },
+  subtitle: { fontSize: 12, color: colors.gray500, marginTop: 4, marginBottom: 14 },
+  input: { borderWidth: 1, borderColor: colors.gray200, borderRadius: 12, paddingHorizontal: 14, paddingVertical: 10, fontSize: 14 },
+  resultRow: { paddingVertical: 10, borderBottomWidth: 1, borderBottomColor: colors.gray100 },
+  resultName: { fontSize: 14, fontWeight: '700', color: colors.gray900 },
+  resultEmail: { fontSize: 12, color: colors.gray400, marginTop: 1 },
+  soloBtn: { marginTop: 14, paddingVertical: 14, borderRadius: 12, borderWidth: 1, borderColor: colors.primary600, alignItems: 'center' },
+  soloBtnText: { color: colors.primary600, fontWeight: '700', fontSize: 14 },
   cancelBtn: { marginTop: 8, paddingVertical: 10, alignItems: 'center' },
-  cancelBtnText: { color: '#9ca3af', fontWeight: '600', fontSize: 13 },
+  cancelBtnText: { color: colors.gray400, fontWeight: '600', fontSize: 13 },
 })
 
 const bracket = StyleSheet.create({
   round: { width: 170, gap: 8 },
-  roundLabel: { fontSize: 11, fontWeight: '800', color: '#6b7280', textAlign: 'center', marginBottom: 4, textTransform: 'uppercase', letterSpacing: 0.5 },
+  roundLabel: { fontSize: 11, fontWeight: '800', color: colors.gray500, textAlign: 'center', marginBottom: 4, textTransform: 'uppercase', letterSpacing: 0.5 },
   match: {
-    backgroundColor: '#fff', borderRadius: 10, overflow: 'hidden',
+    backgroundColor: colors.white, borderRadius: 10, overflow: 'hidden',
     shadowColor: '#000', shadowOpacity: 0.06, shadowRadius: 6, elevation: 2,
     position: 'relative', paddingBottom: 4,
   },
   player: { paddingHorizontal: 10, paddingVertical: 8, flexDirection: 'row', alignItems: 'center', gap: 4 },
-  winner: { backgroundColor: '#f0fdf4' },
+  winner: { backgroundColor: colors.primary50 },
   bye: { opacity: 0.4 },
-  playerName: { flex: 1, fontSize: 11, fontWeight: '600', color: '#374151' },
-  winnerText: { color: '#059669', fontWeight: '800' },
-  score: { fontSize: 10, fontWeight: '700', color: '#6b7280', textAlign: 'center', marginTop: 2 },
-  courtTime: { fontSize: 9, fontWeight: '700', color: '#059669', backgroundColor: '#f0fdf4', paddingVertical: 3, paddingHorizontal: 8 },
-  divider: { height: 1, backgroundColor: '#f3f4f6', marginHorizontal: 8 },
+  playerName: { flex: 1, fontSize: 11, fontWeight: '600', color: colors.gray700 },
+  winnerText: { color: colors.primary600, fontWeight: '800' },
+  score: { fontSize: 10, fontWeight: '700', color: colors.gray500, textAlign: 'center', marginTop: 2 },
+  courtTime: { fontSize: 9, fontWeight: '700', color: colors.primary600, backgroundColor: colors.primary50, paddingVertical: 3, paddingHorizontal: 8 },
+  divider: { height: 1, backgroundColor: colors.gray100, marginHorizontal: 8 },
   liveDot: {
     position: 'absolute', top: 6, right: 6,
-    width: 8, height: 8, borderRadius: 4, backgroundColor: '#ef4444',
+    width: 8, height: 8, borderRadius: 4, backgroundColor: colors.red500,
   },
 })
 
 const groupStyles = StyleSheet.create({
   card: {
-    backgroundColor: '#fff', borderRadius: 16, padding: 14, marginBottom: 12,
+    backgroundColor: colors.white, borderRadius: 16, padding: 14, marginBottom: 12,
     shadowColor: '#000', shadowOpacity: 0.04, shadowRadius: 6, elevation: 2,
   },
   header: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 },
-  title: { fontSize: 15, fontWeight: '800', color: '#111827' },
-  doneTag: { fontSize: 11, fontWeight: '700', color: '#059669' },
-  table: { borderTopWidth: 1, borderTopColor: '#f3f4f6' },
-  tableHeaderRow: { flexDirection: 'row', paddingVertical: 6, borderBottomWidth: 1, borderBottomColor: '#f3f4f6' },
-  tableHeaderText: { fontSize: 10, fontWeight: '800', color: '#9ca3af', textTransform: 'uppercase' },
-  tableRow: { flexDirection: 'row', paddingVertical: 7, borderBottomWidth: 1, borderBottomColor: '#f9fafb', alignItems: 'center' },
-  tableCell: { width: 40, fontSize: 12, color: '#374151', fontWeight: '600', textAlign: 'center' },
-  tableCellName: { flex: 1, width: undefined, textAlign: 'left', fontWeight: '700', color: '#111827' },
+  title: { fontSize: 15, fontWeight: '800', color: colors.gray900 },
+  doneTag: { fontSize: 11, fontWeight: '700', color: colors.primary600 },
+  table: { borderTopWidth: 1, borderTopColor: colors.gray100 },
+  tableHeaderRow: { flexDirection: 'row', paddingVertical: 6, borderBottomWidth: 1, borderBottomColor: colors.gray100 },
+  tableHeaderText: { fontSize: 10, fontWeight: '800', color: colors.gray400, textTransform: 'uppercase' },
+  tableRow: { flexDirection: 'row', paddingVertical: 7, borderBottomWidth: 1, borderBottomColor: colors.gray50, alignItems: 'center' },
+  tableCell: { width: 40, fontSize: 12, color: colors.gray700, fontWeight: '600', textAlign: 'center' },
+  tableCellName: { flex: 1, width: undefined, textAlign: 'left', fontWeight: '700', color: colors.gray900 },
   matchRow: {
     flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center',
-    backgroundColor: '#f9fafb', borderRadius: 10, paddingHorizontal: 10, paddingVertical: 8,
+    backgroundColor: colors.gray50, borderRadius: 10, paddingHorizontal: 10, paddingVertical: 8,
   },
-  matchNames: { fontSize: 12, color: '#374151', fontWeight: '600' },
-  matchCourtTime: { fontSize: 10, color: '#9ca3af', fontWeight: '600', marginTop: 1 },
-  matchScore: { fontSize: 11, fontWeight: '700', color: '#6b7280', marginLeft: 8 },
+  matchNames: { fontSize: 12, color: colors.gray700, fontWeight: '600' },
+  matchCourtTime: { fontSize: 10, color: colors.gray400, fontWeight: '600', marginTop: 1 },
+  matchScore: { fontSize: 11, fontWeight: '700', color: colors.gray500, marginLeft: 8 },
 })

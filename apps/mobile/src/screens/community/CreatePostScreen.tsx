@@ -1,12 +1,13 @@
 import React, { useState } from 'react'
 import {
   View, Text, TextInput, TouchableOpacity, StyleSheet,
-  ActivityIndicator, Alert, KeyboardAvoidingView, Platform,
+  Alert, KeyboardAvoidingView, Platform,
 } from 'react-native'
 import { useMutation, useQueryClient } from '@tanstack/react-query'
 import { communityApi } from '../../services/api'
 import { useAuthStore } from '../../store/auth.store'
 import { BackButton } from '../../components/ui/BackButton'
+import { Button } from '../../components/ui/Button'
 import { PostType } from '@racketly/shared-types'
 import { colors } from '../../theme'
 
@@ -69,16 +70,14 @@ export function CreatePostScreen({ navigation }: { navigation: any }) {
           ))}
         </View>
 
-        <TouchableOpacity
-          style={[styles.publishBtn, (!content.trim() || createMutation.isPending) && styles.publishBtnDisabled]}
+        <Button
           onPress={() => createMutation.mutate()}
-          disabled={!content.trim() || createMutation.isPending}
+          loading={createMutation.isPending}
+          disabled={!content.trim()}
+          style={styles.publishBtn}
         >
-          {createMutation.isPending
-            ? <ActivityIndicator color={colors.white} />
-            : <Text style={styles.publishBtnText}>Publicar</Text>
-          }
-        </TouchableOpacity>
+          Publicar
+        </Button>
       </View>
     </KeyboardAvoidingView>
   )
@@ -96,7 +95,5 @@ const styles = StyleSheet.create({
   sportChipActive: { backgroundColor: '#f0fdf4', borderColor: colors.primary600 },
   sportChipText: { fontSize: 13, fontWeight: '600', color: colors.gray500 },
   sportChipTextActive: { color: colors.primary700 },
-  publishBtn: { backgroundColor: colors.primary600, borderRadius: 14, paddingVertical: 15, alignItems: 'center', marginTop: 32 },
-  publishBtnDisabled: { opacity: 0.5 },
-  publishBtnText: { color: colors.white, fontSize: 16, fontWeight: '700' },
+  publishBtn: { marginTop: 32 },
 })

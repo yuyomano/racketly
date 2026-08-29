@@ -1,5 +1,5 @@
 import axios, { InternalAxiosRequestConfig } from 'axios'
-import * as SecureStore from 'expo-secure-store'
+import { storage } from './storage'
 
 const API_URL = process.env.EXPO_PUBLIC_API_URL || 'http://localhost:3000'
 
@@ -11,7 +11,7 @@ export const api = axios.create({
 
 // Interceptor: agregar token automáticamente
 api.interceptors.request.use(async (config: InternalAxiosRequestConfig) => {
-  const token = await SecureStore.getItemAsync('accessToken')
+  const token = await storage.getItemAsync('accessToken')
   if (token) config.headers.Authorization = `Bearer ${token}`
   return config
 })
@@ -24,18 +24,18 @@ api.interceptors.response.use(
     if (error.response?.status === 401 && !original._retry) {
       original._retry = true
       try {
-        const refreshToken = await SecureStore.getItemAsync('refreshToken')
+        const refreshToken = await storage.getItemAsync('refreshToken')
         const { data } = await axios.post(`${API_URL}/api/auth/refresh`, { refreshToken })
-        await SecureStore.setItemAsync('accessToken', data.data.accessToken)
+        await storage.setItemAsync('accessToken', data.data.accessToken)
         if (data.data.refreshToken) {
-          await SecureStore.setItemAsync('refreshToken', data.data.refreshToken)
+          await storage.setItemAsync('refreshToken', data.data.refreshToken)
         }
         original.headers.Authorization = `Bearer ${data.data.accessToken}`
         return api(original)
       } catch {
         // Refresh falló → logout
-        await SecureStore.deleteItemAsync('accessToken')
-        await SecureStore.deleteItemAsync('refreshToken')
+        await storage.deleteItemAsync('accessToken')
+        await storage.deleteItemAsync('refreshToken')
       }
     }
     return Promise.reject(error)
@@ -79,6 +79,8 @@ export const bookingsApi = {
   getById: (id: string) => api.get(`/api/bookings/${id}`),
   myBookings: (userId: string) => api.get(`/api/bookings/user/${userId}`),
   updatePlayers: (id: string, players: object[]) => api.patch(`/api/bookings/${id}/players`, { players }),
+  guestLink: (bookingId: string, playerId: string) =>
+    api.post(`/api/bookings/${bookingId}/players/${playerId}/guest-link`, {}),
   markPlayerPaid: (bookingId: string, userId: string) => api.patch(`/api/bookings/${bookingId}/players/${userId}/pay`, {}),
   leaveBooking: (bookingId: string, userId: string) =>
     api.delete(`/api/bookings/${bookingId}/players/${userId}`, { data: { issueCredit: true } }),

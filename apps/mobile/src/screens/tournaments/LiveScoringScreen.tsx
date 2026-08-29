@@ -7,7 +7,8 @@ import { io, Socket } from 'socket.io-client'
 import { useQuery } from '@tanstack/react-query'
 import { useAuthStore } from '../../store/auth.store'
 import { matchesApi } from '../../services/api'
-import { BackButton } from '../../components/ui/BackButton'
+import { ScreenHeader } from '../../components/ui/ScreenHeader'
+import { Button } from '../../components/ui/Button'
 
 const WS_URL = process.env.EXPO_PUBLIC_API_URL
   ? process.env.EXPO_PUBLIC_API_URL.replace('http', 'ws')
@@ -198,14 +199,13 @@ export function LiveScoringScreen({ route, navigation }: { route: any; navigatio
   if (isReferee) {
     return (
       <View style={styles.container}>
-        <View style={styles.header}>
-          <BackButton onPress={() => navigation.goBack()} />
+        <ScreenHeader onBack={() => navigation.goBack()} backgroundColor="#111827" style={styles.header}>
           <View style={styles.headerInfo}>
             <Text style={styles.headerTitle}>⚡ Live Scoring</Text>
             <View style={[styles.connDot, { backgroundColor: connected ? '#10b981' : '#ef4444' }]} />
           </View>
           <Text style={styles.refereeLabel}>Árbitro</Text>
-        </View>
+        </ScreenHeader>
 
         <ScrollView style={styles.scroll} showsVerticalScrollIndicator={false}>
           {/* Sets */}
@@ -258,13 +258,9 @@ export function LiveScoringScreen({ route, navigation }: { route: any; navigatio
           </TouchableOpacity>
 
           {/* Botones de acción */}
-          <TouchableOpacity
-            style={[styles.updateBtn, !connected && styles.updateBtnDisabled]}
-            onPress={sendScore}
-            disabled={!connected}
-          >
-            <Text style={styles.updateBtnText}>📡 Enviar marcador en vivo</Text>
-          </TouchableOpacity>
+          <Button onPress={sendScore} disabled={!connected} style={styles.updateBtn}>
+            📡 Enviar marcador en vivo
+          </Button>
 
           <TouchableOpacity style={styles.finishBtn} onPress={finishMatch}>
             <Text style={styles.finishBtnText}>🏁 Finalizar partido</Text>
@@ -291,11 +287,12 @@ export function LiveScoringScreen({ route, navigation }: { route: any; navigatio
 
   return (
     <View style={styles.container}>
-      <View style={styles.header}>
-        <BackButton onPress={() => navigation.goBack()} />
-        <Text style={styles.headerTitle}>🔴 EN VIVO</Text>
-        <View style={[styles.connDot, { backgroundColor: connected ? '#10b981' : '#9ca3af' }]} />
-      </View>
+      <ScreenHeader
+        onBack={() => navigation.goBack()}
+        title="🔴 EN VIVO"
+        backgroundColor="#111827"
+        right={<View style={[styles.connDot, { backgroundColor: connected ? '#10b981' : '#9ca3af' }]} />}
+      />
 
       {(match?.player1 || match?.player2) && (
         <View style={styles.spectatorNamesRow}>
@@ -347,12 +344,7 @@ export function LiveScoringScreen({ route, navigation }: { route: any; navigatio
 
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: '#0a0a0a' },
-  header: {
-    flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between',
-    paddingTop: 60, paddingBottom: 16, paddingHorizontal: 16, backgroundColor: '#111827',
-  },
-  backBtn: { padding: 4 },
-  backText: { color: '#6ee7b7', fontSize: 24, fontWeight: '300' },
+  header: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
   headerInfo: { flexDirection: 'row', alignItems: 'center', gap: 8 },
   headerTitle: { fontSize: 18, fontWeight: '800', color: '#fff' },
   connDot: { width: 10, height: 10, borderRadius: 5 },
@@ -376,9 +368,7 @@ const styles = StyleSheet.create({
   scoreValue: { fontSize: 36, fontWeight: '900', color: '#fff', minWidth: 50, textAlign: 'center' },
   addSetBtn: { margin: 12, borderWidth: 1.5, borderColor: '#374151', borderRadius: 14, paddingVertical: 12, alignItems: 'center', borderStyle: 'dashed' },
   addSetText: { color: '#6b7280', fontSize: 14, fontWeight: '600' },
-  updateBtn: { margin: 12, backgroundColor: '#059669', borderRadius: 14, paddingVertical: 14, alignItems: 'center' },
-  updateBtnDisabled: { opacity: 0.5 },
-  updateBtnText: { color: '#fff', fontSize: 15, fontWeight: '700' },
+  updateBtn: { margin: 12 },
   finishBtn: { marginHorizontal: 12, backgroundColor: '#dc2626', borderRadius: 14, paddingVertical: 14, alignItems: 'center' },
   finishBtnText: { color: '#fff', fontSize: 15, fontWeight: '700' },
   // Spectator

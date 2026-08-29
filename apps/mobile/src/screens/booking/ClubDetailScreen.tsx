@@ -6,8 +6,9 @@ import {
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { clubsApi, membershipsApi, tournamentsApi, classesApi } from '../../services/api'
 import { useAuthStore } from '../../store/auth.store'
-import { BackButton } from '../../components/ui/BackButton'
+import { ScreenHeader } from '../../components/ui/ScreenHeader'
 import { EmptyState } from '../../components/ui/EmptyState'
+import { Button } from '../../components/ui/Button'
 import { colors } from '../../theme'
 import { sportLabel } from '../../constants/sportIcons'
 import { SportIcon } from '../../components/ui/SportIcons'
@@ -123,17 +124,12 @@ export function ClubDetailScreen({ route, navigation }: { route: any; navigation
 
   return (
     <View style={styles.container}>
-      {/* Header */}
-      <View style={styles.header}>
-        <BackButton onPress={() => navigation.goBack()} />
-        <View style={styles.headerInfo}>
-          <Text style={styles.clubName} numberOfLines={1}>{club?.name}</Text>
-          <Text style={styles.clubCity}>{club?.city}, {club?.country}</Text>
-        </View>
-        {club?.ratingAvg > 0 && (
-          <Text style={styles.rating}>⭐ {club.ratingAvg.toFixed(1)}</Text>
-        )}
-      </View>
+      <ScreenHeader
+        onBack={() => navigation.goBack()}
+        title={club?.name || ''}
+        subtitle={`${club?.city}, ${club?.country}`}
+        right={club?.ratingAvg > 0 ? <Text style={styles.rating}>⭐ {club.ratingAvg.toFixed(1)}</Text> : undefined}
+      />
 
       <ScrollView showsVerticalScrollIndicator={false}>
         {/* Info rápida */}
@@ -185,13 +181,9 @@ export function ClubDetailScreen({ route, navigation }: { route: any; navigation
                       {plan.currency}{'\n'}{Number(plan.price).toLocaleString()}
                     </Text>
                     <Text style={styles.membershipPriceSub}>/mes</Text>
-                    <TouchableOpacity
-                      style={[styles.subscribeBtn, subscribeMutation.isPending && { opacity: 0.6 }]}
-                      onPress={() => subscribeMutation.mutate(plan.id)}
-                      disabled={subscribeMutation.isPending}
-                    >
-                      <Text style={styles.subscribeBtnText}>Suscribirse</Text>
-                    </TouchableOpacity>
+                    <Button size="sm" onPress={() => subscribeMutation.mutate(plan.id)} loading={subscribeMutation.isPending} style={styles.subscribeBtn}>
+                      Suscribirse
+                    </Button>
                   </View>
                 </View>
               ))
@@ -294,7 +286,16 @@ export function ClubDetailScreen({ route, navigation }: { route: any; navigation
           <BookingPickerOptimized
             clubId={clubId}
             selectedSlotId={pickedSlot?.id}
-            onSlotSelected={(slot) => setPickedSlot(slot)}
+            onSlotSelected={(slot) => {
+              // Canchas para más de 1 jugador (el caso normal: dobles) van directo al
+              // flujo completo, que exige elegir el cupo completo antes de reservar —
+              // la hoja rápida (BookingConfirmSheet) permitía reservar sin nadie más.
+              if ((slot.court.capacity || 4) > 1) {
+                navigation.navigate('Booking', { slot, club: club ? { id: clubId, name: club.name } : null })
+                return
+              }
+              setPickedSlot(slot)
+            }}
           />
         </View>
 
@@ -324,15 +325,6 @@ export function ClubDetailScreen({ route, navigation }: { route: any; navigation
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: '#f9fafb' },
   loadingContainer: { flex: 1, justifyContent: 'center', alignItems: 'center' },
-  header: {
-    flexDirection: 'row', alignItems: 'center', backgroundColor: '#064e3b',
-    paddingTop: 60, paddingBottom: 16, paddingHorizontal: 16, gap: 12,
-  },
-  backBtn: { padding: 4 },
-  backText: { color: '#6ee7b7', fontSize: 24, fontWeight: '300' },
-  headerInfo: { flex: 1 },
-  clubName: { fontSize: 18, fontWeight: '800', color: '#fff' },
-  clubCity: { fontSize: 13, color: '#6ee7b7', marginTop: 1 },
   rating: { fontSize: 15, color: '#fbbf24', fontWeight: '700' },
   infoRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 8, padding: 16, backgroundColor: '#fff', borderBottomWidth: 1, borderBottomColor: '#f3f4f6' },
   infoPill: { backgroundColor: '#f3f4f6', paddingHorizontal: 12, paddingVertical: 6, borderRadius: 20 },
@@ -406,8 +398,7 @@ const styles = StyleSheet.create({
   membershipPlanRight: { alignItems: 'center', minWidth: 80 },
   membershipPrice: { fontSize: 16, fontWeight: '900', color: '#059669', textAlign: 'center', lineHeight: 22 },
   membershipPriceSub: { fontSize: 11, color: '#6b7280', marginBottom: 10 },
-  subscribeBtn: { backgroundColor: '#059669', borderRadius: 10, paddingVertical: 8, paddingHorizontal: 14 },
-  subscribeBtnText: { color: '#fff', fontSize: 12, fontWeight: '700' },
+  subscribeBtn: { borderRadius: 10 },
   // Clases
   classCard: { backgroundColor: '#fff', borderRadius: 14, padding: 14, borderWidth: 1, borderColor: '#e5e7eb', marginBottom: 10 },
   classCardTop: { flexDirection: 'row', alignItems: 'center', gap: 8 },

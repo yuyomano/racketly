@@ -35,6 +35,13 @@
       "runtimeArgs": ["run", "dev", "--prefix", "apps/web"],
       "port": 3010,
       "autoPort": false
+    },
+    {
+      "name": "mobile-web",
+      "runtimeExecutable": "npm",
+      "runtimeArgs": ["run", "start", "--prefix", "apps/mobile", "--", "--web", "--port", "8090"],
+      "port": 8090,
+      "autoPort": false
     }
   ]
 }

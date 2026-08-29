@@ -8,7 +8,9 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { Ionicons } from '@expo/vector-icons'
 import { bookingsApi, usersApi } from '../../services/api'
 import { useAuthStore } from '../../store/auth.store'
-import { BackButton } from '../../components/ui/BackButton'
+import { ScreenHeader } from '../../components/ui/ScreenHeader'
+import { Button } from '../../components/ui/Button'
+import { Skeleton } from '../../components/ui/Skeleton'
 import { Badge } from '../../components/ui/Badge'
 import { EmptyState } from '../../components/ui/EmptyState'
 import { colors } from '../../theme'
@@ -48,6 +50,11 @@ export function MyBookingsScreen({ navigation }: { navigation: any }) {
   const { user } = useAuthStore()
   const qc = useQueryClient()
   const [tab, setTab] = useState<Tab>('upcoming')
+
+  // ── Invitar por WhatsApp (con link de pago si aplica) ────────────────────
+  const [whatsappBooking, setWhatsappBooking] = useState<any | null>(null)
+  const [guestNameInput, setGuestNameInput] = useState('')
+  const [whatsappLoading, setWhatsappLoading] = useState(false)
 
   // ── Editar jugadores ──────────────────────────────────────────────────────
   const [editBookingId, setEditBookingId] = useState<string | null>(null)
@@ -231,22 +238,83 @@ export function MyBookingsScreen({ navigation }: { navigation: any }) {
     return (Array.isArray(b.players) ? b.players : []).find((p: any) => p.userId === userId)?.name ?? userId
   }
 
-  async function shareBookingWhatsApp(b: any) {
+  function buildInviteText(b: any, paymentLine: string) {
     const sport = b.slot?.court?.sport === 'pickleball' ? 'pickleball' : 'pádel'
     const emoji = sportIcon(b.slot?.court?.sport)
-    const text =
+    return (
       `¡Te invito a jugar ${sport}! ${emoji}\n\n` +
       `🏟️ ${b.slot?.court?.name || 'Pista'}\n` +
       `📍 ${b.slot?.court?.club?.name || 'Club'}\n` +
       `📅 ${formatDate(b.slot?.date || '')}\n` +
       `⏰ ${formatTime(b.slot?.startTime || '')} - ${formatTime(b.slot?.endTime || '')}\n\n` +
-      `Reserva hecha en Racketly — ¡solo tienes que aparecer! 🚀`
+      paymentLine
+    )
+  }
+
+  async function openWhatsApp(text: string) {
     const url = `https://wa.me/?text=${encodeURIComponent(text)}`
     const canOpen = await Linking.canOpenURL(url)
     if (canOpen) {
       Linking.openURL(url)
     } else {
       Share.share({ message: text })
+    }
+  }
+
+  function shareBookingWhatsApp(b: any) {
+    const myPlayer = Array.isArray(b.players) ? b.players.find((p: any) => p.userId === user?.id) : undefined
+    const amountOwed = Number(myPlayer?.amountOwed || 0)
+    const capacity = b.slot?.court?.capacity || 4
+    const currentCount = Array.isArray(b.players) ? b.players.length : 0
+
+    // Sin costo (cubierto por membresía/crédito) — nada que pagar, se comparte directo.
+    if (amountOwed === 0) {
+      openWhatsApp(buildInviteText(b, 'Reserva hecha en Racketly — ¡no tienes que pagar nada, solo aparecer! 🚀'))
+      return
+    }
+    // Cupo lleno — no se puede agregar al invitado como jugador de la reserva,
+    // así que no hay a quién generarle el link de pago.
+    if (currentCount >= capacity) {
+      Alert.alert('Cupo completo', 'Esta reserva ya tiene todos los jugadores. No se puede agregar al invitado.')
+      return
+    }
+    // Requiere pago y hay cupo — pide el nombre para crear su registro de pago (guest) y el link.
+    setGuestNameInput('')
+    setWhatsappBooking(b)
+  }
+
+  async function confirmGuestInviteAndShare() {
+    const b = whatsappBooking
+    const name = guestNameInput.trim()
+    if (!b || !name) return
+
+    setWhatsappLoading(true)
+    try {
+      const existing = (Array.isArray(b.players) ? b.players : []).map((p: any) => ({
+        userId: p.userId ?? undefined,
+        guestId: p.guestId ?? undefined,
+        name: p.name,
+      }))
+      const updateRes = await bookingsApi.updatePlayers(b.id, [...existing, { name }])
+      const updatedPlayers: any[] = updateRes.data.data.players ?? []
+      const newGuest = updatedPlayers.find((p) => p.guestId && !existing.some((e: any) => e.guestId === p.guestId))
+      if (!newGuest) throw new Error('No se pudo identificar al invitado recién agregado')
+
+      const linkRes = await bookingsApi.guestLink(b.id, newGuest.guestId)
+      const payUrl: string = linkRes.data.data.url
+      const amount = Number(newGuest.amountOwed || 0)
+
+      qc.invalidateQueries({ queryKey: ['my-bookings'] })
+      setWhatsappBooking(null)
+      openWhatsApp(buildInviteText(
+        b,
+        `Reserva hecha en Racketly — tu parte es ${b.currency} ${amount.toLocaleString()} 💳\n` +
+        `Paga aquí: ${payUrl}`
+      ))
+    } catch (err: any) {
+      Alert.alert('Error', err.response?.data?.error || 'No se pudo generar el link de pago')
+    } finally {
+      setWhatsappLoading(false)
     }
   }
 
@@ -276,11 +344,7 @@ export function MyBookingsScreen({ navigation }: { navigation: any }) {
 
   return (
     <View style={styles.container}>
-      {/* Header */}
-      <View style={styles.header}>
-        <BackButton onPress={() => navigation.goBack()} />
-        <Text style={styles.title}>Mis Reservas</Text>
-      </View>
+      <ScreenHeader onBack={() => navigation.goBack()} title="Mis Reservas" />
 
       {/* Tabs */}
       <View style={styles.tabs}>
@@ -298,7 +362,18 @@ export function MyBookingsScreen({ navigation }: { navigation: any }) {
       </View>
 
       {isLoading ? (
-        <ActivityIndicator size="large" color="#059669" style={{ marginTop: 60 }} />
+        <View style={{ padding: 16, gap: 12 }}>
+          {[0, 1, 2].map((i) => (
+            <View key={i} style={styles.card}>
+              <View style={styles.cardTop}>
+                <Skeleton style={{ width: 24, height: 24, borderRadius: 12 }} />
+                <Skeleton style={{ width: 70, height: 18, borderRadius: 9 }} />
+              </View>
+              <Skeleton style={{ width: '60%', height: 16, marginBottom: 8 }} />
+              <Skeleton style={{ width: '40%', height: 13 }} />
+            </View>
+          ))}
+        </View>
       ) : filtered.length === 0 ? (
         <View style={styles.empty}>
           <EmptyState
@@ -306,9 +381,9 @@ export function MyBookingsScreen({ navigation }: { navigation: any }) {
             title={tab === 'upcoming' ? 'Sin reservas próximas' : 'Sin historial'}
           />
           {tab === 'upcoming' && (
-            <TouchableOpacity style={styles.bookBtn} onPress={() => navigation.navigate('Home')}>
-              <Text style={styles.bookBtnText}>Reservar pista →</Text>
-            </TouchableOpacity>
+            <Button onPress={() => navigation.navigate('Home')} style={styles.bookBtn}>
+              Reservar pista →
+            </Button>
           )}
         </View>
       ) : (
@@ -526,18 +601,44 @@ export function MyBookingsScreen({ navigation }: { navigation: any }) {
                   )}
                 </View>
 
-                <TouchableOpacity
-                  style={[styles.savePlayersBtn, updatePlayersMutation.isPending && { opacity: 0.7 }]}
-                  onPress={() => updatePlayersMutation.mutate()}
-                  disabled={updatePlayersMutation.isPending}
-                >
-                  {updatePlayersMutation.isPending
-                    ? <ActivityIndicator color="#fff" />
-                    : <Text style={styles.savePlayersBtnText}>Guardar jugadores</Text>
-                  }
-                </TouchableOpacity>
+                <Button onPress={() => updatePlayersMutation.mutate()} loading={updatePlayersMutation.isPending} style={styles.savePlayersBtn}>
+                  Guardar jugadores
+                </Button>
               </>
             )}
+          </View>
+        </KeyboardAvoidingView>
+      </Modal>
+
+      {/* Modal: nombre del invitado — necesario para crear su registro de pago y el link */}
+      <Modal visible={!!whatsappBooking} transparent animationType="fade" onRequestClose={() => setWhatsappBooking(null)}>
+        <KeyboardAvoidingView style={styles.modalOverlay} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
+          <View style={styles.modalSheet}>
+            <View style={styles.modalHeader}>
+              <Text style={styles.modalTitle}>📲 Invitar por WhatsApp</Text>
+              <TouchableOpacity onPress={() => setWhatsappBooking(null)}>
+                <Ionicons name="close" size={22} color={colors.gray500} />
+              </TouchableOpacity>
+            </View>
+            <Text style={styles.modalEmptyHint}>
+              ¿Cómo se llama tu invitado? Con esto le generamos su link de pago.
+            </Text>
+            <TextInput
+              style={styles.playerSearchInput}
+              placeholder="Nombre del invitado"
+              placeholderTextColor={colors.gray400}
+              value={guestNameInput}
+              onChangeText={setGuestNameInput}
+              autoFocus
+            />
+            <Button
+              onPress={confirmGuestInviteAndShare}
+              loading={whatsappLoading}
+              disabled={!guestNameInput.trim()}
+              style={styles.savePlayersBtn}
+            >
+              Generar link y compartir
+            </Button>
           </View>
         </KeyboardAvoidingView>
       </Modal>
@@ -679,16 +780,14 @@ export function MyBookingsScreen({ navigation }: { navigation: any }) {
                   </TouchableOpacity>
                 )}
 
-                <TouchableOpacity
-                  style={[styles.savePlayersBtn, submitMatchMutation.isPending && { opacity: 0.7 }]}
+                <Button
                   onPress={() => submitMatchMutation.mutate()}
-                  disabled={submitMatchMutation.isPending || team1Ids.length === 0 || team2Ids.length === 0}
+                  loading={submitMatchMutation.isPending}
+                  disabled={team1Ids.length === 0 || team2Ids.length === 0}
+                  style={styles.savePlayersBtn}
                 >
-                  {submitMatchMutation.isPending
-                    ? <ActivityIndicator color="#fff" />
-                    : <Text style={styles.savePlayersBtnText}>{existingMatch ? 'Corregir resultado' : 'Guardar resultado'}</Text>
-                  }
-                </TouchableOpacity>
+                  {existingMatch ? 'Corregir resultado' : 'Guardar resultado'}
+                </Button>
                     </>
                   )}
                 </>
@@ -703,23 +802,13 @@ export function MyBookingsScreen({ navigation }: { navigation: any }) {
 
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: '#f9fafb' },
-  header: {
-    backgroundColor: '#064e3b', paddingTop: 60, paddingBottom: 16,
-    paddingHorizontal: 16, flexDirection: 'row', alignItems: 'center', gap: 12,
-  },
-  backBtn: { padding: 4 },
-  backText: { color: '#6ee7b7', fontSize: 24, fontWeight: '300' },
-  title: { fontSize: 18, fontWeight: '800', color: '#fff' },
   tabs: { flexDirection: 'row', backgroundColor: '#fff', borderBottomWidth: 1, borderBottomColor: '#e5e7eb' },
   tab: { flex: 1, paddingVertical: 14, alignItems: 'center' },
   tabActive: { borderBottomWidth: 2.5, borderBottomColor: '#059669' },
   tabText: { fontSize: 14, fontWeight: '600', color: '#9ca3af' },
   tabTextActive: { color: '#059669' },
   empty: { flex: 1, alignItems: 'center', justifyContent: 'center', padding: 32 },
-  emptyIcon: { fontSize: 48, marginBottom: 12 },
-  emptyText: { fontSize: 16, color: '#6b7280', fontWeight: '600' },
-  bookBtn: { marginTop: 16, backgroundColor: '#059669', borderRadius: 12, paddingVertical: 12, paddingHorizontal: 24 },
-  bookBtnText: { color: '#fff', fontWeight: '700', fontSize: 15 },
+  bookBtn: { marginTop: 16 },
   card: {
     backgroundColor: '#fff', borderRadius: 18, padding: 16,
     shadowColor: '#000', shadowOpacity: 0.05, shadowRadius: 8, elevation: 2,
@@ -779,7 +868,6 @@ const styles = StyleSheet.create({
   playerResultName: { fontSize: 14, fontWeight: '600', color: '#111827' },
   playerResultSub: { fontSize: 12, color: colors.gray400, marginTop: 1 },
   savePlayersBtn: { backgroundColor: '#059669', borderRadius: 14, paddingVertical: 14, alignItems: 'center', marginTop: 4 },
-  savePlayersBtnText: { color: '#fff', fontSize: 15, fontWeight: '700' },
   // Resultado del partido
   matchResultBtn: {
     flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 6,

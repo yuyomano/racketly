@@ -1,11 +1,14 @@
 import React from 'react'
-import { View, Text, FlatList, TouchableOpacity, StyleSheet, ActivityIndicator, Image } from 'react-native'
+import { View, Text, FlatList, TouchableOpacity, StyleSheet, Image } from 'react-native'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { Ionicons } from '@expo/vector-icons'
 import { communityApi } from '../../services/api'
 import { useAuthStore } from '../../store/auth.store'
 import type { Post } from '@racketly/shared-types'
 import { Badge } from '../../components/ui/Badge'
+import { ScreenHeader } from '../../components/ui/ScreenHeader'
+import { Skeleton } from '../../components/ui/Skeleton'
+import { EmptyState } from '../../components/ui/EmptyState'
 import { colors } from '../../theme'
 
 export function CommunityScreen({ navigation }: { navigation: any }) {
@@ -47,13 +50,15 @@ export function CommunityScreen({ navigation }: { navigation: any }) {
 
   return (
     <View style={styles.container}>
-      <View style={styles.header}>
-        <Text style={styles.title}>👥 Comunidad</Text>
-        <TouchableOpacity style={styles.postBtn} onPress={() => navigation.navigate('CreatePost')}>
-          <Ionicons name="add" size={14} color={colors.white} />
-          <Text style={styles.postBtnText}>Publicar</Text>
-        </TouchableOpacity>
-      </View>
+      <ScreenHeader
+        title="👥 Comunidad"
+        right={
+          <TouchableOpacity style={styles.postBtn} onPress={() => navigation.navigate('CreatePost')}>
+            <Ionicons name="add" size={14} color={colors.white} />
+            <Text style={styles.postBtnText}>Publicar</Text>
+          </TouchableOpacity>
+        }
+      />
 
       {/* Groups Quick Access */}
       <View style={styles.groupsRow}>
@@ -66,13 +71,23 @@ export function CommunityScreen({ navigation }: { navigation: any }) {
       </View>
 
       {isLoading ? (
-        <ActivityIndicator size="large" color="#059669" style={{ marginTop: 40 }} />
-      ) : !data || data.length === 0 ? (
-        <View style={styles.empty}>
-          <Text style={styles.emptyIcon}>💬</Text>
-          <Text style={styles.emptyText}>Aún no hay publicaciones</Text>
-          <Text style={styles.emptySub}>¡Sé el primero en publicar algo!</Text>
+        <View>
+          {[0, 1, 2].map((i) => (
+            <View key={i} style={styles.postCard}>
+              <View style={styles.postHeader}>
+                <Skeleton style={{ width: 36, height: 36, borderRadius: 18 }} />
+                <View style={{ marginLeft: 8 }}>
+                  <Skeleton style={{ width: 100, height: 13, marginBottom: 4 }} />
+                  <Skeleton style={{ width: 60, height: 11 }} />
+                </View>
+              </View>
+              <Skeleton style={{ width: '90%', height: 13, marginTop: 12, marginBottom: 6 }} />
+              <Skeleton style={{ width: '70%', height: 13 }} />
+            </View>
+          ))}
         </View>
+      ) : !data || data.length === 0 ? (
+        <EmptyState icon="chatbubbles-outline" title="Aún no hay publicaciones" description="¡Sé el primero en publicar algo!" />
       ) : (
         <FlatList
           data={data}
@@ -139,18 +154,12 @@ const groupShortcuts = [
 
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: '#f9fafb' },
-  header: { backgroundColor: '#064e3b', paddingTop: 60, paddingBottom: 16, paddingHorizontal: 20, flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-end' },
-  title: { color: '#fff', fontSize: 22, fontWeight: '900' },
   postBtn: { flexDirection: 'row', gap: 5, alignItems: 'center', backgroundColor: '#10b981', paddingHorizontal: 14, paddingVertical: 8, borderRadius: 20 },
   postBtnText: { color: '#fff', fontWeight: '700', fontSize: 13 },
   groupsRow: { flexDirection: 'row', padding: 12, gap: 8, backgroundColor: '#fff', borderBottomWidth: 1, borderBottomColor: '#e5e7eb' },
   groupChip: { alignItems: 'center', paddingHorizontal: 12, paddingVertical: 6, backgroundColor: '#f3f4f6', borderRadius: 12 },
   groupEmoji: { fontSize: 18 },
   groupLabel: { fontSize: 10, color: '#6b7280', marginTop: 2, fontWeight: '600' },
-  empty: { alignItems: 'center', paddingTop: 60 },
-  emptyIcon: { fontSize: 48, marginBottom: 12 },
-  emptyText: { fontSize: 16, color: '#6b7280', fontWeight: '600' },
-  emptySub: { fontSize: 13, color: '#9ca3af', marginTop: 4 },
   postCard: { margin: 12, marginBottom: 4, backgroundColor: '#fff', borderRadius: 16, padding: 16, shadowColor: '#000', shadowOpacity: 0.04, shadowRadius: 6, elevation: 1 },
   postHeader: { flexDirection: 'row', alignItems: 'center', gap: 10, marginBottom: 10 },
   avatar: { width: 36, height: 36, borderRadius: 18, backgroundColor: '#d1fae5', alignItems: 'center', justifyContent: 'center' },

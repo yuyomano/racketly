@@ -1,13 +1,17 @@
 import React from 'react'
 import { View, Text, TouchableOpacity, StyleSheet, ScrollView } from 'react-native'
+import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import { Ionicons } from '@expo/vector-icons'
 import { useAuthStore } from '../../store/auth.store'
 import { eloToCategory, xpForNextLevel } from '@racketly/utils'
 import { colors, radius, spacing, fontSize, shadow } from '../../theme'
+import { ScreenHeader } from '../../components/ui/ScreenHeader'
+import { Button } from '../../components/ui/Button'
 
 export function ProfileScreen({ navigation }: { navigation: any }) {
   const { user, logout } = useAuthStore()
   const profile = user?.profile
+  const insets = useSafeAreaInsets()
 
   if (!profile) return null
 
@@ -16,9 +20,8 @@ export function ProfileScreen({ navigation }: { navigation: any }) {
 
   return (
     <ScrollView style={styles.container}>
-      {/* Header */}
-      <View style={styles.header}>
-        <TouchableOpacity style={styles.editBtn} onPress={() => navigation.navigate('EditProfile')}>
+      <ScreenHeader style={styles.header}>
+        <TouchableOpacity style={[styles.editBtn, { top: insets.top + spacing.md }]} onPress={() => navigation.navigate('EditProfile')}>
           <Ionicons name="pencil" size={13} color={colors.white} />
           <Text style={styles.editBtnText}>Editar</Text>
         </TouchableOpacity>
@@ -46,7 +49,7 @@ export function ProfileScreen({ navigation }: { navigation: any }) {
             <Text style={styles.eloLabel}>ELO Pickle</Text>
           </View>
         </View>
-      </View>
+      </ScreenHeader>
 
       {/* XP Progress */}
       <View style={styles.xpCard}>
@@ -69,10 +72,9 @@ export function ProfileScreen({ navigation }: { navigation: any }) {
           {user?.subscriptionTier === 'free' ? '🆓 Plan Gratuito' : `⭐ Plan ${user?.subscriptionTier}`}
         </Text>
         {user?.subscriptionTier === 'free' && (
-          <TouchableOpacity style={styles.upgradeBtn} onPress={() => navigation.navigate('Premium')}>
-            <Text style={styles.upgradeBtnText}>Mejorar a Premium</Text>
-            <Ionicons name="arrow-forward" size={14} color={colors.white} />
-          </TouchableOpacity>
+          <Button size="sm" onPress={() => navigation.navigate('Premium')} style={styles.upgradeBtn}>
+            Mejorar a Premium <Ionicons name="arrow-forward" size={14} color={colors.white} />
+          </Button>
         )}
       </View>
 
@@ -115,9 +117,9 @@ const menuItems: { icon: keyof typeof Ionicons.glyphMap; label: string; route?: 
 
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: colors.bg },
-  header: { backgroundColor: colors.primary900, paddingTop: 60, paddingBottom: spacing['2xl'], alignItems: 'center', paddingHorizontal: spacing.xl },
+  header: { paddingBottom: spacing['2xl'], alignItems: 'center', paddingHorizontal: spacing.xl },
   editBtn: {
-    position: 'absolute', top: 60, right: spacing.xl, flexDirection: 'row', alignItems: 'center', gap: spacing.xs,
+    position: 'absolute', right: spacing.xl, flexDirection: 'row', alignItems: 'center', gap: spacing.xs,
     backgroundColor: 'rgba(255,255,255,0.12)', borderRadius: radius.full, paddingHorizontal: spacing.md, paddingVertical: spacing.xs + 2,
   },
   editBtnText: { color: colors.white, fontSize: fontSize.sm, fontWeight: '600' },
@@ -142,8 +144,7 @@ const styles = StyleSheet.create({
   progressText: { fontSize: fontSize.xs, color: colors.gray400 },
   subscriptionCard: { marginHorizontal: spacing.lg, backgroundColor: colors.white, borderRadius: radius.lg, padding: spacing.lg, ...shadow.sm },
   subTitle: { fontSize: fontSize.base, fontWeight: '700', color: colors.textPrimary },
-  upgradeBtn: { flexDirection: 'row', justifyContent: 'center', alignItems: 'center', gap: spacing.xs, marginTop: spacing.sm + 2, backgroundColor: colors.primary600, borderRadius: radius.sm + 2, paddingVertical: spacing.sm + 2 },
-  upgradeBtnText: { color: colors.white, fontWeight: '700', fontSize: fontSize.sm },
+  upgradeBtn: { marginTop: spacing.sm + 2 },
   menu: { margin: spacing.lg, backgroundColor: colors.white, borderRadius: radius.lg, overflow: 'hidden', ...shadow.sm },
   menuItem: { flexDirection: 'row', alignItems: 'center', padding: spacing.lg, borderBottomWidth: 1, borderBottomColor: colors.gray100, gap: spacing.md },
   menuIconWrap: { width: 32, height: 32, borderRadius: radius.sm, backgroundColor: colors.primary50, alignItems: 'center', justifyContent: 'center' },

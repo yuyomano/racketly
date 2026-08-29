@@ -11,6 +11,7 @@ import * as Google from 'expo-auth-session/providers/google'
 import { Ionicons } from '@expo/vector-icons'
 import { authApi } from '../../services/api'
 import { useAuthStore } from '../../store/auth.store'
+import { Button } from '../../components/ui/Button'
 import { colors, radius, spacing, fontSize, shadow } from '../../theme'
 
 WebBrowser.maybeCompleteAuthSession()
@@ -134,20 +135,9 @@ export function LoginScreen({ navigation }: { navigation: any }) {
             )}
           />
 
-          <TouchableOpacity
-            style={[styles.submitBtn, isLoading && styles.submitBtnDisabled]}
-            onPress={handleSubmit(onSubmit)}
-            disabled={isLoading}
-          >
-            {isLoading ? (
-              <ActivityIndicator color={colors.white} />
-            ) : (
-              <>
-                <Text style={styles.submitBtnText}>Entrar</Text>
-                <Ionicons name="arrow-forward" size={17} color={colors.white} />
-              </>
-            )}
-          </TouchableOpacity>
+          <Button onPress={handleSubmit(onSubmit)} loading={isLoading} style={styles.submitBtn}>
+            Entrar <Ionicons name="arrow-forward" size={17} color={colors.white} />
+          </Button>
 
           {/* Divider */}
           <View style={styles.divider}>
@@ -158,7 +148,7 @@ export function LoginScreen({ navigation }: { navigation: any }) {
 
           {/* Google button */}
           <TouchableOpacity
-            style={[styles.googleBtn, googleLoading && styles.submitBtnDisabled]}
+            style={[styles.googleBtn, googleLoading && { opacity: 0.7 }]}
             onPress={() => promptAsync()}
             disabled={googleLoading}
           >
@@ -213,12 +203,7 @@ const styles = StyleSheet.create({
   input: { flex: 1, paddingVertical: spacing.md, fontSize: fontSize.base, color: colors.textPrimary },
   inputError: { borderColor: colors.red500 },
   errorText: { fontSize: fontSize.xs, color: colors.red500 },
-  submitBtn: {
-    flexDirection: 'row', backgroundColor: colors.primary600, borderRadius: radius.md, paddingVertical: spacing.lg - 2,
-    alignItems: 'center', justifyContent: 'center', gap: spacing.sm, marginTop: spacing.xs,
-  },
-  submitBtnDisabled: { opacity: 0.7 },
-  submitBtnText: { color: colors.white, fontSize: fontSize.lg, fontWeight: '700' },
+  submitBtn: { marginTop: spacing.xs },
   registerLink: { textAlign: 'center', fontSize: fontSize.sm, color: colors.gray500, marginTop: spacing.xs },
   divider: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm },
   dividerLine: { flex: 1, height: 1, backgroundColor: colors.gray200 },

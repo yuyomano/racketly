@@ -1,14 +1,16 @@
 import React from 'react'
 import {
-  View, Text, FlatList, TouchableOpacity,
-  StyleSheet, ActivityIndicator, Alert,
+  View, Text, FlatList,
+  StyleSheet, Alert,
 } from 'react-native'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { membershipsApi } from '../../services/api'
 import { useAuthStore } from '../../store/auth.store'
-import { BackButton } from '../../components/ui/BackButton'
+import { ScreenHeader } from '../../components/ui/ScreenHeader'
 import { Badge } from '../../components/ui/Badge'
 import { EmptyState } from '../../components/ui/EmptyState'
+import { Button } from '../../components/ui/Button'
+import { Skeleton } from '../../components/ui/Skeleton'
 
 const STATUS_CONFIG: Record<string, { label: string; tone: 'emerald' | 'amber' | 'red' | 'gray' }> = {
   active:          { label: 'Activa',           tone: 'emerald' },
@@ -54,13 +56,18 @@ export function MyMembershipsScreen({ navigation }: { navigation: any }) {
 
   return (
     <View style={styles.container}>
-      <View style={styles.header}>
-        <BackButton onPress={() => navigation.goBack()} />
-        <Text style={styles.title}>Mis Membresías</Text>
-      </View>
+      <ScreenHeader onBack={() => navigation.goBack()} title="Mis Membresías" />
 
       {isLoading ? (
-        <ActivityIndicator size="large" color="#059669" style={{ marginTop: 60 }} />
+        <View style={{ padding: 16, gap: 12 }}>
+          {[0, 1].map((i) => (
+            <View key={i} style={styles.card}>
+              <Skeleton style={{ width: '50%', height: 16, marginBottom: 10 }} />
+              <Skeleton style={{ width: '70%', height: 13, marginBottom: 6 }} />
+              <Skeleton style={{ width: '40%', height: 13 }} />
+            </View>
+          ))}
+        </View>
       ) : memberships?.length === 0 ? (
         <View style={styles.empty}>
           <EmptyState
@@ -68,9 +75,9 @@ export function MyMembershipsScreen({ navigation }: { navigation: any }) {
             title="Sin membresías activas"
             description="Suscríbete a un club para jugar una vez al día con un precio fijo mensual."
           />
-          <TouchableOpacity style={styles.exploreBtn} onPress={() => navigation.navigate('Home')}>
-            <Text style={styles.exploreBtnText}>Ver clubs con membresía →</Text>
-          </TouchableOpacity>
+          <Button onPress={() => navigation.navigate('Home')} style={styles.exploreBtn}>
+            Ver clubs con membresía →
+          </Button>
         </View>
       ) : (
         <FlatList
@@ -142,13 +149,14 @@ export function MyMembershipsScreen({ navigation }: { navigation: any }) {
 
                 {/* Cancelar */}
                 {isActive && !pendingCancel && (
-                  <TouchableOpacity
-                    style={styles.cancelBtn}
+                  <Button
+                    variant="danger"
+                    size="sm"
                     onPress={() => confirmCancel(m.id, m.club?.name)}
-                    disabled={cancelMutation.isPending}
+                    loading={cancelMutation.isPending}
                   >
-                    <Text style={styles.cancelBtnText}>Cancelar membresía</Text>
-                  </TouchableOpacity>
+                    Cancelar membresía
+                  </Button>
                 )}
                 {pendingCancel && (
                   <Text style={styles.pendingCancelText}>
@@ -166,19 +174,8 @@ export function MyMembershipsScreen({ navigation }: { navigation: any }) {
 
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: '#f9fafb' },
-  header: {
-    backgroundColor: '#064e3b', paddingTop: 60, paddingBottom: 16,
-    paddingHorizontal: 16, flexDirection: 'row', alignItems: 'center', gap: 12,
-  },
-  backBtn: { padding: 4 },
-  backText: { color: '#6ee7b7', fontSize: 24, fontWeight: '300' },
-  title: { fontSize: 18, fontWeight: '800', color: '#fff' },
   empty: { flex: 1, alignItems: 'center', justifyContent: 'center', padding: 32 },
-  emptyIcon: { fontSize: 56, marginBottom: 12 },
-  emptyTitle: { fontSize: 18, fontWeight: '800', color: '#111827', marginBottom: 8 },
-  emptyText: { fontSize: 14, color: '#6b7280', textAlign: 'center', lineHeight: 22 },
-  exploreBtn: { marginTop: 20, backgroundColor: '#059669', borderRadius: 12, paddingVertical: 12, paddingHorizontal: 24 },
-  exploreBtnText: { color: '#fff', fontWeight: '700', fontSize: 15 },
+  exploreBtn: { marginTop: 20 },
   benefitsCard: {
     backgroundColor: '#064e3b', borderRadius: 16, padding: 16, marginBottom: 4,
   },
@@ -203,7 +200,5 @@ const styles = StyleSheet.create({
   dateItem: { flex: 1 },
   dateLabel: { fontSize: 11, color: '#9ca3af', fontWeight: '600', textTransform: 'uppercase', letterSpacing: 0.5 },
   dateValue: { fontSize: 13, color: '#374151', fontWeight: '700', marginTop: 2 },
-  cancelBtn: { borderWidth: 1.5, borderColor: '#fca5a5', borderRadius: 10, paddingVertical: 10, alignItems: 'center' },
-  cancelBtnText: { color: '#ef4444', fontSize: 13, fontWeight: '600' },
   pendingCancelText: { fontSize: 12, color: '#b45309', backgroundColor: '#fffbeb', borderRadius: 10, padding: 10, lineHeight: 18 },
 })

@@ -1,10 +1,12 @@
 import React, { useState } from 'react'
-import { View, Text, FlatList, TouchableOpacity, StyleSheet, ActivityIndicator } from 'react-native'
+import { View, Text, FlatList, TouchableOpacity, StyleSheet } from 'react-native'
 import { useQuery } from '@tanstack/react-query'
 import { academyApi } from '../../services/api'
 import type { Course } from '@racketly/shared-types'
 import { Badge } from '../../components/ui/Badge'
 import { SportIcon } from '../../components/ui/SportIcons'
+import { ScreenHeader } from '../../components/ui/ScreenHeader'
+import { Skeleton } from '../../components/ui/Skeleton'
 
 const LEVELS = ['all', 'beginner', 'intermediate', 'advanced', 'pro']
 const LEVEL_LABELS: Record<string, string> = {
@@ -23,10 +25,7 @@ export function AcademyScreen({ navigation }: { navigation: any }) {
 
   return (
     <View style={styles.container}>
-      <View style={styles.header}>
-        <Text style={styles.title}>🎓 Academia</Text>
-        <Text style={styles.subtitle}>Aprende con los mejores instructores</Text>
-      </View>
+      <ScreenHeader title="🎓 Academia" subtitle="Aprende con los mejores instructores" />
 
       {/* Level filter */}
       <FlatList
@@ -48,7 +47,17 @@ export function AcademyScreen({ navigation }: { navigation: any }) {
       />
 
       {isLoading ? (
-        <ActivityIndicator size="large" color="#059669" style={{ marginTop: 40 }} />
+        <View style={{ padding: 16, gap: 12 }}>
+          {[0, 1, 2].map((i) => (
+            <View key={i} style={[styles.courseCard, { alignItems: 'center' }]}>
+              <Skeleton style={{ width: 90, height: 90 }} />
+              <View style={{ flex: 1, padding: 12 }}>
+                <Skeleton style={{ width: '80%', height: 15, marginBottom: 8 }} />
+                <Skeleton style={{ width: '50%', height: 12 }} />
+              </View>
+            </View>
+          ))}
+        </View>
       ) : (
         <FlatList
           data={data}
@@ -96,9 +105,6 @@ const levelTones: Record<string, 'emerald' | 'blue' | 'amber' | 'violet'> = {
 
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: '#f9fafb' },
-  header: { backgroundColor: '#064e3b', paddingTop: 60, paddingBottom: 20, paddingHorizontal: 20 },
-  title: { color: '#fff', fontSize: 22, fontWeight: '900' },
-  subtitle: { color: '#6ee7b7', fontSize: 13, marginTop: 2 },
   levelFilters: { paddingHorizontal: 16, paddingVertical: 12, gap: 8, backgroundColor: '#fff', borderBottomWidth: 1, borderBottomColor: '#e5e7eb' },
   levelChip: { paddingHorizontal: 14, paddingVertical: 7, borderRadius: 20, backgroundColor: '#f3f4f6' },
   levelChipActive: { backgroundColor: '#059669' },

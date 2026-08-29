@@ -1,13 +1,14 @@
 import React, { useState } from 'react'
 import {
   View, Text, TextInput, TouchableOpacity, StyleSheet,
-  ScrollView, ActivityIndicator, Alert, KeyboardAvoidingView, Platform,
+  ScrollView, Alert, KeyboardAvoidingView, Platform,
 } from 'react-native'
 import { useMutation, useQueryClient } from '@tanstack/react-query'
 import { Ionicons } from '@expo/vector-icons'
 import { useAuthStore } from '../../store/auth.store'
 import { profileApi } from '../../services/api'
-import { BackButton } from '../../components/ui/BackButton'
+import { ScreenHeader } from '../../components/ui/ScreenHeader'
+import { Button } from '../../components/ui/Button'
 import { colors } from '../../theme'
 
 type Sport = 'padel' | 'pickleball' | 'both'
@@ -76,21 +77,15 @@ export function EditProfileScreen({ navigation }: { navigation: any }) {
       behavior={Platform.OS === 'ios' ? 'padding' : undefined}
     >
       <ScrollView style={styles.container} keyboardShouldPersistTaps="handled">
-        {/* Header */}
-        <View style={styles.header}>
-          <View style={styles.backBtn}><BackButton onPress={() => navigation.goBack()} /></View>
-          <Text style={styles.title}>Editar Perfil</Text>
-          <TouchableOpacity
-            onPress={handleSave}
-            disabled={mutation.isPending}
-            style={styles.saveBtn}
-          >
-            {mutation.isPending
-              ? <ActivityIndicator size="small" color="#fff" />
-              : <Text style={styles.saveBtnText}>Guardar</Text>
-            }
-          </TouchableOpacity>
-        </View>
+        <ScreenHeader
+          onBack={() => navigation.goBack()}
+          title="Editar Perfil"
+          right={
+            <Button size="sm" onPress={handleSave} loading={mutation.isPending} style={{ minWidth: 80 }}>
+              Guardar
+            </Button>
+          }
+        />
 
         {/* Avatar placeholder */}
         <View style={styles.avatarSection}>
@@ -224,19 +219,6 @@ export function EditProfileScreen({ navigation }: { navigation: any }) {
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: '#f9fafb' },
 
-  // Header
-  header: {
-    backgroundColor: '#064e3b', paddingTop: 60, paddingBottom: 16,
-    paddingHorizontal: 16, flexDirection: 'row', alignItems: 'center',
-  },
-  backBtn: { padding: 4, marginRight: 12 },
-  backText: { color: '#6ee7b7', fontSize: 24, fontWeight: '300' },
-  title: { flex: 1, fontSize: 18, fontWeight: '800', color: '#fff' },
-  saveBtn: {
-    backgroundColor: '#10b981', borderRadius: 10,
-    paddingHorizontal: 16, paddingVertical: 8, minWidth: 80, alignItems: 'center',
-  },
-  saveBtnText: { color: '#fff', fontWeight: '700', fontSize: 14 },
 
   // Avatar
   avatarSection: { alignItems: 'center', paddingVertical: 24, backgroundColor: '#064e3b' },

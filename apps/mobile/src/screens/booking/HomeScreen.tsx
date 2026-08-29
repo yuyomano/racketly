@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react'
 import {
   View, Text, TextInput, TouchableOpacity,
-  FlatList, ActivityIndicator, StyleSheet
+  FlatList, StyleSheet
 } from 'react-native'
 import { useQuery } from '@tanstack/react-query'
 import * as Location from 'expo-location'
@@ -11,6 +11,8 @@ import type { ClubProfile } from '@racketly/shared-types'
 import { distanceKm } from '@racketly/utils'
 import { Badge } from '../../components/ui/Badge'
 import { EmptyState } from '../../components/ui/EmptyState'
+import { ScreenHeader } from '../../components/ui/ScreenHeader'
+import { Skeleton } from '../../components/ui/Skeleton'
 import { colors, radius, spacing, fontSize, shadow } from '../../theme'
 import { sportLabel } from '../../constants/sportIcons'
 import { PadelIcon, PickleballIcon, SportIcon } from '../../components/ui/SportIcons'
@@ -48,20 +50,16 @@ export function HomeScreen({ navigation }: { navigation: any }) {
 
   return (
     <View style={styles.container}>
-      {/* Header */}
-      <View style={styles.header}>
-        <View style={styles.headerRow}>
-          <View>
-            <Text style={styles.headerTitle}>🎾 Racketly</Text>
-            <Text style={styles.headerSub}>¿Dónde jugamos hoy?</Text>
-          </View>
+      <ScreenHeader
+        title="🎾 Racketly"
+        subtitle="¿Dónde jugamos hoy?"
+        right={
           <TouchableOpacity style={styles.myBookingsBtn} onPress={() => navigation.navigate('MyBookings')}>
             <Ionicons name="calendar-outline" size={14} color={colors.white} />
             <Text style={styles.myBookingsBtnText}>Mis reservas</Text>
           </TouchableOpacity>
-        </View>
-
-        {/* Search */}
+        }
+      >
         <View style={styles.searchWrap}>
           <Ionicons name="search" size={18} color={colors.gray400} />
           <TextInput
@@ -73,7 +71,7 @@ export function HomeScreen({ navigation }: { navigation: any }) {
             onSubmitEditing={() => refetch()}
           />
         </View>
-      </View>
+      </ScreenHeader>
 
       {/* Sport Filter */}
       <View style={styles.filterRow}>
@@ -92,7 +90,15 @@ export function HomeScreen({ navigation }: { navigation: any }) {
 
       {/* Clubs List */}
       {isLoading ? (
-        <ActivityIndicator size="large" color={colors.primary600} style={{ marginTop: 40 }} />
+        <View style={{ paddingTop: spacing.sm }}>
+          {[0, 1, 2, 3].map((i) => (
+            <View key={i} style={styles.clubCardSkeleton}>
+              <Skeleton style={{ width: '55%', height: 16, marginBottom: 8 }} />
+              <Skeleton style={{ width: '35%', height: 12, marginBottom: 12 }} />
+              <Skeleton style={{ width: 90, height: 22, borderRadius: radius.full }} />
+            </View>
+          ))}
+        </View>
       ) : (
         <FlatList
           data={data}
@@ -147,10 +153,6 @@ export function HomeScreen({ navigation }: { navigation: any }) {
 
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: colors.bg },
-  header: { backgroundColor: colors.primary900, paddingTop: 60, paddingBottom: spacing.lg, paddingHorizontal: spacing.xl, gap: spacing.lg },
-  headerRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
-  headerTitle: { color: colors.white, fontSize: fontSize.xl + 4, fontWeight: '900' },
-  headerSub: { color: colors.primary300, fontSize: fontSize.sm, marginTop: 2 },
   myBookingsBtn: {
     flexDirection: 'row', alignItems: 'center', gap: spacing.xs,
     backgroundColor: 'rgba(255,255,255,0.12)', borderRadius: radius.md, paddingHorizontal: spacing.md, paddingVertical: spacing.sm,
@@ -168,6 +170,10 @@ const styles = StyleSheet.create({
   filterText: { fontSize: fontSize.sm, color: colors.gray500, fontWeight: '500' },
   filterTextActive: { color: colors.white },
   clubCard: { marginHorizontal: spacing.md, marginTop: spacing.md, backgroundColor: colors.white, borderRadius: radius.lg, ...shadow.sm },
+  clubCardSkeleton: {
+    marginHorizontal: spacing.md, marginTop: spacing.md, backgroundColor: colors.white,
+    borderRadius: radius.lg, padding: spacing.lg, ...shadow.sm,
+  },
   clubCardContent: { flexDirection: 'row', justifyContent: 'space-between', padding: spacing.lg },
   clubInfo: { flex: 1 },
   clubName: { fontSize: fontSize.lg - 1, fontWeight: '700', color: colors.textPrimary },

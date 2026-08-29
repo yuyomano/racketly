@@ -8,7 +8,8 @@ import { generateTokenPair, verifyAndRotateRefreshToken, revokeRefreshToken } fr
 import { authenticate } from '../middleware/auth.middleware'
 import { AppError } from '../middleware/error.middleware'
 import { validate, registerSchema, loginSchema, refreshSchema } from '../validators/auth.validators'
-import { INITIAL_ELO, encryptPII, decryptPII } from '@racketly/utils'
+import { INITIAL_ELO } from '@racketly/utils'
+import { encryptPII, decryptPII } from '@racketly/utils/pii-crypto'
 
 const router = Router()
 const prisma = new PrismaClient()

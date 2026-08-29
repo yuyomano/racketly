@@ -1,7 +1,5 @@
 import { PlayerCategory } from '@racketly/shared-types'
 
-export { encryptPII, decryptPII } from './pii-crypto'
-
 // ─── ELO Calculator ──────────────────────────────────────────────────────────
 
 const ELO_K_FACTOR = 32

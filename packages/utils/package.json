@@ -9,6 +9,16 @@
       "import": "./dist/index.js",
       "require": "./dist/index.js",
       "types": "./dist/index.d.ts"
+    },
+    "./pii-crypto": {
+      "import": "./dist/pii-crypto.js",
+      "require": "./dist/pii-crypto.js",
+      "types": "./dist/pii-crypto.d.ts"
+    }
+  },
+  "typesVersions": {
+    "*": {
+      "pii-crypto": ["./dist/pii-crypto.d.ts"]
     }
   },
   "scripts": {

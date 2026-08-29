@@ -35,6 +35,9 @@ const ALLOWED_ORIGINS = (process.env.ALLOWED_ORIGINS || '')
   .filter(Boolean)
   .concat([
     'http://localhost:3000',
+    'http://localhost:3010',  // Next.js web (dashboard + jugadores) — Next reenvía el
+                               // header Origin original al hacer proxy vía rewrites,
+                               // así que el gateway lo ve aunque sea same-origin en el navegador
     'http://localhost:8081',   // Expo Metro
     'http://localhost:19006',  // Expo web
     'http://10.0.2.2:8081',   // Android emulator Metro

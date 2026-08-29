@@ -3,7 +3,7 @@ import { PrismaClient } from '@prisma/client'
 import { AppError } from '../middleware/error.middleware'
 import { countMembershipSessionsForDate } from '../services/membership-sessions.service'
 import { recordPayment, resolvePaymentMethod } from '../services/payment-ledger.service'
-import { decryptPII } from '@racketly/utils'
+import { decryptPII } from '@racketly/utils/pii-crypto'
 
 const router = Router()
 const prisma = new PrismaClient()

@@ -12,6 +12,9 @@ export async function POST(req: Request) {
     const data = await res.json()
     return NextResponse.json(data, { status: res.status })
   } catch {
-    return NextResponse.json({ success: false, error: 'No se pudo crear la reserva' }, { status: 502 })
+    return NextResponse.json(
+      { success: false, error: 'No se pudo crear la reserva' },
+      { status: 502 }
+    )
   }
 }

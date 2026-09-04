@@ -2,12 +2,25 @@ import { Router, Request, Response, NextFunction } from 'express'
 import { PrismaClient, Prisma } from '@prisma/client'
 import { AppError } from '../middleware/error.middleware'
 import {
-  distanceKm, matchFormatDurationMinutes, resolveMatchFormat, knockoutStageKeyForRound,
-  KNOCKOUT_STAGE_KEYS, MATCH_FORMAT_LABELS, type MatchFormatOverrides,
-  matchFormatMaxSets, pairKey, PairWorkloadTracker, findWorkloadEligibleStart,
+  distanceKm,
+  matchFormatDurationMinutes,
+  resolveMatchFormat,
+  knockoutStageKeyForRound,
+  KNOCKOUT_STAGE_KEYS,
+  MATCH_FORMAT_LABELS,
+  type MatchFormatOverrides,
+  matchFormatMaxSets,
+  pairKey,
+  PairWorkloadTracker,
+  findWorkloadEligibleStart,
 } from '@racketly/utils'
 import { computeGroupStandings, type GroupStanding } from '../lib/group-standings'
-import { createStripePaymentIntent, retrieveStripePaymentIntent, isStripeConfigured, recordPayment } from '../services/payment.service'
+import {
+  createStripePaymentIntent,
+  retrieveStripePaymentIntent,
+  isStripeConfigured,
+  recordPayment,
+} from '../services/payment.service'
 
 // Filtra matchFormatOverrides a solo claves/valores válidos (octavos/cuartos/semifinal/final
 // con una modalidad de juego reconocida); ignora silenciosamente el resto.
@@ -30,13 +43,27 @@ const prisma = new PrismaClient()
 // GET /api/tournaments
 router.get('/', async (req: Request, res: Response, next: NextFunction) => {
   try {
-    const { clubId, sport, city, country, status, category, page = '1', limit = '20', lat, lng, radius = '30', userId } = req.query
+    const {
+      clubId,
+      sport,
+      city,
+      country,
+      status,
+      category,
+      page = '1',
+      limit = '20',
+      lat,
+      lng,
+      radius = '30',
+      userId,
+    } = req.query
     const where: Record<string, unknown> = {}
     if (clubId) where.clubId = clubId
     if (sport) where.sport = sport
     if (status) where.status = status
     if (category) where.category = category
-    if (city || country) where.location = { contains: (city || country) as string, mode: 'insensitive' }
+    if (city || country)
+      where.location = { contains: (city || country) as string, mode: 'insensitive' }
 
     // Modo "descubrimiento" (app móvil, sin clubId explícito): mostrar solo torneos de clubes
     // cercanos y/o donde el usuario jugó (reservó) en los últimos 3 meses — mismo criterio que
@@ -48,9 +75,13 @@ router.get('/', async (req: Request, res: Response, next: NextFunction) => {
         const userLat = parseFloat(lat as string)
         const userLng = parseFloat(lng as string)
         const maxRadius = parseFloat(radius as string)
-        const clubs = await prisma.club.findMany({ where: { isActive: true }, select: { id: true, latitude: true, longitude: true } })
+        const clubs = await prisma.club.findMany({
+          where: { isActive: true },
+          select: { id: true, latitude: true, longitude: true },
+        })
         for (const c of clubs) {
-          if (distanceKm(userLat, userLng, c.latitude, c.longitude) <= maxRadius) allowedClubIds.add(c.id)
+          if (distanceKm(userLat, userLng, c.latitude, c.longitude) <= maxRadius)
+            allowedClubIds.add(c.id)
         }
       }
 
@@ -78,8 +109,14 @@ router.get('/', async (req: Request, res: Response, next: NextFunction) => {
       prisma.tournament.count({ where }),
     ])
 
-    return res.json({ success: true, data: tournaments, pagination: { page: Number(page), pageSize: Number(limit), total } })
-  } catch (err) { return next(err) }
+    return res.json({
+      success: true,
+      data: tournaments,
+      pagination: { page: Number(page), pageSize: Number(limit), total },
+    })
+  } catch (err) {
+    return next(err)
+  }
 })
 
 // GET /api/tournaments/:id
@@ -88,7 +125,9 @@ router.get('/:id', async (req: Request, res: Response, next: NextFunction) => {
     const tournament = await prisma.tournament.findUnique({
       where: { id: req.params.id },
       include: {
-        participants: { include: { player: { select: { displayName: true, avatarUrl: true, category: true } } } },
+        participants: {
+          include: { player: { select: { displayName: true, avatarUrl: true, category: true } } },
+        },
         matches: { orderBy: [{ round: 'asc' }, { id: 'asc' }] },
         _count: { select: { participants: true } },
         club: { select: { name: true, address: true, city: true } },
@@ -103,114 +142,179 @@ router.get('/:id', async (req: Request, res: Response, next: NextFunction) => {
       confirmed: !requiresPair || (!!p.partnerId && playerIdSet.has(p.partnerId)),
     }))
 
-    return res.json({ success: true, data: { ...tournament, participants: participantsWithStatus } })
-  } catch (err) { return next(err) }
+    return res.json({
+      success: true,
+      data: { ...tournament, participants: participantsWithStatus },
+    })
+  } catch (err) {
+    return next(err)
+  }
 })
 
 // GET /api/tournaments/participants/user/:userId — historial y torneos activos de un jugador, con su pareja
-router.get('/participants/user/:userId', async (req: Request, res: Response, next: NextFunction) => {
-  try {
-    const { userId } = req.params
+router.get(
+  '/participants/user/:userId',
+  async (req: Request, res: Response, next: NextFunction) => {
+    try {
+      const { userId } = req.params
 
-    const participations = await prisma.tournamentParticipant.findMany({
-      where: { playerId: userId },
-      include: { tournament: { include: { club: { select: { name: true } } } } },
-      orderBy: { registeredAt: 'desc' },
-    })
+      const participations = await prisma.tournamentParticipant.findMany({
+        where: { playerId: userId },
+        include: { tournament: { include: { club: { select: { name: true } } } } },
+        orderBy: { registeredAt: 'desc' },
+      })
 
-    const partnerIds = [...new Set(participations.map((p) => p.partnerId).filter((id): id is string => !!id))]
-    const partnerProfiles = partnerIds.length
-      ? await prisma.playerProfile.findMany({ where: { userId: { in: partnerIds } }, select: { userId: true, displayName: true } })
-      : []
-    const partnerNameById = new Map(partnerProfiles.map((p) => [p.userId, p.displayName]))
+      const partnerIds = [
+        ...new Set(participations.map((p) => p.partnerId).filter((id): id is string => !!id)),
+      ]
+      const partnerProfiles = partnerIds.length
+        ? await prisma.playerProfile.findMany({
+            where: { userId: { in: partnerIds } },
+            select: { userId: true, displayName: true },
+          })
+        : []
+      const partnerNameById = new Map(partnerProfiles.map((p) => [p.userId, p.displayName]))
 
-    const data = participations.map((p) => ({
-      id: p.id,
-      tournamentId: p.tournamentId,
-      tournamentName: p.tournament.name,
-      sport: p.tournament.sport,
-      status: p.tournament.status,
-      clubName: p.tournament.club?.name ?? null,
-      location: p.tournament.location,
-      category: p.tournament.category,
-      startDate: p.tournament.startDate,
-      endDate: p.tournament.endDate,
-      partnerId: p.partnerId,
-      partnerName: p.partnerId ? partnerNameById.get(p.partnerId) ?? null : null,
-      paymentStatus: p.paymentStatus,
-      isActive: p.tournament.status === 'open' || p.tournament.status === 'in_progress',
-    }))
+      const data = participations.map((p) => ({
+        id: p.id,
+        tournamentId: p.tournamentId,
+        tournamentName: p.tournament.name,
+        sport: p.tournament.sport,
+        status: p.tournament.status,
+        clubName: p.tournament.club?.name ?? null,
+        location: p.tournament.location,
+        category: p.tournament.category,
+        startDate: p.tournament.startDate,
+        endDate: p.tournament.endDate,
+        partnerId: p.partnerId,
+        partnerName: p.partnerId ? (partnerNameById.get(p.partnerId) ?? null) : null,
+        paymentStatus: p.paymentStatus,
+        isActive: p.tournament.status === 'open' || p.tournament.status === 'in_progress',
+      }))
 
-    return res.json({ success: true, data })
-  } catch (err) { return next(err) }
-})
+      return res.json({ success: true, data })
+    } catch (err) {
+      return next(err)
+    }
+  }
+)
 
 // POST /api/tournaments — crear torneo
 router.post('/', async (req: Request, res: Response, next: NextFunction) => {
   try {
     const {
-      clubId, eventId, organizerId, name, description, sport, format, matchFormat, matchFormatOverrides, minRestMinutes, type, genderCategory,
-      category, maxParticipants, entryFee, currency,
-      prizePool, prizeInfo, rules, location,
-      registrationStart, registrationEnd, startDate, endDate,
-      sponsorId, sponsorLogoUrl,
+      clubId,
+      eventId,
+      organizerId,
+      name,
+      description,
+      sport,
+      format,
+      matchFormat,
+      matchFormatOverrides,
+      minRestMinutes,
+      type,
+      genderCategory,
+      category,
+      maxParticipants,
+      entryFee,
+      currency,
+      prizePool,
+      prizeInfo,
+      rules,
+      location,
+      registrationStart,
+      registrationEnd,
+      startDate,
+      endDate,
+      sponsorId,
+      sponsorLogoUrl,
     } = req.body
 
     // prizePool (legacy field from frontend) → prizeInfo string
-    const resolvedPrizeInfo = prizeInfo
-      ?? (prizePool ? `${currency ?? 'USD'} ${Number(prizePool).toLocaleString()}` : null)
+    const resolvedPrizeInfo =
+      prizeInfo ?? (prizePool ? `${currency ?? 'USD'} ${Number(prizePool).toLocaleString()}` : null)
 
     if (eventId) {
-      const event = await prisma.tournamentEvent.findUnique({ where: { id: eventId }, select: { clubId: true } })
+      const event = await prisma.tournamentEvent.findUnique({
+        where: { id: eventId },
+        select: { clubId: true },
+      })
       if (!event) throw new AppError('Evento no encontrado', 404)
-      if (clubId && event.clubId !== clubId) throw new AppError('El torneo debe pertenecer al mismo club que el evento', 400)
+      if (clubId && event.clubId !== clubId)
+        throw new AppError('El torneo debe pertenecer al mismo club que el evento', 400)
     }
 
     const tournament = await prisma.tournament.create({
       data: {
-        ...(clubId             && { clubId }),
-        ...(eventId            && { eventId }),
+        ...(clubId && { clubId }),
+        ...(eventId && { eventId }),
         organizerId,
         name,
-        ...(description        && { description }),
+        ...(description && { description }),
         sport,
-        format:            format ?? 'round_robin',
-        matchFormat:       matchFormat ?? 'best_of_3_full',
+        format: format ?? 'round_robin',
+        matchFormat: matchFormat ?? 'best_of_3_full',
         matchFormatOverrides: sanitizeMatchFormatOverrides(matchFormatOverrides) ?? undefined,
-        minRestMinutes:    Number(minRestMinutes ?? 30),
-        ...(type               && { type }),
-        genderCategory:    genderCategory ?? 'mixto',
+        minRestMinutes: Number(minRestMinutes ?? 30),
+        ...(type && { type }),
+        genderCategory: genderCategory ?? 'mixto',
         category,
-        maxParticipants:   Number(maxParticipants ?? 16),
-        entryFee:          Number(entryFee ?? 0),
-        currency:          currency ?? 'USD',
-        ...(resolvedPrizeInfo  && { prizeInfo: resolvedPrizeInfo }),
-        ...(rules              && { rules }),
+        maxParticipants: Number(maxParticipants ?? 16),
+        entryFee: Number(entryFee ?? 0),
+        currency: currency ?? 'USD',
+        ...(resolvedPrizeInfo && { prizeInfo: resolvedPrizeInfo }),
+        ...(rules && { rules }),
         location,
         registrationStart: new Date(registrationStart),
-        registrationEnd:   new Date(registrationEnd),
-        startDate:         new Date(startDate),
-        endDate:           new Date(endDate ?? startDate),
-        ...(sponsorId          && { sponsorId }),
-        ...(sponsorLogoUrl     && { sponsorLogoUrl }),
+        registrationEnd: new Date(registrationEnd),
+        startDate: new Date(startDate),
+        endDate: new Date(endDate ?? startDate),
+        ...(sponsorId && { sponsorId }),
+        ...(sponsorLogoUrl && { sponsorLogoUrl }),
         status: 'draft',
       },
     })
     return res.status(201).json({ success: true, data: tournament })
-  } catch (err) { return next(err) }
+  } catch (err) {
+    return next(err)
+  }
 })
 
 // PATCH /api/tournaments/:id — editar torneo
 router.patch('/:id', async (req: Request, res: Response, next: NextFunction) => {
   try {
     const {
-      name, description, sport, format, matchFormat, matchFormatOverrides, minRestMinutes, type, genderCategory, category,
-      maxParticipants, entryFee, currency, prizePool, prizeInfo,
-      rules, location, registrationStart, registrationEnd, startDate, endDate, eventId,
+      name,
+      description,
+      sport,
+      format,
+      matchFormat,
+      matchFormatOverrides,
+      minRestMinutes,
+      type,
+      genderCategory,
+      category,
+      maxParticipants,
+      entryFee,
+      currency,
+      prizePool,
+      prizeInfo,
+      rules,
+      location,
+      registrationStart,
+      registrationEnd,
+      startDate,
+      endDate,
+      eventId,
     } = req.body
 
-    const resolvedPrizeInfo = prizeInfo !== undefined ? prizeInfo
-      : (prizePool !== undefined ? `${currency ?? 'USD'} ${Number(prizePool).toLocaleString()}` : undefined)
+    const resolvedPrizeInfo =
+      prizeInfo !== undefined
+        ? prizeInfo
+        : prizePool !== undefined
+          ? `${currency ?? 'USD'} ${Number(prizePool).toLocaleString()}`
+          : undefined
 
     if (eventId !== undefined && eventId !== null) {
       const [tournament, event] = await Promise.all([
@@ -218,36 +322,44 @@ router.patch('/:id', async (req: Request, res: Response, next: NextFunction) => 
         prisma.tournamentEvent.findUnique({ where: { id: eventId }, select: { clubId: true } }),
       ])
       if (!event) throw new AppError('Evento no encontrado', 404)
-      if (tournament?.clubId && tournament.clubId !== event.clubId) throw new AppError('El torneo debe pertenecer al mismo club que el evento', 400)
+      if (tournament?.clubId && tournament.clubId !== event.clubId)
+        throw new AppError('El torneo debe pertenecer al mismo club que el evento', 400)
     }
 
     const data: Record<string, unknown> = {}
-    if (eventId           !== undefined) data.eventId           = eventId
-    if (name              !== undefined) data.name              = name
-    if (description       !== undefined) data.description       = description || null
-    if (sport             !== undefined) data.sport             = sport
-    if (format            !== undefined) data.format            = format
-    if (matchFormat       !== undefined) data.matchFormat       = matchFormat
-    if (matchFormatOverrides !== undefined) data.matchFormatOverrides = sanitizeMatchFormatOverrides(matchFormatOverrides)
-    if (minRestMinutes    !== undefined) data.minRestMinutes    = Number(minRestMinutes)
-    if (type              !== undefined) data.type              = type
-    if (genderCategory    !== undefined) data.genderCategory    = genderCategory
-    if (category          !== undefined) data.category          = category
-    if (maxParticipants   !== undefined) data.maxParticipants   = Number(maxParticipants)
-    if (entryFee          !== undefined) data.entryFee          = Number(entryFee)
-    if (currency          !== undefined) data.currency          = currency
-    if (resolvedPrizeInfo !== undefined) data.prizeInfo         = resolvedPrizeInfo || null
-    if (rules             !== undefined) data.rules             = rules || null
-    if (location          !== undefined) data.location          = location
+    if (eventId !== undefined) data.eventId = eventId
+    if (name !== undefined) data.name = name
+    if (description !== undefined) data.description = description || null
+    if (sport !== undefined) data.sport = sport
+    if (format !== undefined) data.format = format
+    if (matchFormat !== undefined) data.matchFormat = matchFormat
+    if (matchFormatOverrides !== undefined)
+      data.matchFormatOverrides = sanitizeMatchFormatOverrides(matchFormatOverrides)
+    if (minRestMinutes !== undefined) data.minRestMinutes = Number(minRestMinutes)
+    if (type !== undefined) data.type = type
+    if (genderCategory !== undefined) data.genderCategory = genderCategory
+    if (category !== undefined) data.category = category
+    if (maxParticipants !== undefined) data.maxParticipants = Number(maxParticipants)
+    if (entryFee !== undefined) data.entryFee = Number(entryFee)
+    if (currency !== undefined) data.currency = currency
+    if (resolvedPrizeInfo !== undefined) data.prizeInfo = resolvedPrizeInfo || null
+    if (rules !== undefined) data.rules = rules || null
+    if (location !== undefined) data.location = location
     if (registrationStart !== undefined) data.registrationStart = new Date(registrationStart)
-    if (registrationEnd   !== undefined) data.registrationEnd   = new Date(registrationEnd)
-    if (startDate         !== undefined) data.startDate         = new Date(startDate)
-    if (endDate           !== undefined) data.endDate           = new Date(endDate)
+    if (registrationEnd !== undefined) data.registrationEnd = new Date(registrationEnd)
+    if (startDate !== undefined) data.startDate = new Date(startDate)
+    if (endDate !== undefined) data.endDate = new Date(endDate)
 
     if (data.maxParticipants !== undefined) {
-      const current = await prisma.tournament.findUnique({ where: { id: req.params.id }, select: { currentParticipants: true } })
+      const current = await prisma.tournament.findUnique({
+        where: { id: req.params.id },
+        select: { currentParticipants: true },
+      })
       if (current && (data.maxParticipants as number) < current.currentParticipants) {
-        throw new AppError(`No puedes reducir el cupo por debajo de los ${current.currentParticipants} jugadores ya inscritos`, 400)
+        throw new AppError(
+          `No puedes reducir el cupo por debajo de los ${current.currentParticipants} jugadores ya inscritos`,
+          400
+        )
       }
     }
 
@@ -257,7 +369,9 @@ router.patch('/:id', async (req: Request, res: Response, next: NextFunction) => 
       include: { club: { select: { name: true } } },
     })
     return res.json({ success: true, data: tournament })
-  } catch (err) { return next(err) }
+  } catch (err) {
+    return next(err)
+  }
 })
 
 // PATCH /api/tournaments/:id/reserved-slots — reservar/liberar cupos de parejas (no disponibles para inscripción pública)
@@ -265,14 +379,18 @@ router.patch('/:id/reserved-slots', async (req: Request, res: Response, next: Ne
   try {
     const { reservedPairs } = req.body
     const n = Number(reservedPairs)
-    if (!Number.isInteger(n) || n < 0) throw new AppError('Número de parejas reservadas inválido', 400)
+    if (!Number.isInteger(n) || n < 0)
+      throw new AppError('Número de parejas reservadas inválido', 400)
 
     const tournament = await prisma.tournament.findUnique({ where: { id: req.params.id } })
     if (!tournament) throw new AppError('Torneo no encontrado', 404)
 
     const reservedSlots = n * 2
     if (reservedSlots + tournament.currentParticipants > tournament.maxParticipants) {
-      throw new AppError('No hay suficiente cupo disponible para reservar esa cantidad de parejas', 400)
+      throw new AppError(
+        'No hay suficiente cupo disponible para reservar esa cantidad de parejas',
+        400
+      )
     }
 
     const updated = await prisma.tournament.update({
@@ -280,7 +398,9 @@ router.patch('/:id/reserved-slots', async (req: Request, res: Response, next: Ne
       data: { reservedSlots },
     })
     return res.json({ success: true, data: updated })
-  } catch (err) { return next(err) }
+  } catch (err) {
+    return next(err)
+  }
 })
 
 // ─── Generación de partidos ───────────────────────────────────────────────────
@@ -294,8 +414,8 @@ function nextPow2(n: number): number {
 function shuffle<T>(arr: T[]): T[] {
   const a = [...arr]
   for (let i = a.length - 1; i > 0; i--) {
-    const j = Math.floor(Math.random() * (i + 1));
-    [a[i], a[j]] = [a[j], a[i]]
+    const j = Math.floor(Math.random() * (i + 1))
+    ;[a[i], a[j]] = [a[j], a[i]]
   }
   return a
 }
@@ -309,9 +429,9 @@ async function generateEliminationMatches(tournamentId: string, playerIds: strin
 // significa bye. Se usa tanto para elimination directa (orden aleatorio) como para
 // el knockout post-grupos (seeding real, con posibles byes intercalados).
 async function generateKnockoutMatches(tournamentId: string, seeded: (string | null)[]) {
-  const size    = nextPow2(seeded.length)
-  const padded  = [...seeded, ...Array(size - seeded.length).fill(null)] // null = bye
-  const rounds  = Math.log2(size)
+  const size = nextPow2(seeded.length)
+  const padded = [...seeded, ...Array(size - seeded.length).fill(null)] // null = bye
+  const rounds = Math.log2(size)
   const creates: Prisma.MatchCreateManyInput[] = []
 
   // Round 1 — real matchups; byes get walkover with the real player advancing
@@ -321,12 +441,12 @@ async function generateKnockoutMatches(tournamentId: string, seeded: (string | n
     const isBye = !p1 || !p2
     creates.push({
       tournamentId,
-      round:     1,
-      stage:     'knockout',
+      round: 1,
+      stage: 'knockout',
       player1Id: p1 ?? null,
       player2Id: p2 ?? null,
-      status:    isBye ? 'walkover' : 'scheduled',
-      winnerId:  isBye ? (p1 ?? p2) : null,
+      status: isBye ? 'walkover' : 'scheduled',
+      winnerId: isBye ? (p1 ?? p2) : null,
     })
   }
 
@@ -342,14 +462,16 @@ async function generateKnockoutMatches(tournamentId: string, seeded: (string | n
 
   // Los byes ya quedan con winnerId al crearse, pero el placeholder de la ronda
   // siguiente sigue vacío — propagarlos igual que un resultado normal.
-  const byeMatches = await prisma.match.findMany({ where: { tournamentId, stage: 'knockout', round: 1, status: 'walkover' } })
+  const byeMatches = await prisma.match.findMany({
+    where: { tournamentId, stage: 'knockout', round: 1, status: 'walkover' },
+  })
   for (const m of byeMatches) await propagateKnockoutWinner(tournamentId, m.id)
 }
 
 // Reparte entrantes en grupos balanceados (objetivo: 4 por grupo) y genera un
 // round-robin de partidos dentro de cada grupo, marcados con stage='group'.
 async function generateGroupStageMatches(tournamentId: string, playerIds: string[]) {
-  const shuffled  = shuffle(playerIds)
+  const shuffled = shuffle(playerIds)
   const numGroups = Math.max(1, Math.round(shuffled.length / 4))
   const groups: string[][] = Array.from({ length: numGroups }, () => [])
   shuffled.forEach((id, i) => groups[i % numGroups].push(id))
@@ -364,8 +486,12 @@ async function generateGroupStageMatches(tournamentId: string, playerIds: string
   })
   const updates = participants
     .map((p) => {
-      const gn = groupByPlayerId.get(p.playerId) ?? (p.partnerId ? groupByPlayerId.get(p.partnerId) : undefined)
-      return gn ? prisma.tournamentParticipant.update({ where: { id: p.id }, data: { groupNumber: gn } }) : null
+      const gn =
+        groupByPlayerId.get(p.playerId) ??
+        (p.partnerId ? groupByPlayerId.get(p.partnerId) : undefined)
+      return gn
+        ? prisma.tournamentParticipant.update({ where: { id: p.id }, data: { groupNumber: gn } })
+        : null
     })
     .filter((u): u is NonNullable<typeof u> => !!u)
   if (updates.length) await prisma.$transaction(updates)
@@ -382,7 +508,15 @@ async function generateGroupStageMatches(tournamentId: string, playerIds: string
         const p1 = gp[i]
         const p2 = gp[n - 1 - i]
         if (p1 !== 'BYE' && p2 !== 'BYE') {
-          creates.push({ tournamentId, round: round + 1, stage: 'group', groupNumber, player1Id: p1, player2Id: p2, status: 'scheduled' })
+          creates.push({
+            tournamentId,
+            round: round + 1,
+            stage: 'group',
+            groupNumber,
+            player1Id: p1,
+            player2Id: p2,
+            status: 'scheduled',
+          })
         }
       }
       const last = gp.pop()!
@@ -396,8 +530,8 @@ async function generateGroupStageMatches(tournamentId: string, playerIds: string
 async function generateRoundRobinMatches(tournamentId: string, playerIds: string[]) {
   const players = shuffle(playerIds)
   if (players.length % 2 !== 0) players.push('BYE')
-  const n       = players.length
-  const rounds  = n - 1
+  const n = players.length
+  const rounds = n - 1
   const creates: Prisma.MatchCreateManyInput[] = []
 
   for (let round = 0; round < rounds; round++) {
@@ -405,7 +539,13 @@ async function generateRoundRobinMatches(tournamentId: string, playerIds: string
       const p1 = players[i]
       const p2 = players[n - 1 - i]
       if (p1 !== 'BYE' && p2 !== 'BYE') {
-        creates.push({ tournamentId, round: round + 1, player1Id: p1, player2Id: p2, status: 'scheduled' })
+        creates.push({
+          tournamentId,
+          round: round + 1,
+          player1Id: p1,
+          player2Id: p2,
+          status: 'scheduled',
+        })
       }
     }
     // Rotate: keep players[0] fixed, rotate the rest clockwise
@@ -477,7 +617,9 @@ router.patch('/:id/status', async (req: Request, res: Response, next: NextFuncti
     }
 
     return res.json({ success: true, data: tournament })
-  } catch (err) { return next(err) }
+  } catch (err) {
+    return next(err)
+  }
 })
 
 // Resuelve method con default 'cash' — igual criterio que booking-service: los cobros hechos
@@ -491,9 +633,15 @@ function resolvePaymentMethodDefaultCash(input: unknown): 'cash' | 'card' {
 // A diferencia de bookings, hoy no hay descuento de membresía en torneos — el entryFee del
 // torneo es el mismo para todos; socio/no socio es solo informativo en Caja.
 function resolveParticipantCharge(entryFee: number, status: string, paymentMethod: unknown) {
-  if (status === 'courtesy') return { amountOwed: entryFee, amountPaid: 0, paymentMethod: null as ('cash' | 'card' | null) }
-  if (status === 'paid') return { amountOwed: entryFee, amountPaid: entryFee, paymentMethod: resolvePaymentMethodDefaultCash(paymentMethod) }
-  return { amountOwed: entryFee, amountPaid: 0, paymentMethod: null as ('cash' | 'card' | null) }
+  if (status === 'courtesy')
+    return { amountOwed: entryFee, amountPaid: 0, paymentMethod: null as 'cash' | 'card' | null }
+  if (status === 'paid')
+    return {
+      amountOwed: entryFee,
+      amountPaid: entryFee,
+      paymentMethod: resolvePaymentMethodDefaultCash(paymentMethod),
+    }
+  return { amountOwed: entryFee, amountPaid: 0, paymentMethod: null as 'cash' | 'card' | null }
 }
 
 // POST /api/tournaments/:id/register — inscribirse (individual, o en pareja si el torneo lo requiere)
@@ -502,8 +650,10 @@ router.post('/:id/register', async (req: Request, res: Response, next: NextFunct
     const { playerId, partnerId, teamName, paymentStatus, courtesyReason, paymentMethod } = req.body
 
     const status = paymentStatus ?? 'pending'
-    if (!['pending', 'paid', 'courtesy'].includes(status)) throw new AppError('Estado de pago inválido', 400)
-    if (status === 'courtesy' && !courtesyReason?.trim()) throw new AppError('La cortesía requiere una razón', 400)
+    if (!['pending', 'paid', 'courtesy'].includes(status))
+      throw new AppError('Estado de pago inválido', 400)
+    if (status === 'courtesy' && !courtesyReason?.trim())
+      throw new AppError('La cortesía requiere una razón', 400)
 
     // Todo el chequeo de cupo + creación va dentro de una transacción que toma un lock de fila
     // sobre el Tournament (SELECT ... FOR UPDATE) antes de leer currentParticipants. Sin esto, dos
@@ -530,16 +680,25 @@ router.post('/:id/register', async (req: Request, res: Response, next: NextFunct
 
       // Sin pareja: inscripción individual (queda pendiente de completar si el torneo requiere pareja)
       if (!partnerId) {
-        if (tournament.currentParticipants >= availableCapacity) throw new AppError('Torneo lleno', 400)
+        if (tournament.currentParticipants >= availableCapacity)
+          throw new AppError('Torneo lleno', 400)
         const participant = await tx.tournamentParticipant.create({
           data: {
-            tournamentId: req.params.id, playerId, teamName, paymentStatus: status,
+            tournamentId: req.params.id,
+            playerId,
+            teamName,
+            paymentStatus: status,
             courtesyReason: status === 'courtesy' ? courtesyReason.trim() : null,
-            amountOwed: charge.amountOwed, amountPaid: charge.amountPaid,
-            paymentMethod: charge.paymentMethod, paidAt: charge.amountPaid > 0 ? new Date() : null,
+            amountOwed: charge.amountOwed,
+            amountPaid: charge.amountPaid,
+            paymentMethod: charge.paymentMethod,
+            paidAt: charge.amountPaid > 0 ? new Date() : null,
           },
         })
-        await tx.tournament.update({ where: { id: req.params.id }, data: { currentParticipants: { increment: 1 } } })
+        await tx.tournament.update({
+          where: { id: req.params.id },
+          data: { currentParticipants: { increment: 1 } },
+        })
         return { participant, confirmed: !requiresPair, tournament, charge }
       }
 
@@ -551,34 +710,64 @@ router.post('/:id/register', async (req: Request, res: Response, next: NextFunct
 
       if (partnerExisting) {
         // Completar la pareja incompleta del compañero
-        if (tournament.currentParticipants >= availableCapacity) throw new AppError('Torneo lleno', 400)
-        await tx.tournamentParticipant.update({ where: { id: partnerExisting.id }, data: { partnerId: playerId } })
+        if (tournament.currentParticipants >= availableCapacity)
+          throw new AppError('Torneo lleno', 400)
+        await tx.tournamentParticipant.update({
+          where: { id: partnerExisting.id },
+          data: { partnerId: playerId },
+        })
         const participant = await tx.tournamentParticipant.create({
           data: {
-            tournamentId: req.params.id, playerId, partnerId, teamName, paymentStatus: status,
+            tournamentId: req.params.id,
+            playerId,
+            partnerId,
+            teamName,
+            paymentStatus: status,
             courtesyReason: status === 'courtesy' ? courtesyReason.trim() : null,
-            amountOwed: charge.amountOwed, amountPaid: charge.amountPaid,
-            paymentMethod: charge.paymentMethod, paidAt: charge.amountPaid > 0 ? new Date() : null,
+            amountOwed: charge.amountOwed,
+            amountPaid: charge.amountPaid,
+            paymentMethod: charge.paymentMethod,
+            paidAt: charge.amountPaid > 0 ? new Date() : null,
           },
         })
-        await tx.tournament.update({ where: { id: req.params.id }, data: { currentParticipants: { increment: 1 } } })
+        await tx.tournament.update({
+          where: { id: req.params.id },
+          data: { currentParticipants: { increment: 1 } },
+        })
         return { participant, confirmed: true, tournament, charge }
       }
 
       // Pareja nueva: crear ambos registros de una vez (el compañero queda con su propio cobro pendiente)
-      if (tournament.currentParticipants + 2 > availableCapacity) throw new AppError('Torneo lleno', 400)
+      if (tournament.currentParticipants + 2 > availableCapacity)
+        throw new AppError('Torneo lleno', 400)
       const participant = await tx.tournamentParticipant.create({
         data: {
-          tournamentId: req.params.id, playerId, partnerId, teamName, paymentStatus: status,
+          tournamentId: req.params.id,
+          playerId,
+          partnerId,
+          teamName,
+          paymentStatus: status,
           courtesyReason: status === 'courtesy' ? courtesyReason.trim() : null,
-          amountOwed: charge.amountOwed, amountPaid: charge.amountPaid,
-          paymentMethod: charge.paymentMethod, paidAt: charge.amountPaid > 0 ? new Date() : null,
+          amountOwed: charge.amountOwed,
+          amountPaid: charge.amountPaid,
+          paymentMethod: charge.paymentMethod,
+          paidAt: charge.amountPaid > 0 ? new Date() : null,
         },
       })
       await tx.tournamentParticipant.create({
-        data: { tournamentId: req.params.id, playerId: partnerId, partnerId: playerId, teamName, paymentStatus: 'pending', amountOwed: tournament.entryFee },
+        data: {
+          tournamentId: req.params.id,
+          playerId: partnerId,
+          partnerId: playerId,
+          teamName,
+          paymentStatus: 'pending',
+          amountOwed: tournament.entryFee,
+        },
       })
-      await tx.tournament.update({ where: { id: req.params.id }, data: { currentParticipants: { increment: 2 } } })
+      await tx.tournament.update({
+        where: { id: req.params.id },
+        data: { currentParticipants: { increment: 2 } },
+      })
       return { participant, confirmed: true, tournament, charge }
     })
 
@@ -587,120 +776,183 @@ router.post('/:id/register', async (req: Request, res: Response, next: NextFunct
     if (result.charge.amountPaid > 0 && result.tournament.clubId) {
       const profile = await prisma.playerProfile.findUnique({ where: { userId: playerId } })
       await recordPayment({
-        clubId: result.tournament.clubId, tournamentParticipantId: result.participant.id,
-        playerUserId: playerId, playerName: profile?.displayName,
-        amount: result.charge.amountPaid, currency: result.tournament.currency, method: result.charge.paymentMethod || 'cash',
+        clubId: result.tournament.clubId,
+        tournamentParticipantId: result.participant.id,
+        playerUserId: playerId,
+        playerName: profile?.displayName,
+        amount: result.charge.amountPaid,
+        currency: result.tournament.currency,
+        method: result.charge.paymentMethod || 'cash',
       })
     }
 
-    return res.status(201).json({ success: true, data: { ...result.participant, confirmed: result.confirmed } })
-  } catch (err) { return next(err) }
+    return res
+      .status(201)
+      .json({ success: true, data: { ...result.participant, confirmed: result.confirmed } })
+  } catch (err) {
+    return next(err)
+  }
 })
 
 // POST /api/tournaments/:id/participants/:participantId/pay-intent — el propio jugador paga su
 // inscripción con tarjeta (Stripe). Crea el PaymentIntent por el monto pendiente.
-router.post('/:id/participants/:participantId/pay-intent', async (req: Request, res: Response, next: NextFunction) => {
-  try {
-    const participant = await prisma.tournamentParticipant.findUnique({ where: { id: req.params.participantId } })
-    if (!participant || participant.tournamentId !== req.params.id) throw new AppError('Participante no encontrado', 404)
-    if (participant.paymentStatus !== 'pending') throw new AppError('Esta inscripción ya está resuelta', 400)
+router.post(
+  '/:id/participants/:participantId/pay-intent',
+  async (req: Request, res: Response, next: NextFunction) => {
+    try {
+      const participant = await prisma.tournamentParticipant.findUnique({
+        where: { id: req.params.participantId },
+      })
+      if (!participant || participant.tournamentId !== req.params.id)
+        throw new AppError('Participante no encontrado', 404)
+      if (participant.paymentStatus !== 'pending')
+        throw new AppError('Esta inscripción ya está resuelta', 400)
 
-    const owed = participant.amountOwed - participant.amountPaid
-    if (owed <= 0) throw new AppError('No hay nada pendiente por pagar', 400)
+      const owed = participant.amountOwed - participant.amountPaid
+      if (owed <= 0) throw new AppError('No hay nada pendiente por pagar', 400)
 
-    const tournament = await prisma.tournament.findUnique({ where: { id: req.params.id } })
-    if (!tournament) throw new AppError('Torneo no encontrado', 404)
+      const tournament = await prisma.tournament.findUnique({ where: { id: req.params.id } })
+      if (!tournament) throw new AppError('Torneo no encontrado', 404)
 
-    const paymentData = await createStripePaymentIntent({
-      amount: Math.round(owed * 100),
-      currency: tournament.currency,
-      participantId: participant.id,
-      userId: participant.playerId,
-      description: `Inscripción torneo ${tournament.name}`,
-    })
+      const paymentData = await createStripePaymentIntent({
+        amount: Math.round(owed * 100),
+        currency: tournament.currency,
+        participantId: participant.id,
+        userId: participant.playerId,
+        description: `Inscripción torneo ${tournament.name}`,
+      })
 
-    return res.json({
-      success: true,
-      data: { clientSecret: paymentData.clientSecret, paymentIntentId: paymentData.paymentIntentId, devMode: !!paymentData.devMode, stripeConfigured: isStripeConfigured },
-    })
-  } catch (err) { return next(err) }
-})
+      return res.json({
+        success: true,
+        data: {
+          clientSecret: paymentData.clientSecret,
+          paymentIntentId: paymentData.paymentIntentId,
+          devMode: !!paymentData.devMode,
+          stripeConfigured: isStripeConfigured,
+        },
+      })
+    } catch (err) {
+      return next(err)
+    }
+  }
+)
 
 // POST /api/tournaments/:id/participants/:participantId/confirm — verifica el PaymentIntent con
 // Stripe server-side y marca pagada la inscripción (nunca confiamos en que el cliente diga "ya pagué").
-router.post('/:id/participants/:participantId/confirm', async (req: Request, res: Response, next: NextFunction) => {
-  try {
-    const { paymentIntentId } = req.body
-    if (!paymentIntentId) throw new AppError('Falta paymentIntentId', 400)
+router.post(
+  '/:id/participants/:participantId/confirm',
+  async (req: Request, res: Response, next: NextFunction) => {
+    try {
+      const { paymentIntentId } = req.body
+      if (!paymentIntentId) throw new AppError('Falta paymentIntentId', 400)
 
-    const participant = await prisma.tournamentParticipant.findUnique({ where: { id: req.params.participantId } })
-    if (!participant || participant.tournamentId !== req.params.id) throw new AppError('Participante no encontrado', 404)
-    if (participant.paymentStatus === 'paid') return res.json({ success: true, data: { alreadyPaid: true } })
-    if (participant.paymentStatus !== 'pending') throw new AppError('Esta inscripción ya está resuelta', 400)
-
-    const intent = await retrieveStripePaymentIntent(paymentIntentId)
-    if (intent.status !== 'succeeded') throw new AppError('El pago aún no se completó', 400)
-
-    const tournament = await prisma.tournament.findUnique({ where: { id: req.params.id } })
-    if (!tournament) throw new AppError('Torneo no encontrado', 404)
-
-    const owed = participant.amountOwed - participant.amountPaid
-    const updated = await prisma.tournamentParticipant.update({
-      where: { id: participant.id },
-      data: { paymentStatus: 'paid', amountPaid: participant.amountOwed, paymentMethod: 'card', paidAt: new Date() },
-    })
-
-    if (owed > 0 && tournament.clubId) {
-      const profile = await prisma.playerProfile.findUnique({ where: { userId: participant.playerId } })
-      await recordPayment({
-        clubId: tournament.clubId, tournamentParticipantId: participant.id,
-        playerUserId: participant.playerId, playerName: profile?.displayName,
-        amount: owed, currency: tournament.currency, method: 'card',
+      const participant = await prisma.tournamentParticipant.findUnique({
+        where: { id: req.params.participantId },
       })
-    }
+      if (!participant || participant.tournamentId !== req.params.id)
+        throw new AppError('Participante no encontrado', 404)
+      if (participant.paymentStatus === 'paid')
+        return res.json({ success: true, data: { alreadyPaid: true } })
+      if (participant.paymentStatus !== 'pending')
+        throw new AppError('Esta inscripción ya está resuelta', 400)
 
-    return res.json({ success: true, data: updated })
-  } catch (err) { return next(err) }
-})
+      const intent = await retrieveStripePaymentIntent(paymentIntentId)
+      if (intent.status !== 'succeeded') throw new AppError('El pago aún no se completó', 400)
+
+      const tournament = await prisma.tournament.findUnique({ where: { id: req.params.id } })
+      if (!tournament) throw new AppError('Torneo no encontrado', 404)
+
+      const owed = participant.amountOwed - participant.amountPaid
+      const updated = await prisma.tournamentParticipant.update({
+        where: { id: participant.id },
+        data: {
+          paymentStatus: 'paid',
+          amountPaid: participant.amountOwed,
+          paymentMethod: 'card',
+          paidAt: new Date(),
+        },
+      })
+
+      if (owed > 0 && tournament.clubId) {
+        const profile = await prisma.playerProfile.findUnique({
+          where: { userId: participant.playerId },
+        })
+        await recordPayment({
+          clubId: tournament.clubId,
+          tournamentParticipantId: participant.id,
+          playerUserId: participant.playerId,
+          playerName: profile?.displayName,
+          amount: owed,
+          currency: tournament.currency,
+          method: 'card',
+        })
+      }
+
+      return res.json({ success: true, data: updated })
+    } catch (err) {
+      return next(err)
+    }
+  }
+)
 
 // PATCH /api/tournaments/:id/participants/:participantId/payment — pago individual o cortesía
 // (admin, desde el dashboard). Body opcional: { paymentMethod: 'cash' | 'card' } al marcar 'paid'.
-router.patch('/:id/participants/:participantId/payment', async (req: Request, res: Response, next: NextFunction) => {
-  try {
-    const { paymentStatus, courtesyReason, paymentMethod } = req.body
-    if (!['pending', 'paid', 'courtesy'].includes(paymentStatus)) throw new AppError('Estado de pago inválido', 400)
-    if (paymentStatus === 'courtesy' && !courtesyReason?.trim()) throw new AppError('La cortesía requiere una razón', 400)
+router.patch(
+  '/:id/participants/:participantId/payment',
+  async (req: Request, res: Response, next: NextFunction) => {
+    try {
+      const { paymentStatus, courtesyReason, paymentMethod } = req.body
+      if (!['pending', 'paid', 'courtesy'].includes(paymentStatus))
+        throw new AppError('Estado de pago inválido', 400)
+      if (paymentStatus === 'courtesy' && !courtesyReason?.trim())
+        throw new AppError('La cortesía requiere una razón', 400)
 
-    const existing = await prisma.tournamentParticipant.findUnique({ where: { id: req.params.participantId } })
-    if (!existing || existing.tournamentId !== req.params.id) throw new AppError('Participante no encontrado', 404)
+      const existing = await prisma.tournamentParticipant.findUnique({
+        where: { id: req.params.participantId },
+      })
+      if (!existing || existing.tournamentId !== req.params.id)
+        throw new AppError('Participante no encontrado', 404)
 
-    const owed = existing.amountOwed - existing.amountPaid
-    const method = resolvePaymentMethodDefaultCash(paymentMethod)
+      const owed = existing.amountOwed - existing.amountPaid
+      const method = resolvePaymentMethodDefaultCash(paymentMethod)
 
-    const participant = await prisma.tournamentParticipant.update({
-      where: { id: req.params.participantId },
-      data: {
-        paymentStatus,
-        courtesyReason: paymentStatus === 'courtesy' ? courtesyReason.trim() : null,
-        ...(paymentStatus === 'paid' && { amountPaid: existing.amountOwed, paymentMethod: method, paidAt: new Date() }),
-      },
-    })
+      const participant = await prisma.tournamentParticipant.update({
+        where: { id: req.params.participantId },
+        data: {
+          paymentStatus,
+          courtesyReason: paymentStatus === 'courtesy' ? courtesyReason.trim() : null,
+          ...(paymentStatus === 'paid' && {
+            amountPaid: existing.amountOwed,
+            paymentMethod: method,
+            paidAt: new Date(),
+          }),
+        },
+      })
 
-    if (paymentStatus === 'paid' && owed > 0) {
-      const tournament = await prisma.tournament.findUnique({ where: { id: req.params.id } })
-      if (tournament?.clubId) {
-        const profile = await prisma.playerProfile.findUnique({ where: { userId: existing.playerId } })
-        await recordPayment({
-          clubId: tournament.clubId, tournamentParticipantId: participant.id,
-          playerUserId: existing.playerId, playerName: profile?.displayName,
-          amount: owed, currency: tournament.currency, method,
-        })
+      if (paymentStatus === 'paid' && owed > 0) {
+        const tournament = await prisma.tournament.findUnique({ where: { id: req.params.id } })
+        if (tournament?.clubId) {
+          const profile = await prisma.playerProfile.findUnique({
+            where: { userId: existing.playerId },
+          })
+          await recordPayment({
+            clubId: tournament.clubId,
+            tournamentParticipantId: participant.id,
+            playerUserId: existing.playerId,
+            playerName: profile?.displayName,
+            amount: owed,
+            currency: tournament.currency,
+            method,
+          })
+        }
       }
-    }
 
-    return res.json({ success: true, data: participant })
-  } catch (err) { return next(err) }
-})
+      return res.json({ success: true, data: participant })
+    } catch (err) {
+      return next(err)
+    }
+  }
+)
 
 // Coloca al ganador de un partido de eliminación en el slot correspondiente del
 // partido de la ronda siguiente. Sin esto, el cuadro nunca avanza más allá de la
@@ -732,11 +984,11 @@ router.patch('/:id/matches/:matchId', async (req: Request, res: Response, next: 
   try {
     const { score, winnerId, status, scheduledAt, courtId } = req.body
     const data: Record<string, unknown> = {}
-    if (score      !== undefined) data.score      = score
-    if (winnerId   !== undefined) data.winnerId   = winnerId ?? null
-    if (status     !== undefined) data.status     = status
+    if (score !== undefined) data.score = score
+    if (winnerId !== undefined) data.winnerId = winnerId ?? null
+    if (status !== undefined) data.status = status
     if (scheduledAt !== undefined) data.scheduledAt = scheduledAt ? new Date(scheduledAt) : null
-    if (courtId    !== undefined) data.courtId    = courtId ?? null
+    if (courtId !== undefined) data.courtId = courtId ?? null
 
     const match = await prisma.match.update({
       where: { id: req.params.matchId },
@@ -752,27 +1004,41 @@ router.patch('/:id/matches/:matchId', async (req: Request, res: Response, next: 
     }
 
     return res.json({ success: true, data: match })
-  } catch (err) { return next(err) }
+  } catch (err) {
+    return next(err)
+  }
 })
 
 // Adjunta el nombre de la pista (courtName) a partidos que solo tienen courtId — Match
 // no tiene relación Prisma declarada hacia Court (dominios distintos), así que se resuelve
 // con una consulta aparte en vez de un include.
-async function attachCourtNames<T extends { courtId: string | null }>(matches: T[]): Promise<(T & { courtName: string | null })[]> {
+async function attachCourtNames<T extends { courtId: string | null }>(
+  matches: T[]
+): Promise<(T & { courtName: string | null })[]> {
   const courtIds = [...new Set(matches.map((m) => m.courtId).filter((x): x is string => !!x))]
   const courts = courtIds.length
-    ? await prisma.court.findMany({ where: { id: { in: courtIds } }, select: { id: true, name: true } })
+    ? await prisma.court.findMany({
+        where: { id: { in: courtIds } },
+        select: { id: true, name: true },
+      })
     : []
   const nameById = new Map(courts.map((c) => [c.id, c.name]))
-  return matches.map((m) => ({ ...m, courtName: m.courtId ? nameById.get(m.courtId) ?? null : null }))
+  return matches.map((m) => ({
+    ...m,
+    courtName: m.courtId ? (nameById.get(m.courtId) ?? null) : null,
+  }))
 }
 
 // GET /api/tournaments/:id/groups — grupos, standings y partidos de la fase de grupos
 router.get('/:id/groups', async (req: Request, res: Response, next: NextFunction) => {
   try {
-    const tournament = await prisma.tournament.findUnique({ where: { id: req.params.id }, select: { type: true, format: true } })
+    const tournament = await prisma.tournament.findUnique({
+      where: { id: req.params.id },
+      select: { type: true, format: true },
+    })
     if (!tournament) throw new AppError('Torneo no encontrado', 404)
-    if (tournament.format !== 'groups_bracket') throw new AppError('Este torneo no usa formato de grupos', 400)
+    if (tournament.format !== 'groups_bracket')
+      throw new AppError('Este torneo no usa formato de grupos', 400)
 
     const [participants, matches] = await Promise.all([
       prisma.tournamentParticipant.findMany({
@@ -796,18 +1062,30 @@ router.get('/:id/groups', async (req: Request, res: Response, next: NextFunction
 
     const groups = Array.from({ length: numGroups }, (_, i) => {
       const groupNumber = i + 1
-      const entrants = participants.filter((p) => p.groupNumber === groupNumber && p.partnerId && nameByPlayerId.has(p.partnerId) && p.playerId < p.partnerId!)
+      const entrants = participants.filter(
+        (p) =>
+          p.groupNumber === groupNumber &&
+          p.partnerId &&
+          nameByPlayerId.has(p.partnerId) &&
+          p.playerId < p.partnerId!
+      )
       // playerId < partnerId evita listar la pareja dos veces (una fila por cada miembro)
       const groupMatches = matchesWithCourt.filter((m) => m.groupNumber === groupNumber)
-      const groupPlayerIds = [...new Set(groupMatches.flatMap((m) => [m.player1Id, m.player2Id]).filter((x): x is string => !!x))]
-      const standings = computeGroupStandings(groupMatches, groupPlayerIds, groupNumber).map((s) => ({
-        ...s,
-        displayName: nameByPlayerId.get(s.playerId) ?? 'Desconocido',
-        partnerName: (() => {
-          const p = participants.find((pp) => pp.playerId === s.playerId)
-          return p?.partnerId ? nameByPlayerId.get(p.partnerId) ?? null : null
-        })(),
-      }))
+      const groupPlayerIds = [
+        ...new Set(
+          groupMatches.flatMap((m) => [m.player1Id, m.player2Id]).filter((x): x is string => !!x)
+        ),
+      ]
+      const standings = computeGroupStandings(groupMatches, groupPlayerIds, groupNumber).map(
+        (s) => ({
+          ...s,
+          displayName: nameByPlayerId.get(s.playerId) ?? 'Desconocido',
+          partnerName: (() => {
+            const p = participants.find((pp) => pp.playerId === s.playerId)
+            return p?.partnerId ? (nameByPlayerId.get(p.partnerId) ?? null) : null
+          })(),
+        })
+      )
 
       return {
         groupNumber,
@@ -819,12 +1097,16 @@ router.get('/:id/groups', async (req: Request, res: Response, next: NextFunction
         })),
         matches: groupMatches,
         standings,
-        isComplete: groupMatches.length > 0 && groupMatches.every((m) => m.status === 'completed' || m.status === 'walkover'),
+        isComplete:
+          groupMatches.length > 0 &&
+          groupMatches.every((m) => m.status === 'completed' || m.status === 'walkover'),
       }
     })
 
     return res.json({ success: true, data: groups })
-  } catch (err) { return next(err) }
+  } catch (err) {
+    return next(err)
+  }
 })
 
 // Reparte cuántos clasificados directos salen de cada grupo y a qué tamaño de cuadro
@@ -842,8 +1124,8 @@ function knockoutPlan(numGroups: number): { targetSize: number; directPerGroup: 
 function standingStrengthCompare(a: GroupStanding, b: GroupStanding): number {
   return (
     b.points - a.points ||
-    (b.setsWon - b.setsLost) - (a.setsWon - a.setsLost) ||
-    (b.gamesWon - b.gamesLost) - (a.gamesWon - a.gamesLost)
+    b.setsWon - b.setsLost - (a.setsWon - a.setsLost) ||
+    b.gamesWon - b.gamesLost - (a.gamesWon - a.gamesLost)
   )
 }
 
@@ -852,7 +1134,9 @@ function standingStrengthCompare(a: GroupStanding, b: GroupStanding): number {
 // se completa con los mejores "siguientes puestos" de todos los grupos hasta llenar
 // el tamaño de cuadro objetivo (mejores segundos, o mejores terceros si ya se tomaron
 // 2 directos por grupo).
-function rankKnockoutQualifiers(standingsByGroup: GroupStanding[][]): { playerId: string; groupNumber: number }[] {
+function rankKnockoutQualifiers(
+  standingsByGroup: GroupStanding[][]
+): { playerId: string; groupNumber: number }[] {
   const { targetSize, directPerGroup } = knockoutPlan(standingsByGroup.length)
 
   const direct = standingsByGroup.flatMap((standings) => standings.slice(0, directPerGroup))
@@ -894,7 +1178,10 @@ function standardBracketSeedOrder(size: number): number[] {
 // la tabla). Este paso recorre los partidos de ronda 1 y, ante un cruce del mismo grupo,
 // intercambia con el próximo jugador del cuadro que no genere otro conflicto (ni con su
 // rival actual ni con el nuevo rival que le tocaría a quien se desplaza).
-function resolveGroupConflicts(seeded: (string | null)[], groupByPlayer: Map<string, number>): (string | null)[] {
+function resolveGroupConflicts(
+  seeded: (string | null)[],
+  groupByPlayer: Map<string, number>
+): (string | null)[] {
   const result = [...seeded]
   for (let i = 0; i < result.length; i += 2) {
     const a = result[i]
@@ -934,25 +1221,35 @@ router.post('/:id/advance-to-knockout', async (req: Request, res: Response, next
   try {
     const tournament = await prisma.tournament.findUnique({ where: { id: req.params.id } })
     if (!tournament) throw new AppError('Torneo no encontrado', 404)
-    if (tournament.format !== 'groups_bracket') throw new AppError('Este torneo no usa formato de grupos', 400)
+    if (tournament.format !== 'groups_bracket')
+      throw new AppError('Este torneo no usa formato de grupos', 400)
 
-    const existingKnockout = await prisma.match.count({ where: { tournamentId: req.params.id, stage: 'knockout' } })
+    const existingKnockout = await prisma.match.count({
+      where: { tournamentId: req.params.id, stage: 'knockout' },
+    })
     if (existingKnockout > 0) throw new AppError('El bracket de eliminación ya fue generado', 409)
 
     const [participants, groupMatches] = await Promise.all([
-      prisma.tournamentParticipant.findMany({ where: { tournamentId: req.params.id, groupNumber: { not: null } } }),
+      prisma.tournamentParticipant.findMany({
+        where: { tournamentId: req.params.id, groupNumber: { not: null } },
+      }),
       prisma.match.findMany({ where: { tournamentId: req.params.id, stage: 'group' } }),
     ])
     if (groupMatches.length === 0) throw new AppError('La fase de grupos no ha sido generada', 400)
 
     const pending = groupMatches.filter((m) => m.status !== 'completed' && m.status !== 'walkover')
-    if (pending.length > 0) throw new AppError(`Faltan ${pending.length} partido(s) de grupos por completar`, 400)
+    if (pending.length > 0)
+      throw new AppError(`Faltan ${pending.length} partido(s) de grupos por completar`, 400)
 
     const numGroups = Math.max(0, ...participants.map((p) => p.groupNumber ?? 0))
     const standingsByGroup: GroupStanding[][] = []
     for (let g = 1; g <= numGroups; g++) {
       const groupMatchesG = groupMatches.filter((m) => m.groupNumber === g)
-      const groupPlayerIds = [...new Set(groupMatchesG.flatMap((m) => [m.player1Id, m.player2Id]).filter((x): x is string => !!x))]
+      const groupPlayerIds = [
+        ...new Set(
+          groupMatchesG.flatMap((m) => [m.player1Id, m.player2Id]).filter((x): x is string => !!x)
+        ),
+      ]
       standingsByGroup.push(computeGroupStandings(groupMatchesG, groupPlayerIds, g))
     }
 
@@ -960,7 +1257,9 @@ router.post('/:id/advance-to-knockout', async (req: Request, res: Response, next
     const groupByPlayer = new Map(qualifiersByStrength.map((q) => [q.playerId, q.groupNumber]))
     const bracketSize = nextPow2(qualifiersByStrength.length)
     const seedOrder = standardBracketSeedOrder(bracketSize)
-    const naiveSeeded: (string | null)[] = seedOrder.map((seedNum) => qualifiersByStrength[seedNum - 1]?.playerId ?? null)
+    const naiveSeeded: (string | null)[] = seedOrder.map(
+      (seedNum) => qualifiersByStrength[seedNum - 1]?.playerId ?? null
+    )
     const seeded = resolveGroupConflicts(naiveSeeded, groupByPlayer)
 
     await generateKnockoutMatches(req.params.id, seeded)
@@ -975,7 +1274,9 @@ router.post('/:id/advance-to-knockout', async (req: Request, res: Response, next
     })
 
     return res.json({ success: true, data: knockoutMatches })
-  } catch (err) { return next(err) }
+  } catch (err) {
+    return next(err)
+  }
 })
 
 // POST /api/tournaments/:id/schedule — asigna pista y horario a todos los partidos
@@ -1015,10 +1316,14 @@ router.post('/:id/schedule', async (req: Request, res: Response, next: NextFunct
     const overrides = (tournament.matchFormatOverrides as MatchFormatOverrides | null) ?? null
 
     function formatForMatch(m: { stage: string; round: number | null }): string {
-      const stageKey = m.stage === 'knockout' && m.round !== null
-        ? knockoutStageKeyForRound(m.round, maxKnockoutRound)
-        : null
-      return resolveMatchFormat({ matchFormat: baseMatchFormat, matchFormatOverrides: overrides }, stageKey)
+      const stageKey =
+        m.stage === 'knockout' && m.round !== null
+          ? knockoutStageKeyForRound(m.round, maxKnockoutRound)
+          : null
+      return resolveMatchFormat(
+        { matchFormat: baseMatchFormat, matchFormatOverrides: overrides },
+        stageKey
+      )
     }
     function durationMsForMatch(m: { stage: string; round: number | null }): number {
       return matchFormatDurationMinutes(formatForMatch(m)) * 60000
@@ -1042,10 +1347,19 @@ router.post('/:id/schedule', async (req: Request, res: Response, next: NextFunct
     } else {
       courts = []
     }
-    if (courts.length === 0) throw new AppError('No hay pistas disponibles para asignar (el club no tiene pistas de este deporte, o pasa courtIds explícitos)', 400)
+    if (courts.length === 0)
+      throw new AppError(
+        'No hay pistas disponibles para asignar (el club no tiene pistas de este deporte, o pasa courtIds explícitos)',
+        400
+      )
 
     const pending = await prisma.match.findMany({
-      where: { tournamentId: req.params.id, scheduledAt: null, status: 'scheduled', round: { not: null } },
+      where: {
+        tournamentId: req.params.id,
+        scheduledAt: null,
+        status: 'scheduled',
+        round: { not: null },
+      },
       orderBy: [{ stage: 'asc' }, { round: 'asc' }, { id: 'asc' }], // 'group' < 'knockout' alfabéticamente: grupos primero
     })
     if (pending.length === 0) throw new AppError('No hay partidos pendientes de horario', 400)
@@ -1058,7 +1372,11 @@ router.post('/:id/schedule', async (req: Request, res: Response, next: NextFunct
       orderBy: { scheduledAt: 'desc' },
     })
     const startCursor = latestScheduled?.scheduledAt
-      ? new Date(latestScheduled.scheduledAt.getTime() + durationMsForMatch(latestScheduled) + Math.max(breakMs, restMs))
+      ? new Date(
+          latestScheduled.scheduledAt.getTime() +
+            durationMsForMatch(latestScheduled) +
+            Math.max(breakMs, restMs)
+        )
       : new Date(startAt ?? tournament.startDate)
 
     const courtFreeAt = new Map<string, number>(courts.map((c) => [c.id, startCursor.getTime()]))
@@ -1070,8 +1388,21 @@ router.post('/:id/schedule', async (req: Request, res: Response, next: NextFunct
     // por partes (sin tocar lo ya fijado) siga respetando el límite diario acumulado.
     const tracker = new PairWorkloadTracker()
     const alreadyScheduled = await prisma.match.findMany({
-      where: { tournamentId: req.params.id, scheduledAt: { not: null }, player1Id: { not: null }, player2Id: { not: null } },
-      select: { player1Id: true, player1PartnerId: true, player2Id: true, player2PartnerId: true, scheduledAt: true, stage: true, round: true },
+      where: {
+        tournamentId: req.params.id,
+        scheduledAt: { not: null },
+        player1Id: { not: null },
+        player2Id: { not: null },
+      },
+      select: {
+        player1Id: true,
+        player1PartnerId: true,
+        player2Id: true,
+        player2PartnerId: true,
+        scheduledAt: true,
+        stage: true,
+        round: true,
+      },
     })
     for (const m of alreadyScheduled) {
       const sets = matchFormatMaxSets(formatForMatch(m))
@@ -1088,7 +1419,10 @@ router.post('/:id/schedule', async (req: Request, res: Response, next: NextFunct
       let bestCourt = courts[0].id
       let bestFreeAt = Infinity
       for (const [courtId, freeAt] of courtFreeAt) {
-        if (freeAt <= t && freeAt < bestFreeAt) { bestFreeAt = freeAt; bestCourt = courtId }
+        if (freeAt <= t && freeAt < bestFreeAt) {
+          bestFreeAt = freeAt
+          bestCourt = courtId
+        }
       }
       return bestCourt
     }
@@ -1101,11 +1435,13 @@ router.post('/:id/schedule', async (req: Request, res: Response, next: NextFunct
       const pairB = pairKey(m.player2Id!, m.player2PartnerId)
       const earliestForPlayers = Math.max(
         playerFreeAt.get(m.player1Id!) ?? startCursor.getTime(),
-        playerFreeAt.get(m.player2Id!) ?? startCursor.getTime(),
+        playerFreeAt.get(m.player2Id!) ?? startCursor.getTime()
       )
       const start = findWorkloadEligibleStart({
         lowerBound: earliestForPlayers,
-        sets, pairKeys: [pairA, pairB], tracker,
+        sets,
+        pairKeys: [pairA, pairB],
+        tracker,
         earliestCourtAtOrAfter: earliestCourtTimeAtOrAfter,
       })
       const bestCourt = pickCourtAtTime(start)
@@ -1128,7 +1464,7 @@ router.post('/:id/schedule', async (req: Request, res: Response, next: NextFunct
     let waveFloor = Math.max(
       startCursor.getTime(),
       ...(playerFreeAt.size ? [...playerFreeAt.values()] : []),
-      ...(courtFreeAt.size ? [...courtFreeAt.values()] : []),
+      ...(courtFreeAt.size ? [...courtFreeAt.values()] : [])
     )
     const courtIdsList = courts.map((c) => c.id)
     for (const matches of waves.values()) {
@@ -1145,10 +1481,17 @@ router.post('/:id/schedule', async (req: Request, res: Response, next: NextFunct
     }
 
     await prisma.$transaction(
-      updates.map((u) => prisma.match.update({ where: { id: u.id }, data: { scheduledAt: u.scheduledAt, courtId: u.courtId } }))
+      updates.map((u) =>
+        prisma.match.update({
+          where: { id: u.id },
+          data: { scheduledAt: u.scheduledAt, courtId: u.courtId },
+        })
+      )
     )
 
-    const estimatedEndAt = new Date(Math.max(...updates.map((u) => u.scheduledAt.getTime() + u.durationMs)))
+    const estimatedEndAt = new Date(
+      Math.max(...updates.map((u) => u.scheduledAt.getTime() + u.durationMs))
+    )
 
     return res.json({
       success: true,
@@ -1160,22 +1503,34 @@ router.post('/:id/schedule', async (req: Request, res: Response, next: NextFunct
         estimatedEndAt,
       },
     })
-  } catch (err) { return next(err) }
+  } catch (err) {
+    return next(err)
+  }
 })
 
 // Duración de un partido según la modalidad de SU torneo (con cache por torneo,
 // para no repetir la consulta de Tournament + agregado de ronda máxima por cada
 // candidato al comprobar solapamientos).
-type DurationCtx = { baseFormat: string; overrides: MatchFormatOverrides | null; maxKnockoutRound: number }
+type DurationCtx = {
+  baseFormat: string
+  overrides: MatchFormatOverrides | null
+  maxKnockoutRound: number
+}
 async function matchDurationMs(
   m: { tournamentId: string | null; stage: string; round: number | null },
-  cache: Map<string, DurationCtx>,
+  cache: Map<string, DurationCtx>
 ): Promise<number> {
   if (!m.tournamentId) return matchFormatDurationMinutes('best_of_3_full') * 60000
   let ctx = cache.get(m.tournamentId)
   if (!ctx) {
-    const t = await prisma.tournament.findUnique({ where: { id: m.tournamentId }, select: { matchFormat: true, matchFormatOverrides: true } })
-    const maxRoundAgg = await prisma.match.aggregate({ where: { tournamentId: m.tournamentId, stage: 'knockout' }, _max: { round: true } })
+    const t = await prisma.tournament.findUnique({
+      where: { id: m.tournamentId },
+      select: { matchFormat: true, matchFormatOverrides: true },
+    })
+    const maxRoundAgg = await prisma.match.aggregate({
+      where: { tournamentId: m.tournamentId, stage: 'knockout' },
+      _max: { round: true },
+    })
     ctx = {
       baseFormat: t?.matchFormat ?? 'best_of_3_full',
       overrides: (t?.matchFormatOverrides as MatchFormatOverrides | null) ?? null,
@@ -1183,8 +1538,14 @@ async function matchDurationMs(
     }
     cache.set(m.tournamentId, ctx)
   }
-  const stageKey = m.stage === 'knockout' && m.round !== null ? knockoutStageKeyForRound(m.round, ctx.maxKnockoutRound) : null
-  const format = resolveMatchFormat({ matchFormat: ctx.baseFormat as never, matchFormatOverrides: ctx.overrides }, stageKey)
+  const stageKey =
+    m.stage === 'knockout' && m.round !== null
+      ? knockoutStageKeyForRound(m.round, ctx.maxKnockoutRound)
+      : null
+  const format = resolveMatchFormat(
+    { matchFormat: ctx.baseFormat as never, matchFormatOverrides: ctx.overrides },
+    stageKey
+  )
   return matchFormatDurationMinutes(format) * 60000
 }
 
@@ -1197,124 +1558,164 @@ async function matchDurationMs(
 //   - con resolveConflict=true: mueve también al partido en conflicto — busca el
 //     próximo hueco libre en esa misma pista después del horario que se está
 //     asignando, y lo reubica ahí (nunca lo deja fuera de la pista/torneo).
-router.patch('/:id/matches/:matchId/reschedule', async (req: Request, res: Response, next: NextFunction) => {
-  try {
-    const { courtId, scheduledAt, resolveConflict } = req.body
-    if (!courtId) throw new AppError('courtId es requerido', 400)
-    if (!scheduledAt) throw new AppError('scheduledAt es requerido', 400)
+router.patch(
+  '/:id/matches/:matchId/reschedule',
+  async (req: Request, res: Response, next: NextFunction) => {
+    try {
+      const { courtId, scheduledAt, resolveConflict } = req.body
+      if (!courtId) throw new AppError('courtId es requerido', 400)
+      if (!scheduledAt) throw new AppError('scheduledAt es requerido', 400)
 
-    const match = await prisma.match.findUnique({ where: { id: req.params.matchId } })
-    if (!match) throw new AppError('Partido no encontrado', 404)
-    if (match.tournamentId !== req.params.id) throw new AppError('El partido no pertenece a este torneo', 400)
+      const match = await prisma.match.findUnique({ where: { id: req.params.matchId } })
+      if (!match) throw new AppError('Partido no encontrado', 404)
+      if (match.tournamentId !== req.params.id)
+        throw new AppError('El partido no pertenece a este torneo', 400)
 
-    const durationCache = new Map<string, DurationCtx>()
-    const newStart = new Date(scheduledAt).getTime()
-    if (Number.isNaN(newStart)) throw new AppError('scheduledAt inválido', 400)
-    const durationMs = await matchDurationMs(match, durationCache)
-    const newEnd = newStart + durationMs
+      const durationCache = new Map<string, DurationCtx>()
+      const newStart = new Date(scheduledAt).getTime()
+      if (Number.isNaN(newStart)) throw new AppError('scheduledAt inválido', 400)
+      const durationMs = await matchDurationMs(match, durationCache)
+      const newEnd = newStart + durationMs
 
-    const sameCourtMatches = await prisma.match.findMany({
-      where: { courtId, scheduledAt: { not: null }, status: { notIn: ['cancelled'] }, id: { not: match.id } },
-      include: { player1: { select: { displayName: true } }, player2: { select: { displayName: true } } },
-    })
+      const sameCourtMatches = await prisma.match.findMany({
+        where: {
+          courtId,
+          scheduledAt: { not: null },
+          status: { notIn: ['cancelled'] },
+          id: { not: match.id },
+        },
+        include: {
+          player1: { select: { displayName: true } },
+          player2: { select: { displayName: true } },
+        },
+      })
 
-    // OJO: puede haber MÁS de un partido ya solapado en esa pista/hora (datos
-    // heredados de agendados automáticos independientes que no se coordinaron
-    // entre sí) — hay que resolverlos todos, no solo el primero que se encuentre,
-    // o el partido movido terminaría compartiendo el slot con el que quedó fuera.
-    const conflicts: { match: (typeof sameCourtMatches)[number]; durationMs: number }[] = []
-    for (const c of sameCourtMatches) {
-      const cStart = c.scheduledAt!.getTime()
-      const cDur = await matchDurationMs(c, durationCache)
-      if (newStart < cStart + cDur && cStart < newEnd) conflicts.push({ match: c, durationMs: cDur })
-    }
-
-    if (conflicts.length > 0 && !resolveConflict) {
-      const first = conflicts[0].match
-      const conflictTournament = first.tournamentId
-        ? await prisma.tournament.findUnique({ where: { id: first.tournamentId }, select: { name: true } })
-        : null
-      const label = (first.player1?.displayName || first.player2?.displayName)
-        ? `${first.player1?.displayName ?? '?'} vs ${first.player2?.displayName ?? '?'}`
-        : 'un partido por definir'
-      const extra = conflicts.length > 1 ? ` (y ${conflicts.length - 1} más)` : ''
-      throw new AppError(
-        `Esa pista ya tiene ${label} agendado a esa hora (${conflictTournament?.name ?? 'otro torneo'})${extra}. Repite el cambio con resolveConflict:true para moverlos automáticamente.`,
-        409,
-      )
-    }
-
-    const updates: { id: string; courtId: string | null; scheduledAt: Date | null }[] = [
-      { id: match.id, courtId, scheduledAt: new Date(scheduledAt) },
-    ]
-
-    if (conflicts.length > 0) {
-      const conflictIds = new Set(conflicts.map((c) => c.match.id))
-      // Huecos ya ocupados en esa pista, sin contar a los que se van a mover —
-      // se va actualizando según se les va asignando nuevo horario a cada uno,
-      // para que dos partidos desplazados nunca terminen chocando entre sí.
-      const occupiedWithDur: { start: number; end: number }[] = [{ start: newStart, end: newEnd }]
+      // OJO: puede haber MÁS de un partido ya solapado en esa pista/hora (datos
+      // heredados de agendados automáticos independientes que no se coordinaron
+      // entre sí) — hay que resolverlos todos, no solo el primero que se encuentre,
+      // o el partido movido terminaría compartiendo el slot con el que quedó fuera.
+      const conflicts: { match: (typeof sameCourtMatches)[number]; durationMs: number }[] = []
       for (const c of sameCourtMatches) {
-        if (conflictIds.has(c.id)) continue
         const cStart = c.scheduledAt!.getTime()
         const cDur = await matchDurationMs(c, durationCache)
-        occupiedWithDur.push({ start: cStart, end: cStart + cDur })
+        if (newStart < cStart + cDur && cStart < newEnd)
+          conflicts.push({ match: c, durationMs: cDur })
       }
 
-      // Se reubican en orden de hora original, cada uno buscando el próximo
-      // hueco libre después de newEnd considerando lo ya ocupado (incluyendo a
-      // los conflictos ya reubicados en esta misma pasada).
-      const orderedConflicts = [...conflicts].sort((a, b) => a.match.scheduledAt!.getTime() - b.match.scheduledAt!.getTime())
-      for (const { match: c, durationMs: cDur } of orderedConflicts) {
-        let candidateStart = newEnd
-        for (let i = 0; i < 100; i++) {
-          const candidateEnd = candidateStart + cDur
-          const overlapping = occupiedWithDur.find((o) => candidateStart < o.end && o.start < candidateEnd)
-          if (!overlapping) break
-          candidateStart = overlapping.end
+      if (conflicts.length > 0 && !resolveConflict) {
+        const first = conflicts[0].match
+        const conflictTournament = first.tournamentId
+          ? await prisma.tournament.findUnique({
+              where: { id: first.tournamentId },
+              select: { name: true },
+            })
+          : null
+        const label =
+          first.player1?.displayName || first.player2?.displayName
+            ? `${first.player1?.displayName ?? '?'} vs ${first.player2?.displayName ?? '?'}`
+            : 'un partido por definir'
+        const extra = conflicts.length > 1 ? ` (y ${conflicts.length - 1} más)` : ''
+        throw new AppError(
+          `Esa pista ya tiene ${label} agendado a esa hora (${conflictTournament?.name ?? 'otro torneo'})${extra}. Repite el cambio con resolveConflict:true para moverlos automáticamente.`,
+          409
+        )
+      }
+
+      const updates: { id: string; courtId: string | null; scheduledAt: Date | null }[] = [
+        { id: match.id, courtId, scheduledAt: new Date(scheduledAt) },
+      ]
+
+      if (conflicts.length > 0) {
+        const conflictIds = new Set(conflicts.map((c) => c.match.id))
+        // Huecos ya ocupados en esa pista, sin contar a los que se van a mover —
+        // se va actualizando según se les va asignando nuevo horario a cada uno,
+        // para que dos partidos desplazados nunca terminen chocando entre sí.
+        const occupiedWithDur: { start: number; end: number }[] = [{ start: newStart, end: newEnd }]
+        for (const c of sameCourtMatches) {
+          if (conflictIds.has(c.id)) continue
+          const cStart = c.scheduledAt!.getTime()
+          const cDur = await matchDurationMs(c, durationCache)
+          occupiedWithDur.push({ start: cStart, end: cStart + cDur })
         }
-        occupiedWithDur.push({ start: candidateStart, end: candidateStart + cDur })
-        updates.push({ id: c.id, courtId, scheduledAt: new Date(candidateStart) })
+
+        // Se reubican en orden de hora original, cada uno buscando el próximo
+        // hueco libre después de newEnd considerando lo ya ocupado (incluyendo a
+        // los conflictos ya reubicados en esta misma pasada).
+        const orderedConflicts = [...conflicts].sort(
+          (a, b) => a.match.scheduledAt!.getTime() - b.match.scheduledAt!.getTime()
+        )
+        for (const { match: c, durationMs: cDur } of orderedConflicts) {
+          let candidateStart = newEnd
+          for (let i = 0; i < 100; i++) {
+            const candidateEnd = candidateStart + cDur
+            const overlapping = occupiedWithDur.find(
+              (o) => candidateStart < o.end && o.start < candidateEnd
+            )
+            if (!overlapping) break
+            candidateStart = overlapping.end
+          }
+          occupiedWithDur.push({ start: candidateStart, end: candidateStart + cDur })
+          updates.push({ id: c.id, courtId, scheduledAt: new Date(candidateStart) })
+        }
       }
+
+      await prisma.$transaction(
+        updates.map((u) =>
+          prisma.match.update({
+            where: { id: u.id },
+            data: { courtId: u.courtId, scheduledAt: u.scheduledAt },
+          })
+        )
+      )
+
+      return res.json({
+        success: true,
+        data: {
+          movedMatchId: match.id,
+          swappedMatchIds: conflicts.map((c) => c.match.id),
+          updates,
+        },
+      })
+    } catch (err) {
+      return next(err)
     }
-
-    await prisma.$transaction(
-      updates.map((u) => prisma.match.update({ where: { id: u.id }, data: { courtId: u.courtId, scheduledAt: u.scheduledAt } }))
-    )
-
-    return res.json({
-      success: true,
-      data: { movedMatchId: match.id, swappedMatchIds: conflicts.map((c) => c.match.id), updates },
-    })
-  } catch (err) { return next(err) }
-})
+  }
+)
 
 // DELETE /api/tournaments/:id/participants/:participantId — retirar inscripción
-router.delete('/:id/participants/:participantId', async (req: Request, res: Response, next: NextFunction) => {
-  try {
-    const existing = await prisma.tournamentParticipant.findUnique({
-      where: { id: req.params.participantId },
-    })
-    if (!existing || existing.tournamentId !== req.params.id) {
-      throw new AppError('Participante no encontrado', 404)
+router.delete(
+  '/:id/participants/:participantId',
+  async (req: Request, res: Response, next: NextFunction) => {
+    try {
+      const existing = await prisma.tournamentParticipant.findUnique({
+        where: { id: req.params.participantId },
+      })
+      if (!existing || existing.tournamentId !== req.params.id) {
+        throw new AppError('Participante no encontrado', 404)
+      }
+
+      await prisma.$transaction([
+        prisma.tournamentParticipant.delete({ where: { id: req.params.participantId } }),
+        prisma.tournament.update({
+          where: { id: req.params.id },
+          data: { currentParticipants: { decrement: 1 } },
+        }),
+      ])
+
+      return res.json({ success: true })
+    } catch (err) {
+      return next(err)
     }
-
-    await prisma.$transaction([
-      prisma.tournamentParticipant.delete({ where: { id: req.params.participantId } }),
-      prisma.tournament.update({
-        where: { id: req.params.id },
-        data: { currentParticipants: { decrement: 1 } },
-      }),
-    ])
-
-    return res.json({ success: true })
-  } catch (err) { return next(err) }
-})
+  }
+)
 
 // GET /api/tournaments/:id/bracket — cuadro del torneo
 router.get('/:id/bracket', async (req: Request, res: Response, next: NextFunction) => {
   try {
-    const tournament = await prisma.tournament.findUnique({ where: { id: req.params.id }, select: { type: true } })
+    const tournament = await prisma.tournament.findUnique({
+      where: { id: req.params.id },
+      select: { type: true },
+    })
 
     const [matches, participants] = await Promise.all([
       prisma.match.findMany({
@@ -1347,20 +1748,25 @@ router.get('/:id/bracket', async (req: Request, res: Response, next: NextFunctio
     const matchesWithCourt = await attachCourtNames(matches)
     const matchesWithPartners = matchesWithCourt.map((m) => ({
       ...m,
-      player1PartnerName: m.player1Id ? partnerNameByPlayerId.get(m.player1Id) ?? null : null,
-      player2PartnerName: m.player2Id ? partnerNameByPlayerId.get(m.player2Id) ?? null : null,
+      player1PartnerName: m.player1Id ? (partnerNameByPlayerId.get(m.player1Id) ?? null) : null,
+      player2PartnerName: m.player2Id ? (partnerNameByPlayerId.get(m.player2Id) ?? null) : null,
     }))
 
     // Agrupar por ronda
-    const bracket = matchesWithPartners.reduce((acc: Record<number, typeof matchesWithPartners>, match) => {
-      const round = match.round ?? 0
-      if (!acc[round]) acc[round] = []
-      acc[round].push(match)
-      return acc
-    }, {})
+    const bracket = matchesWithPartners.reduce(
+      (acc: Record<number, typeof matchesWithPartners>, match) => {
+        const round = match.round ?? 0
+        if (!acc[round]) acc[round] = []
+        acc[round].push(match)
+        return acc
+      },
+      {}
+    )
 
     return res.json({ success: true, data: bracket })
-  } catch (err) { return next(err) }
+  } catch (err) {
+    return next(err)
+  }
 })
 
 // GET /api/tournaments/:id/matches — agenda plana (todas las fases) con pista, hora
@@ -1405,10 +1811,14 @@ router.get('/:id/matches', async (req: Request, res: Response, next: NextFunctio
     const matchesWithCourt = await attachCourtNames(matches)
 
     const data = matchesWithCourt.map((m) => {
-      const stageKey = m.stage === 'knockout' && m.round !== null
-        ? knockoutStageKeyForRound(m.round, maxKnockoutRound)
-        : null
-      const format = resolveMatchFormat({ matchFormat: tournament.matchFormat, matchFormatOverrides: overrides }, stageKey)
+      const stageKey =
+        m.stage === 'knockout' && m.round !== null
+          ? knockoutStageKeyForRound(m.round, maxKnockoutRound)
+          : null
+      const format = resolveMatchFormat(
+        { matchFormat: tournament.matchFormat, matchFormatOverrides: overrides },
+        stageKey
+      )
       return {
         id: m.id,
         tournamentId: m.tournamentId,
@@ -1427,15 +1837,17 @@ router.get('/:id/matches', async (req: Request, res: Response, next: NextFunctio
         player2Id: m.player2Id,
         player1: m.player1,
         player2: m.player2,
-        player1PartnerName: m.player1Id ? partnerNameByPlayerId.get(m.player1Id) ?? null : null,
-        player2PartnerName: m.player2Id ? partnerNameByPlayerId.get(m.player2Id) ?? null : null,
+        player1PartnerName: m.player1Id ? (partnerNameByPlayerId.get(m.player1Id) ?? null) : null,
+        player2PartnerName: m.player2Id ? (partnerNameByPlayerId.get(m.player2Id) ?? null) : null,
         score: m.score,
         winnerId: m.winnerId,
       }
     })
 
     return res.json({ success: true, data })
-  } catch (err) { return next(err) }
+  } catch (err) {
+    return next(err)
+  }
 })
 
 export { router as tournamentsRouter }

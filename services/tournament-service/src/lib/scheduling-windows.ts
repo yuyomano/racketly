@@ -27,7 +27,10 @@ export function sanitizeSchedulingWindows(input: unknown): SchedulingWindow[] | 
 // openTime/closeTime son hora LOCAL del club (ej. "08:00" en Santo Domingo, no UTC) —
 // timezone es el IANA de Club.timezone; sin esto, "08:00" se agendaba como 08:00 UTC,
 // desplazando los partidos varias horas respecto a lo que el admin configuró.
-export function windowsToMs(windows: SchedulingWindow[], timezone: string): { start: number; end: number }[] {
+export function windowsToMs(
+  windows: SchedulingWindow[],
+  timezone: string
+): { start: number; end: number }[] {
   return windows.map((w) => ({
     start: zonedTimeToUtc(w.date, w.openTime, timezone),
     end: zonedTimeToUtc(w.date, w.closeTime, timezone),

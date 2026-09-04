@@ -21,7 +21,7 @@ export const isStripeConfigured = !DEV_MODE
 // ─── Types ────────────────────────────────────────────────────────────────────
 
 export interface CreatePaymentIntentParams {
-  amount: number        // en centavos
+  amount: number // en centavos
   currency: string
   bookingId: string
   userId: string
@@ -65,7 +65,12 @@ export async function createStripePaymentIntent(params: CreatePaymentIntentParam
 
 export async function retrieveStripePaymentIntent(paymentIntentId: string) {
   if (DEV_MODE || paymentIntentId.startsWith('dev_pi_')) {
-    return { id: paymentIntentId, status: 'succeeded' as const, amount: undefined as number | undefined, currency: undefined as string | undefined }
+    return {
+      id: paymentIntentId,
+      status: 'succeeded' as const,
+      amount: undefined as number | undefined,
+      currency: undefined as string | undefined,
+    }
   }
   return getStripe().paymentIntents.retrieve(paymentIntentId)
 }

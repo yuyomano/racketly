@@ -4,19 +4,34 @@ import { Card } from './Card'
 import { cn } from '@/lib/utils'
 
 export function StatCard({
-  label, value, sub, icon: Icon, trend, trendUp, tone = 'gray', onClick, active,
+  label,
+  value,
+  sub,
+  icon: Icon,
+  trend,
+  trendUp,
+  tone = 'gray',
+  onClick,
+  active,
 }: {
-  label: string; value: string; sub?: string; icon: LucideIcon
-  trend?: string; trendUp?: boolean
+  label: string
+  value: string
+  sub?: string
+  icon: LucideIcon
+  trend?: string
+  trendUp?: boolean
   tone?: 'emerald' | 'amber' | 'violet' | 'gray'
   onClick?: () => void
   active?: boolean
 }) {
-  const toneClasses = {
-    emerald: 'bg-emerald-50 text-emerald-600',
-    amber:   'bg-amber-50 text-amber-600',
-    violet:  'bg-violet-50 text-violet-600',
-    gray:    'bg-gray-50 text-gray-500',
+  // Antes: icono en una placa de color redondeada (el "SaaS-card-kit"). Ahora: una
+  // línea superior de 2px hace de acento de tono, y el icono queda pequeño y neutro
+  // junto a la etiqueta — el número es lo único que compite por atención.
+  const ruleClass = {
+    emerald: 'border-t-court-500',
+    amber: 'border-t-trophy-500',
+    violet: 'border-t-ink-400',
+    gray: 'border-t-ink-100',
   }[tone]
 
   const isLong = value.length > 8
@@ -25,31 +40,34 @@ export function StatCard({
   return (
     <Card
       className={cn(
-        'p-5',
-        onClick && 'cursor-pointer transition-shadow hover:shadow-md',
-        active && 'ring-2 ring-emerald-500/60'
+        'p-5 border-t-2 transition-colors',
+        ruleClass,
+        onClick && 'cursor-pointer hover:border-court-200',
+        active && 'ring-2 ring-court-500/50'
       )}
       onClick={onClick}
     >
-      <div className="flex items-start justify-between">
-        <div className="min-w-0 flex-1">
-          <p className="text-xs font-medium text-gray-500 uppercase tracking-wide truncate">{label}</p>
-          <p className={cn(
-            'font-black text-gray-900 mt-1.5 tracking-tight',
-            valueSizeClass,
-            isLong ? 'leading-tight break-words' : 'leading-none truncate',
-          )}>{value}</p>
-          {sub && <p className="text-xs text-gray-400 mt-1.5 truncate">{sub}</p>}
-        </div>
-        <div className={cn('w-10 h-10 rounded-xl flex items-center justify-center shrink-0', toneClasses)}>
-          <Icon className="w-5 h-5" strokeWidth={2} />
-        </div>
+      <div className="flex items-center gap-1.5 text-ink-500">
+        <Icon className="w-3.5 h-3.5 shrink-0" strokeWidth={2} />
+        <p className="text-xs font-medium truncate">{label}</p>
       </div>
+      <p
+        className={cn(
+          'font-display font-score font-black text-ink-900 mt-1.5 tracking-tight',
+          valueSizeClass,
+          isLong ? 'leading-tight break-words' : 'leading-none truncate'
+        )}
+      >
+        {value}
+      </p>
+      {sub && <p className="text-xs text-ink-400 mt-1.5 truncate">{sub}</p>}
       {trend && (
-        <div className={cn(
-          'mt-3 inline-flex items-center gap-1 text-xs font-semibold',
-          trendUp ? 'text-emerald-600' : 'text-red-500'
-        )}>
+        <div
+          className={cn(
+            'mt-3 inline-flex items-center gap-1 text-xs font-semibold',
+            trendUp ? 'text-court-600' : 'text-referee-500'
+          )}
+        >
           {trendUp ? <ArrowUp className="w-3 h-3" /> : <ArrowDown className="w-3 h-3" />}
           {trend}
         </div>

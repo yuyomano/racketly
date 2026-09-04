@@ -7,11 +7,11 @@ import { LanguageSwitcher } from '@/components/ui/LanguageSwitcher'
 import { AppNavLink, type AppNavIconKey } from './AppNavLink'
 
 const NAV_KEYS: { href: string; key: string; icon: AppNavIconKey }[] = [
-  { href: '/booking',     key: 'booking',     icon: 'CalendarDays' },
+  { href: '/booking', key: 'booking', icon: 'CalendarDays' },
   { href: '/tournaments', key: 'tournaments', icon: 'Trophy' },
-  { href: '/academy',     key: 'academy',     icon: 'GraduationCap' },
-  { href: '/community',   key: 'community',   icon: 'Users2' },
-  { href: '/profile',     key: 'profile',     icon: 'UserCircle' },
+  { href: '/academy', key: 'academy', icon: 'GraduationCap' },
+  { href: '/community', key: 'community', icon: 'Users2' },
+  { href: '/profile', key: 'profile', icon: 'UserCircle' },
 ]
 
 export default async function AppLayout({ children }: { children: React.ReactNode }) {
@@ -19,7 +19,11 @@ export default async function AppLayout({ children }: { children: React.ReactNod
   if (!user) redirect('/login')
 
   const t = await getTranslations('AppNav')
-  const navItems = NAV_KEYS.map((item) => ({ href: item.href, icon: item.icon, label: t(item.key) }))
+  const navItems = NAV_KEYS.map((item) => ({
+    href: item.href,
+    icon: item.icon,
+    label: t(item.key),
+  }))
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -32,7 +36,9 @@ export default async function AppLayout({ children }: { children: React.ReactNod
         </Link>
 
         <nav className="flex items-center gap-1 overflow-x-auto">
-          {navItems.map((item) => <AppNavLink key={item.href} {...item} />)}
+          {navItems.map((item) => (
+            <AppNavLink key={item.href} {...item} />
+          ))}
         </nav>
 
         <div className="flex items-center gap-3 shrink-0">
@@ -49,15 +55,17 @@ export default async function AppLayout({ children }: { children: React.ReactNod
 
 function LogoutButton({ label }: { label: string }) {
   return (
-    <form action={async () => {
-      'use server'
-      const { cookies } = await import('next/headers')
-      const { redirect } = await import('next/navigation')
-      const cookieStore = await cookies()
-      cookieStore.delete('racketly_token')
-      cookieStore.delete('racketly_user')
-      redirect('/login')
-    }}>
+    <form
+      action={async () => {
+        'use server'
+        const { cookies } = await import('next/headers')
+        const { redirect } = await import('next/navigation')
+        const cookieStore = await cookies()
+        cookieStore.delete('racketly_token')
+        cookieStore.delete('racketly_user')
+        redirect('/login')
+      }}
+    >
       <button
         type="submit"
         className="flex items-center gap-1.5 text-gray-400 hover:text-gray-600 text-xs font-medium transition-colors"

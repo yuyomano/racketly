@@ -86,7 +86,15 @@ function StatusLegend() {
     <div className="flex flex-wrap items-center gap-3 px-4 py-2 border-b border-gray-100 bg-gray-50/50 text-[0.6875rem] text-gray-500">
       {entries.map((e) => (
         <div key={e.key} className="flex items-center gap-1.5">
-          <span className={`w-3 h-3 rounded border ${e.extraClass ?? BOOKING_STATUS[e.key]?.gridClass.split(' ').filter((c) => c.startsWith('bg-') || c.startsWith('border-')).join(' ')}`} />
+          <span
+            className={`w-3 h-3 rounded border ${
+              e.extraClass ??
+              BOOKING_STATUS[e.key]?.gridClass
+                .split(' ')
+                .filter((c) => c.startsWith('bg-') || c.startsWith('border-'))
+                .join(' ')
+            }`}
+          />
           {e.label}
         </div>
       ))}
@@ -120,14 +128,32 @@ function GridSkeleton({ columns }: { columns: number }) {
 }
 
 export function CourtScheduleGrid({
-  bookings, courts, classSlots, loading,
-  gridDate, setGridDate, hourFrom, setHourFrom, hourTo, setHourTo,
-  onEdit, onCancel, cancellingId, onNewBooking, onEditClass,
+  bookings,
+  courts,
+  classSlots,
+  loading,
+  gridDate,
+  setGridDate,
+  hourFrom,
+  setHourFrom,
+  hourTo,
+  setHourTo,
+  onEdit,
+  onCancel,
+  cancellingId,
+  onNewBooking,
+  onEditClass,
 }: {
-  bookings: BookingRow[]; courts: CourtRow[]; classSlots: ClassSlotRow[]; loading: boolean
-  gridDate: string; setGridDate: (v: string) => void
-  hourFrom: string; setHourFrom: (v: string) => void
-  hourTo: string; setHourTo: (v: string) => void
+  bookings: BookingRow[]
+  courts: CourtRow[]
+  classSlots: ClassSlotRow[]
+  loading: boolean
+  gridDate: string
+  setGridDate: (v: string) => void
+  hourFrom: string
+  setHourFrom: (v: string) => void
+  hourTo: string
+  setHourTo: (v: string) => void
   onEdit: (b: BookingRow) => void
   onCancel: (b: BookingRow) => void
   cancellingId: string | null
@@ -143,10 +169,16 @@ export function CourtScheduleGrid({
   const bookingsForDate = bookings.filter((b) => b.slot?.date === gridDate)
   const classesForDate = classSlots.filter((s) => s.date === gridDate && s.status !== 'cancelled')
 
-  type Cell = { kind: 'empty' } | { kind: 'skip' } | { kind: 'booking'; booking: BookingRow; span: number } | { kind: 'class'; classSlot: ClassSlotRow; span: number }
+  type Cell =
+    | { kind: 'empty' }
+    | { kind: 'skip' }
+    | { kind: 'booking'; booking: BookingRow; span: number }
+    | { kind: 'class'; classSlot: ClassSlotRow; span: number }
 
   const rows = courts.map((court) => {
-    const cells: Cell[] = new Array(columns.length).fill(null).map(() => ({ kind: 'empty' as const }))
+    const cells: Cell[] = new Array(columns.length)
+      .fill(null)
+      .map(() => ({ kind: 'empty' as const }))
     // Ordenadas para que, si hay un solape, siempre gane una reserva activa/completada
     // sobre una cancelada (una cancelación nunca debería poder "tapar" en la grilla a la
     // reserva real que ocupa ese horario), y dentro del mismo estado, la que empieza primero.
@@ -166,7 +198,9 @@ export function CourtScheduleGrid({
       // la misma pista), no la dibujamos encima: dos <td colSpan> superpuestos en la misma
       // fila desalinean todas las columnas siguientes respecto al encabezado, haciendo que
       // reservas posteriores aparezcan bajo una hora que no es la suya.
-      const hasConflict = Array.from({ length: span }, (_, k) => cells[startIdx + k]).some((c) => c.kind !== 'empty')
+      const hasConflict = Array.from({ length: span }, (_, k) => cells[startIdx + k]).some(
+        (c) => c.kind !== 'empty'
+      )
       if (hasConflict) continue
       cells[startIdx] = { kind: 'booking', booking: b, span }
       for (let k = 1; k < span; k++) cells[startIdx + k] = { kind: 'skip' }
@@ -178,8 +212,13 @@ export function CourtScheduleGrid({
     for (const s of courtClasses) {
       const startIdx = columns.indexOf(toMin(s.startTime))
       if (startIdx === -1) continue
-      const span = Math.min(Math.max(1, Math.round(s.durationMinutes / GRID_STEP_MIN)), columns.length - startIdx)
-      const hasConflict = Array.from({ length: span }, (_, k) => cells[startIdx + k]).some((c) => c.kind !== 'empty')
+      const span = Math.min(
+        Math.max(1, Math.round(s.durationMinutes / GRID_STEP_MIN)),
+        columns.length - startIdx
+      )
+      const hasConflict = Array.from({ length: span }, (_, k) => cells[startIdx + k]).some(
+        (c) => c.kind !== 'empty'
+      )
       if (hasConflict) continue
       cells[startIdx] = { kind: 'class', classSlot: s, span }
       for (let k = 1; k < span; k++) cells[startIdx + k] = { kind: 'skip' }
@@ -193,19 +232,39 @@ export function CourtScheduleGrid({
     <Card className="overflow-hidden">
       <div className="p-4 border-b border-gray-100 flex flex-wrap items-end gap-3">
         <div>
-          <label className="block text-xs font-semibold text-gray-500 mb-1">{t('grid.fecha')}</label>
-          <Input type="date" value={gridDate} onChange={(e) => setGridDate(e.target.value)}
-            className="px-4 py-2 w-auto" />
+          <label className="block text-xs font-semibold text-gray-500 mb-1">
+            {t('grid.fecha')}
+          </label>
+          <Input
+            type="date"
+            value={gridDate}
+            onChange={(e) => setGridDate(e.target.value)}
+            className="px-4 py-2 w-auto"
+          />
         </div>
         <div>
-          <label className="block text-xs font-semibold text-gray-500 mb-1">{t('grid.desde')}</label>
-          <Input type="time" step={1800} value={hourFrom} onChange={(e) => setHourFrom(e.target.value)}
-            className="px-3 py-2 w-auto" />
+          <label className="block text-xs font-semibold text-gray-500 mb-1">
+            {t('grid.desde')}
+          </label>
+          <Input
+            type="time"
+            step={1800}
+            value={hourFrom}
+            onChange={(e) => setHourFrom(e.target.value)}
+            className="px-3 py-2 w-auto"
+          />
         </div>
         <div>
-          <label className="block text-xs font-semibold text-gray-500 mb-1">{t('grid.hasta')}</label>
-          <Input type="time" step={1800} value={hourTo} onChange={(e) => setHourTo(e.target.value)}
-            className="px-3 py-2 w-auto" />
+          <label className="block text-xs font-semibold text-gray-500 mb-1">
+            {t('grid.hasta')}
+          </label>
+          <Input
+            type="time"
+            step={1800}
+            value={hourTo}
+            onChange={(e) => setHourTo(e.target.value)}
+            className="px-3 py-2 w-auto"
+          />
         </div>
         <div className="ml-auto flex items-center gap-3">
           {loading && !showSkeleton && <RefreshCw className="w-4 h-4 text-gray-400 animate-spin" />}
@@ -224,21 +283,36 @@ export function CourtScheduleGrid({
       {showSkeleton ? (
         <GridSkeleton columns={columns.length} />
       ) : columns.length === 0 ? (
-        <EmptyState icon={Clock} title={t('grid.rangoInvalido')} description={t('grid.rangoInvalidoDesc')} />
+        <EmptyState
+          icon={Clock}
+          title={t('grid.rangoInvalido')}
+          description={t('grid.rangoInvalidoDesc')}
+        />
       ) : courts.length === 0 ? (
-        <EmptyState icon={Search} title={loading ? t('grid.cargandoPistas') : t('grid.sinPistas')} description={t('grid.sinPistasDesc')} />
+        <EmptyState
+          icon={Search}
+          title={loading ? t('grid.cargandoPistas') : t('grid.sinPistas')}
+          description={t('grid.sinPistasDesc')}
+        />
       ) : (
         <div className="overflow-x-auto">
           <table className="border-collapse table-fixed">
             <colgroup>
               <col style={{ width: '9.375rem' }} />
-              {columns.map((m) => <col key={m} style={{ width: '4rem' }} />)}
+              {columns.map((m) => (
+                <col key={m} style={{ width: '4rem' }} />
+              ))}
             </colgroup>
             <thead>
               <tr className="text-left text-xs text-gray-400 uppercase tracking-wider bg-gray-50">
                 <th className="px-3 py-2 sticky left-0 bg-gray-50 z-10">{t('grid.pista')}</th>
                 {columns.map((m) => (
-                  <th key={m} className="px-1 py-2 text-center font-medium border-l border-gray-100">{fmtMin(m)}</th>
+                  <th
+                    key={m}
+                    className="px-1 py-2 text-center font-medium border-l border-gray-100"
+                  >
+                    {fmtMin(m)}
+                  </th>
                 ))}
               </tr>
             </thead>
@@ -262,14 +336,26 @@ export function CourtScheduleGrid({
                       const cupos = `${activeStudents.length}/${s.maxStudents}`
                       const studentNames = activeStudents.map((bk) => bk.studentName).join(', ')
                       return (
-                        <td key={i} colSpan={cell.span} className="border-l border-gray-100 p-0 align-top">
+                        <td
+                          key={i}
+                          colSpan={cell.span}
+                          className="border-l border-gray-100 p-0 align-top"
+                        >
                           <div
                             className="h-14 px-2 py-1 border text-[0.6875rem] leading-tight overflow-hidden bg-violet-50 hover:bg-violet-100 text-violet-800 border-violet-200 cursor-pointer transition-colors"
                             onClick={() => onEditClass(s)}
-                            title={t('grid.claseTitle', { name: s.professor.name, cupos, students: studentNames ? ` — ${studentNames}` : '' })}
+                            title={t('grid.claseTitle', {
+                              name: s.professor.name,
+                              cupos,
+                              students: studentNames ? ` — ${studentNames}` : '',
+                            })}
                           >
-                            <span className="font-semibold truncate block">🎓 {s.professor.name} · {cupos}</span>
-                            <p className="opacity-70 truncate">{studentNames || t('grid.sinAlumnosAun')}</p>
+                            <span className="font-semibold truncate block">
+                              🎓 {s.professor.name} · {cupos}
+                            </span>
+                            <p className="opacity-70 truncate">
+                              {studentNames || t('grid.sinAlumnosAun')}
+                            </p>
                           </div>
                         </td>
                       )
@@ -279,16 +365,28 @@ export function CourtScheduleGrid({
                     const names = (b.players ?? []).map((p) => p.name).join(', ') || '—'
                     const meta = bookingStatusMeta(b.status)
                     return (
-                      <td key={i} colSpan={cell.span} className="border-l border-gray-100 p-0 align-top">
-                        <div className={`h-14 px-2 py-1 border text-[0.6875rem] leading-tight overflow-hidden ${meta.gridClass} ${isActive ? 'cursor-pointer' : ''}`}
+                      <td
+                        key={i}
+                        colSpan={cell.span}
+                        className="border-l border-gray-100 p-0 align-top"
+                      >
+                        <div
+                          className={`h-14 px-2 py-1 border text-[0.6875rem] leading-tight overflow-hidden ${meta.gridClass} ${isActive ? 'cursor-pointer' : ''}`}
                           onClick={() => isActive && onEdit(b)}
-                          title={isActive ? t('grid.bookingTitle', { names }) : `${names} · ${bookingStatusLabel(t, b.status)}`}
+                          title={
+                            isActive
+                              ? t('grid.bookingTitle', { names })
+                              : `${names} · ${bookingStatusLabel(t, b.status)}`
+                          }
                         >
                           <div className="flex items-start justify-between gap-1">
                             <span className="font-semibold truncate">{names}</span>
                             {isActive && (
                               <button
-                                onClick={(e) => { e.stopPropagation(); onCancel(b) }}
+                                onClick={(e) => {
+                                  e.stopPropagation()
+                                  onCancel(b)
+                                }}
                                 disabled={cancellingId === b.id}
                                 className="shrink-0 text-current opacity-60 hover:opacity-100"
                                 title={t('grid.cancelarReservaTitle')}
@@ -297,7 +395,10 @@ export function CourtScheduleGrid({
                               </button>
                             )}
                           </div>
-                          <p className="opacity-70 truncate">{formatCurrency(effectiveAmountPaid(b), b.currency)}{!isActive && ` · ${bookingStatusLabel(t, b.status)}`}</p>
+                          <p className="opacity-70 truncate">
+                            {formatCurrency(effectiveAmountPaid(b), b.currency)}
+                            {!isActive && ` · ${bookingStatusLabel(t, b.status)}`}
+                          </p>
                         </div>
                       </td>
                     )

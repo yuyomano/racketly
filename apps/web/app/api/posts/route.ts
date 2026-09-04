@@ -9,7 +9,10 @@ export async function GET(req: Request) {
     const data = await res.json()
     return NextResponse.json(data, { status: res.status })
   } catch {
-    return NextResponse.json({ success: false, error: 'No se pudo cargar el feed' }, { status: 502 })
+    return NextResponse.json(
+      { success: false, error: 'No se pudo cargar el feed' },
+      { status: 502 }
+    )
   }
 }
 

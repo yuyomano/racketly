@@ -4,7 +4,11 @@ import axios from 'axios'
 import jwt from 'jsonwebtoken'
 import rateLimit from 'express-rate-limit'
 import { PrismaClient } from '@prisma/client'
-import { generateTokenPair, verifyAndRotateRefreshToken, revokeRefreshToken } from '../services/token.service'
+import {
+  generateTokenPair,
+  verifyAndRotateRefreshToken,
+  revokeRefreshToken,
+} from '../services/token.service'
 import { authenticate } from '../middleware/auth.middleware'
 import { AppError } from '../middleware/error.middleware'
 import { validate, registerSchema, loginSchema, refreshSchema } from '../validators/auth.validators'
@@ -28,60 +32,65 @@ const WEB_URL = process.env.WEB_URL || 'http://localhost:3010'
 const NOTIFICATION_SERVICE_URL = process.env.NOTIFICATION_SERVICE_URL || 'http://localhost:3006'
 
 // POST /api/auth/register
-router.post('/register', authLimiter, validate(registerSchema), async (req: Request, res: Response, next: NextFunction) => {
-  try {
-    const { email, password, displayName, phone, country, city, sport } = req.body
+router.post(
+  '/register',
+  authLimiter,
+  validate(registerSchema),
+  async (req: Request, res: Response, next: NextFunction) => {
+    try {
+      const { email, password, displayName, phone, country, city, sport } = req.body
 
-    const existing = await prisma.user.findUnique({ where: { email } })
-    if (existing) throw new AppError('Este email ya está registrado', 409)
+      const existing = await prisma.user.findUnique({ where: { email } })
+      if (existing) throw new AppError('Este email ya está registrado', 409)
 
-    const passwordHash = await bcrypt.hash(password, 12)
+      const passwordHash = await bcrypt.hash(password, 12)
 
-    const user = await prisma.user.create({
-      data: {
-        email,
-        phone: encryptPII(phone),
-        passwordHash,
-        subscriptionTier: 'free',
-        playerProfile: {
-          create: {
-            displayName,
-            country,
-            city,
-            sport,
-            eloPadel: INITIAL_ELO,
-            eloPickleball: INITIAL_ELO,
-            category: 'C4',
-            xpPoints: 0,
-            level: 1,
+      const user = await prisma.user.create({
+        data: {
+          email,
+          phone: encryptPII(phone),
+          passwordHash,
+          subscriptionTier: 'free',
+          playerProfile: {
+            create: {
+              displayName,
+              country,
+              city,
+              sport,
+              eloPadel: INITIAL_ELO,
+              eloPickleball: INITIAL_ELO,
+              category: 'C4',
+              xpPoints: 0,
+              level: 1,
+            },
           },
         },
-      },
-      include: { playerProfile: true },
-    })
+        include: { playerProfile: true },
+      })
 
-    const tokens = await generateTokenPair({
-      userId: user.id,
-      email: user.email,
-      subscriptionTier: user.subscriptionTier,
-    })
+      const tokens = await generateTokenPair({
+        userId: user.id,
+        email: user.email,
+        subscriptionTier: user.subscriptionTier,
+      })
 
-    return res.status(201).json({
-      success: true,
-      data: {
-        user: {
-          id: user.id,
-          email: user.email,
-          subscriptionTier: user.subscriptionTier,
-          profile: user.playerProfile,
+      return res.status(201).json({
+        success: true,
+        data: {
+          user: {
+            id: user.id,
+            email: user.email,
+            subscriptionTier: user.subscriptionTier,
+            profile: user.playerProfile,
+          },
+          ...tokens,
         },
-        ...tokens,
-      },
-    })
-  } catch (err) {
-    return next(err)
+      })
+    } catch (err) {
+      return next(err)
+    }
   }
-})
+)
 
 // POST /api/auth/invite — admin crea un jugador (nombre + email) y le envía invitación para completar su cuenta
 router.post('/invite', async (req: Request, res: Response, next: NextFunction) => {
@@ -136,21 +145,33 @@ router.post('/invite', async (req: Request, res: Response, next: NextFunction) =
 
     // Envío de email best-effort — si el notification-service no está disponible, el link sigue disponible en la respuesta
     try {
-      await axios.post(`${NOTIFICATION_SERVICE_URL}/api/notifications/email`, {
-        to: normalizedEmail,
-        subject: 'Te invitaron a Racketly',
-        html: `<p>Hola ${name.trim()},</p><p>Te han creado una cuenta en Racketly. Completa tu registro aquí:</p><p><a href="${inviteLink}">${inviteLink}</a></p><p>Este link expira en 7 días.</p>`,
-      }, { timeout: 3000 })
-    } catch { /* best-effort, el link queda disponible en la respuesta igualmente */ }
+      await axios.post(
+        `${NOTIFICATION_SERVICE_URL}/api/notifications/email`,
+        {
+          to: normalizedEmail,
+          subject: 'Te invitaron a Racketly',
+          html: `<p>Hola ${name.trim()},</p><p>Te han creado una cuenta en Racketly. Completa tu registro aquí:</p><p><a href="${inviteLink}">${inviteLink}</a></p><p>Este link expira en 7 días.</p>`,
+        },
+        { timeout: 3000 }
+      )
+    } catch {
+      /* best-effort, el link queda disponible en la respuesta igualmente */
+    }
 
     return res.status(201).json({
       success: true,
       data: {
         user: { id: user.id, email: user.email, displayName: user.playerProfile?.displayName },
-        invite: { token: user.accountInvite!.token, link: inviteLink, expiresAt: user.accountInvite!.expiresAt },
+        invite: {
+          token: user.accountInvite!.token,
+          link: inviteLink,
+          expiresAt: user.accountInvite!.expiresAt,
+        },
       },
     })
-  } catch (err) { return next(err) }
+  } catch (err) {
+    return next(err)
+  }
 })
 
 // GET /api/auth/invite/:token — datos de la invitación (para la pantalla de aceptar)
@@ -168,16 +189,22 @@ router.get('/invite/:token', async (req: Request, res: Response, next: NextFunct
       success: true,
       data: { email: invite.user.email, name: invite.user.playerProfile?.displayName ?? '' },
     })
-  } catch (err) { return next(err) }
+  } catch (err) {
+    return next(err)
+  }
 })
 
 // POST /api/auth/invite/:token/accept — el jugador define su contraseña y activa la cuenta
 router.post('/invite/:token/accept', async (req: Request, res: Response, next: NextFunction) => {
   try {
     const { password } = req.body
-    if (!password || password.length < 8) throw new AppError('La contraseña debe tener al menos 8 caracteres', 400)
+    if (!password || password.length < 8)
+      throw new AppError('La contraseña debe tener al menos 8 caracteres', 400)
 
-    const invite = await prisma.accountInvite.findUnique({ where: { token: req.params.token }, include: { user: true } })
+    const invite = await prisma.accountInvite.findUnique({
+      where: { token: req.params.token },
+      include: { user: true },
+    })
     if (!invite) throw new AppError('Invitación no encontrada', 404)
     if (invite.acceptedAt) throw new AppError('Esta invitación ya fue utilizada', 400)
     if (invite.expiresAt < new Date()) throw new AppError('Esta invitación expiró', 400)
@@ -202,38 +229,6 @@ router.post('/invite/:token/accept', async (req: Request, res: Response, next: N
     return res.json({
       success: true,
       data: {
-        user: { id: user.id, email: user.email, subscriptionTier: user.subscriptionTier, profile: user.playerProfile },
-        ...tokens,
-      },
-    })
-  } catch (err) { return next(err) }
-})
-
-// POST /api/auth/login
-router.post('/login', authLimiter, validate(loginSchema), async (req: Request, res: Response, next: NextFunction) => {
-  try {
-    const { email, password } = req.body
-
-    const user = await prisma.user.findUnique({
-      where: { email },
-      include: { playerProfile: true },
-    })
-
-    if (!user) throw new AppError('Credenciales incorrectas', 401)
-    if (!user.passwordHash) throw new AppError('Esta cuenta usa Google Sign-In. Inicia sesión con Google.', 400)
-
-    const isMatch = await bcrypt.compare(password, user.passwordHash)
-    if (!isMatch) throw new AppError('Credenciales incorrectas', 401)
-
-    const tokens = await generateTokenPair({
-      userId: user.id,
-      email: user.email,
-      subscriptionTier: user.subscriptionTier,
-    })
-
-    return res.json({
-      success: true,
-      data: {
         user: {
           id: user.id,
           email: user.email,
@@ -248,29 +243,79 @@ router.post('/login', authLimiter, validate(loginSchema), async (req: Request, r
   }
 })
 
-// POST /api/auth/refresh
-router.post('/refresh', authLimiter, validate(refreshSchema), async (req: Request, res: Response, next: NextFunction) => {
-  try {
-    const { refreshToken } = req.body
-    // Decodifica sin verificar todavía, solo para saber a quién buscar — la verificación
-    // real (firma + vigencia en DB) ocurre dentro de verifyAndRotateRefreshToken.
-    const unsafeDecoded = jwt.decode(refreshToken) as { userId?: string } | null
-    if (!unsafeDecoded?.userId) throw new AppError('Refresh token inválido o expirado', 401)
+// POST /api/auth/login
+router.post(
+  '/login',
+  authLimiter,
+  validate(loginSchema),
+  async (req: Request, res: Response, next: NextFunction) => {
+    try {
+      const { email, password } = req.body
 
-    const user = await prisma.user.findUnique({ where: { id: unsafeDecoded.userId } })
-    if (!user) throw new AppError('Refresh token inválido o expirado', 401)
+      const user = await prisma.user.findUnique({
+        where: { email },
+        include: { playerProfile: true },
+      })
 
-    const tokens = await verifyAndRotateRefreshToken(refreshToken, {
-      userId: user.id,
-      email: user.email,
-      subscriptionTier: user.subscriptionTier,
-    })
+      if (!user) throw new AppError('Credenciales incorrectas', 401)
+      if (!user.passwordHash)
+        throw new AppError('Esta cuenta usa Google Sign-In. Inicia sesión con Google.', 400)
 
-    return res.json({ success: true, data: tokens })
-  } catch {
-    return next(new AppError('Refresh token inválido o expirado', 401))
+      const isMatch = await bcrypt.compare(password, user.passwordHash)
+      if (!isMatch) throw new AppError('Credenciales incorrectas', 401)
+
+      const tokens = await generateTokenPair({
+        userId: user.id,
+        email: user.email,
+        subscriptionTier: user.subscriptionTier,
+      })
+
+      return res.json({
+        success: true,
+        data: {
+          user: {
+            id: user.id,
+            email: user.email,
+            subscriptionTier: user.subscriptionTier,
+            profile: user.playerProfile,
+          },
+          ...tokens,
+        },
+      })
+    } catch (err) {
+      return next(err)
+    }
   }
-})
+)
+
+// POST /api/auth/refresh
+router.post(
+  '/refresh',
+  authLimiter,
+  validate(refreshSchema),
+  async (req: Request, res: Response, next: NextFunction) => {
+    try {
+      const { refreshToken } = req.body
+      // Decodifica sin verificar todavía, solo para saber a quién buscar — la verificación
+      // real (firma + vigencia en DB) ocurre dentro de verifyAndRotateRefreshToken.
+      const unsafeDecoded = jwt.decode(refreshToken) as { userId?: string } | null
+      if (!unsafeDecoded?.userId) throw new AppError('Refresh token inválido o expirado', 401)
+
+      const user = await prisma.user.findUnique({ where: { id: unsafeDecoded.userId } })
+      if (!user) throw new AppError('Refresh token inválido o expirado', 401)
+
+      const tokens = await verifyAndRotateRefreshToken(refreshToken, {
+        userId: user.id,
+        email: user.email,
+        subscriptionTier: user.subscriptionTier,
+      })
+
+      return res.json({ success: true, data: tokens })
+    } catch {
+      return next(new AppError('Refresh token inválido o expirado', 401))
+    }
+  }
+)
 
 // POST /api/auth/google
 // Acepta un accessToken de Google, obtiene los datos del usuario y hace find-or-create
@@ -301,7 +346,10 @@ router.post('/google', async (req: Request, res: Response, next: NextFunction) =
       // apropiarse de la cuenta existente. En ese caso, pedimos loguearse con password.
       if (!user.googleId) {
         if (user.passwordHash) {
-          throw new AppError('Esta cuenta usa contraseña. Inicia sesión con tu contraseña para vincular Google desde tu perfil.', 409)
+          throw new AppError(
+            'Esta cuenta usa contraseña. Inicia sesión con tu contraseña para vincular Google desde tu perfil.',
+            409
+          )
         }
         user = await prisma.user.update({
           where: { id: user.id },
@@ -357,7 +405,8 @@ router.post('/google', async (req: Request, res: Response, next: NextFunction) =
       },
     })
   } catch (err: any) {
-    if (err.response?.status === 401) return next(new AppError('Token de Google inválido o expirado', 401))
+    if (err.response?.status === 401)
+      return next(new AppError('Token de Google inválido o expirado', 401))
     return next(err)
   }
 })
@@ -365,7 +414,18 @@ router.post('/google', async (req: Request, res: Response, next: NextFunction) =
 // PATCH /api/auth/me — cambiar email, contraseña y/o datos personales
 router.patch('/me', authenticate, async (req: Request, res: Response, next: NextFunction) => {
   try {
-    const { email, currentPassword, newPassword, firstName, lastName, phone, documentType, documentNumber, birthDate, pushToken } = req.body
+    const {
+      email,
+      currentPassword,
+      newPassword,
+      firstName,
+      lastName,
+      phone,
+      documentType,
+      documentNumber,
+      birthDate,
+      pushToken,
+    } = req.body
     const userId = req.user!.userId
 
     const user = await prisma.user.findUnique({ where: { id: userId } })
@@ -381,19 +441,21 @@ router.patch('/me', authenticate, async (req: Request, res: Response, next: Next
 
     if (newPassword) {
       if (!currentPassword) throw new AppError('Se requiere la contraseña actual', 400)
-      if (!user.passwordHash) throw new AppError('Esta cuenta usa Google Sign-In. No puedes cambiar la contraseña.', 400)
+      if (!user.passwordHash)
+        throw new AppError('Esta cuenta usa Google Sign-In. No puedes cambiar la contraseña.', 400)
       const isMatch = await bcrypt.compare(currentPassword, user.passwordHash)
       if (!isMatch) throw new AppError('Contraseña actual incorrecta', 401)
       updateData.passwordHash = await bcrypt.hash(newPassword, 12)
     }
 
-    if (firstName  !== undefined) updateData.firstName  = firstName  || null
-    if (lastName   !== undefined) updateData.lastName   = lastName   || null
-    if (phone      !== undefined) updateData.phone      = phone ? encryptPII(phone) : null
-    if (documentType   !== undefined) updateData.documentType   = documentType   || null
-    if (documentNumber !== undefined) updateData.documentNumber = documentNumber ? encryptPII(documentNumber) : null
-    if (birthDate  !== undefined) updateData.birthDate  = birthDate ? encryptPII(birthDate) : null
-    if (pushToken  !== undefined) updateData.pushToken  = pushToken || null
+    if (firstName !== undefined) updateData.firstName = firstName || null
+    if (lastName !== undefined) updateData.lastName = lastName || null
+    if (phone !== undefined) updateData.phone = phone ? encryptPII(phone) : null
+    if (documentType !== undefined) updateData.documentType = documentType || null
+    if (documentNumber !== undefined)
+      updateData.documentNumber = documentNumber ? encryptPII(documentNumber) : null
+    if (birthDate !== undefined) updateData.birthDate = birthDate ? encryptPII(birthDate) : null
+    if (pushToken !== undefined) updateData.pushToken = pushToken || null
 
     if (Object.keys(updateData).length === 0) {
       return res.json({ success: true, message: 'Sin cambios' })
@@ -402,7 +464,17 @@ router.patch('/me', authenticate, async (req: Request, res: Response, next: Next
     const updated = await prisma.user.update({
       where: { id: userId },
       data: updateData,
-      select: { id: true, email: true, firstName: true, lastName: true, phone: true, documentType: true, documentNumber: true, birthDate: true, pushToken: true },
+      select: {
+        id: true,
+        email: true,
+        firstName: true,
+        lastName: true,
+        phone: true,
+        documentType: true,
+        documentNumber: true,
+        birthDate: true,
+        pushToken: true,
+      },
     })
 
     return res.json({

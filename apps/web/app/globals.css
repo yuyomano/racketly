@@ -2,28 +2,31 @@
 @tailwind components;
 @tailwind utilities;
 
+/* Sistema "Marcador" — ver tailwind.config.ts para el razonamiento de cada tono.
+   Estas variables son el mismo valor que court/ink/ball en HSL, para que shadcn-style
+   utilities (bg-background, text-foreground, etc.) y las escalas de Tailwind coincidan. */
 @layer base {
   :root {
-    --background: 0 0% 100%;
-    --foreground: 222.2 84% 4.9%;
-    --primary: 160 84% 39%;        /* emerald-600 — color principal Racketly */
+    --background: 150 15% 96%;     /* chalk — línea de cal, no blanco clínico ni cream */
+    --foreground: 165 35% 9%;      /* turf-ink */
+    --primary: 174 60% 26%;        /* court — teal petróleo, reemplaza al emerald genérico */
     --primary-foreground: 0 0% 100%;
-    --secondary: 210 40% 96.1%;
-    --secondary-foreground: 222.2 47.4% 11.2%;
-    --muted: 210 40% 96.1%;
-    --muted-foreground: 215.4 16.3% 46.9%;
-    --accent: 45 93% 47%;          /* amber — acento deportivo */
-    --accent-foreground: 222.2 47.4% 11.2%;
-    --destructive: 0 84.2% 60.2%;
-    --border: 214.3 31.8% 91.4%;
+    --secondary: 165 12% 92%;
+    --secondary-foreground: 165 35% 9%;
+    --muted: 165 10% 93%;
+    --muted-foreground: 165 12% 40%;
+    --accent: 70 77% 57%;          /* ball — acento de estado (en vivo/disponible), no decorativo */
+    --accent-foreground: 165 35% 9%;
+    --destructive: 4 58% 47%;      /* referee */
+    --border: 165 12% 88%;
     --radius: 0.75rem;
   }
 
   .dark {
-    --background: 222.2 84% 4.9%;
-    --foreground: 210 40% 98%;
-    --primary: 160 84% 39%;
-    --primary-foreground: 0 0% 100%;
+    --background: 165 35% 9%;
+    --foreground: 150 15% 96%;
+    --primary: 174 55% 40%;
+    --primary-foreground: 165 35% 9%;
   }
 
   body {
@@ -33,9 +36,12 @@
 }
 
 @layer utilities {
-  .sport-padel { @apply bg-emerald-500 text-white; }
-  .sport-pickleball { @apply bg-amber-500 text-white; }
+  .sport-padel { @apply bg-court-500 text-white; }
+  .sport-pickleball { @apply bg-trophy-500 text-white; }
   .category-badge { @apply inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium; }
+  /* Números de marcador/estadística — el ancho fijo evita que los dígitos "salten"
+     cuando un marcador o KPI se actualiza en vivo. */
+  .font-score { font-variant-numeric: tabular-nums; }
 }
 
 @keyframes toast-in {
@@ -43,3 +49,15 @@
   to   { opacity: 1; transform: translateY(0); }
 }
 .toast-enter { animation: toast-in 0.18s ease-out; }
+
+/* Único momento de movimiento "no disparado por el usuario" del sistema — el punto de
+   EN VIVO. Deliberadamente no hay fade-in/slide-up en scroll en ningún otro lugar. */
+@keyframes live-pulse {
+  0%, 100% { opacity: 1; }
+  50%      { opacity: 0.35; }
+}
+.live-dot { animation: live-pulse 1.6s ease-in-out infinite; }
+
+@media (prefers-reduced-motion: reduce) {
+  .live-dot, .toast-enter { animation: none; }
+}

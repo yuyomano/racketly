@@ -2,11 +2,20 @@ import { PrismaClient } from '@prisma/client'
 const prisma = new PrismaClient()
 
 async function main() {
-  const clubs = await prisma.club.findMany({ select: { id: true, name: true, country: true, currency: true } })
+  const clubs = await prisma.club.findMany({
+    select: { id: true, name: true, country: true, currency: true },
+  })
 
   const COUNTRY_CURRENCY: Record<string, string> = {
-    CO: 'COP', MX: 'MXN', AR: 'ARS', BR: 'BRL', CL: 'CLP', PE: 'PEN',
-    US: 'USD', ES: 'EUR', GB: 'GBP',
+    CO: 'COP',
+    MX: 'MXN',
+    AR: 'ARS',
+    BR: 'BRL',
+    CL: 'CLP',
+    PE: 'PEN',
+    US: 'USD',
+    ES: 'EUR',
+    GB: 'GBP',
   }
 
   for (const club of clubs) {
@@ -21,4 +30,6 @@ async function main() {
   console.log('Done.')
 }
 
-main().catch(console.error).finally(() => prisma.$disconnect())
+main()
+  .catch(console.error)
+  .finally(() => prisma.$disconnect())

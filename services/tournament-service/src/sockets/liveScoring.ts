@@ -52,7 +52,10 @@ export function setupLiveScoring(io: Server) {
     socket.on('match:finish', async ({ matchId, sets }: { matchId: string; sets: SetScore[] }) => {
       try {
         const match = await prisma.match.findUnique({ where: { id: matchId } })
-        if (!match) { socket.emit('error', { message: 'Partido no encontrado' }); return }
+        if (!match) {
+          socket.emit('error', { message: 'Partido no encontrado' })
+          return
+        }
 
         const winnerPos = determineWinner(sets)
         const winnerId = winnerPos === 1 ? match.player1Id : match.player2Id
@@ -80,7 +83,9 @@ export function setupLiveScoring(io: Server) {
           if (p1 && p2) {
             const player1Won = winnerId === match.player1Id
             const { newElo1, newElo2, delta1, delta2 } = calculateElo(
-              p1.eloPadel, p2.eloPadel, player1Won
+              p1.eloPadel,
+              p2.eloPadel,
+              player1Won
             )
 
             await Promise.all([
@@ -94,8 +99,20 @@ export function setupLiveScoring(io: Server) {
               }),
               prisma.eloHistory.createMany({
                 data: [
-                  { playerId: p1.userId, matchId, eloBefore: p1.eloPadel, eloAfter: newElo1, delta: delta1 },
-                  { playerId: p2.userId, matchId, eloBefore: p2.eloPadel, eloAfter: newElo2, delta: delta2 },
+                  {
+                    playerId: p1.userId,
+                    matchId,
+                    eloBefore: p1.eloPadel,
+                    eloAfter: newElo1,
+                    delta: delta1,
+                  },
+                  {
+                    playerId: p2.userId,
+                    matchId,
+                    eloBefore: p2.eloPadel,
+                    eloAfter: newElo2,
+                    delta: delta2,
+                  },
                 ],
               }),
             ])
@@ -111,7 +128,9 @@ export function setupLiveScoring(io: Server) {
           await propagateKnockoutWinner(match.tournamentId, matchId)
         }
 
-        scoreNs.to(`match:${matchId}`).emit('match:finished', { matchId, winnerId, sets, eloChanges })
+        scoreNs
+          .to(`match:${matchId}`)
+          .emit('match:finished', { matchId, winnerId, sets, eloChanges })
       } catch (err) {
         console.error('[LiveScoring] match:finish error', err)
         socket.emit('error', { message: 'Error finalizando partido' })

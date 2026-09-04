@@ -9,18 +9,21 @@ El proyecto necesita **PostgreSQL** y **Redis**. Elige una de estas opciones:
 ## OPCIÓN 1: Docker Desktop (Recomendado) 🐳
 
 **Instalar Docker Desktop:**
+
 1. Ir a https://www.docker.com/products/docker-desktop/
 2. Descargar e instalar para Windows
 3. Reiniciar el equipo
 4. Abrir Docker Desktop y esperar que arranque
 
 **Luego ejecutar:**
+
 ```powershell
 cd "C:\Users\angelsa\OneDrive - Bellon S.A.S\Documents\Racketly"
 npm run docker:dev
 ```
 
 Esto levanta automáticamente:
+
 - PostgreSQL en `localhost:5432`
 - Redis en `localhost:6379`
 
@@ -76,17 +79,17 @@ npm run dev
 
 ## Puertos en desarrollo
 
-| Servicio | Puerto | URL |
-|---|---|---|
-| API Gateway | 4000 | http://localhost:4000 |
-| Auth Service | 3001 | http://localhost:3001/health |
-| Booking Service | 3002 | http://localhost:3002/health |
-| Tournament Service | 3003 | http://localhost:3003/health |
-| Community Service | 3004 | http://localhost:3004/health |
-| Academy Service | 3005 | http://localhost:3005/health |
-| Notification Service | 3006 | http://localhost:3006/health |
-| Web (Next.js) | 3000 | http://localhost:3000 |
-| Prisma Studio | 5555 | http://localhost:5555 |
+| Servicio             | Puerto | URL                          |
+| -------------------- | ------ | ---------------------------- |
+| API Gateway          | 4000   | http://localhost:4000        |
+| Auth Service         | 3001   | http://localhost:3001/health |
+| Booking Service      | 3002   | http://localhost:3002/health |
+| Tournament Service   | 3003   | http://localhost:3003/health |
+| Community Service    | 3004   | http://localhost:3004/health |
+| Academy Service      | 3005   | http://localhost:3005/health |
+| Notification Service | 3006   | http://localhost:3006/health |
+| Web (Next.js)        | 3000   | http://localhost:3000        |
+| Prisma Studio        | 5555   | http://localhost:5555        |
 
 ---
 
@@ -100,6 +103,7 @@ curl http://localhost:3003/health
 ```
 
 Respuesta esperada:
+
 ```json
-{"success":true,"service":"auth-service","status":"ok"}
+{ "success": true, "service": "auth-service", "status": "ok" }
 ```

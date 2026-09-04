@@ -5,14 +5,26 @@ import { v4 as uuidv4 } from 'uuid'
 import { randomUUID } from 'crypto'
 import { AppError } from '../middleware/error.middleware'
 import { isSlotAvailable } from '../services/slot.service'
-import { createStripePaymentIntent, retrieveStripePaymentIntent, refundStripePayment, isStripeConfigured } from '../services/payment.service'
+import {
+  createStripePaymentIntent,
+  retrieveStripePaymentIntent,
+  refundStripePayment,
+  isStripeConfigured,
+} from '../services/payment.service'
 
 const WEB_URL = process.env.WEB_URL || 'http://localhost:3010'
 const GUEST_PAYMENT_LINK_TTL_HOURS = 48
 import { countMembershipSessionsForDate } from '../services/membership-sessions.service'
 import { applyMatchElo } from '../services/match-elo.service'
-import { restoreCoveredCredits, cancelBookingAndIssueCredit } from '../services/cancellation.service'
-import { toMinutes, hasConflictingClass, hasConflictingMaintenance } from '../services/schedule-conflict.service'
+import {
+  restoreCoveredCredits,
+  cancelBookingAndIssueCredit,
+} from '../services/cancellation.service'
+import {
+  toMinutes,
+  hasConflictingClass,
+  hasConflictingMaintenance,
+} from '../services/schedule-conflict.service'
 import { determineWinner } from '@racketly/utils'
 import type { SetScore } from '@racketly/shared-types'
 
@@ -23,8 +35,13 @@ const prisma = new PrismaClient()
 // amountPaid/paymentStatus en Booking. `paidAt` es SIEMPRE el momento del cobro — no la
 // fecha de la reserva que cubre — porque es lo que importa para el cuadre de caja diario.
 export async function recordPayment(opts: {
-  clubId: string; bookingId?: string; playerUserId?: string | null; playerName?: string
-  amount: number; currency: string; method: 'cash' | 'card'
+  clubId: string
+  bookingId?: string
+  playerUserId?: string | null
+  playerName?: string
+  amount: number
+  currency: string
+  method: 'cash' | 'card'
 }) {
   if (opts.amount <= 0) return
   await prisma.payment.create({
@@ -61,7 +78,13 @@ function resolvePaymentMethodDefaultCash(input: unknown): 'cash' | 'card' {
 // de la pista — igual que ya calculaba GET /pricing (antes esta función lo ignoraba y siempre
 // cobraba el precio completo, dejando la tarifa de socio sin aplicar en la reserva real).
 // Si ninguna aplica, cae al flag `pay` que decidió quien reserva.
-async function resolvePlayerCoverage(playerUserId: string, clubId: string, pricePerPlayer: number, wantsToPayNow: boolean, slotDate: string) {
+async function resolvePlayerCoverage(
+  playerUserId: string,
+  clubId: string,
+  pricePerPlayer: number,
+  wantsToPayNow: boolean,
+  slotDate: string
+) {
   const membership = await prisma.userClubMembership.findFirst({
     where: { userId: playerUserId, clubId, status: 'active' },
     include: { plan: true },
@@ -69,9 +92,20 @@ async function resolvePlayerCoverage(playerUserId: string, clubId: string, price
 
   let effectivePrice = pricePerPlayer
   if (membership) {
-    const sessionsOnDate = await countMembershipSessionsForDate(prisma, playerUserId, clubId, slotDate)
+    const sessionsOnDate = await countMembershipSessionsForDate(
+      prisma,
+      playerUserId,
+      clubId,
+      slotDate
+    )
     if (sessionsOnDate < membership.plan.sessionsPerDay) {
-      return { amountOwed: 0, amountPaid: 0, paymentStatus: 'paid' as const, coveredBy: 'membership' as const, creditIdsUsed: undefined as string[] | undefined }
+      return {
+        amountOwed: 0,
+        amountPaid: 0,
+        paymentStatus: 'paid' as const,
+        coveredBy: 'membership' as const,
+        creditIdsUsed: undefined as string[] | undefined,
+      }
     }
     if (membership.plan.priceExtraSession > 0) {
       effectivePrice = membership.plan.priceExtraSession
@@ -91,8 +125,17 @@ async function resolvePlayerCoverage(playerUserId: string, clubId: string, price
       idsToUse.push(c.id)
       remaining -= c.amount
     }
-    await prisma.userCredit.updateMany({ where: { id: { in: idsToUse } }, data: { status: 'used', usedAt: new Date() } })
-    return { amountOwed: effectivePrice, amountPaid: effectivePrice, paymentStatus: 'paid' as const, coveredBy: 'credit' as const, creditIdsUsed: idsToUse }
+    await prisma.userCredit.updateMany({
+      where: { id: { in: idsToUse } },
+      data: { status: 'used', usedAt: new Date() },
+    })
+    return {
+      amountOwed: effectivePrice,
+      amountPaid: effectivePrice,
+      paymentStatus: 'paid' as const,
+      coveredBy: 'credit' as const,
+      creditIdsUsed: idsToUse,
+    }
   }
 
   return {
@@ -104,10 +147,18 @@ async function resolvePlayerCoverage(playerUserId: string, clubId: string, price
   }
 }
 
-
 // POST /api/bookings — Crear reserva
 router.post('/', async (req: Request, res: Response, next: NextFunction) => {
-  const { slotId, userId, players, paymentProvider, pricingType, membershipId, ownerName, ownerPay } = req.body
+  const {
+    slotId,
+    userId,
+    players,
+    paymentProvider,
+    pricingType,
+    membershipId,
+    ownerName,
+    ownerPay,
+  } = req.body
   // Método de cobro para lo que se paga AHORA en esta reserva (dueño y/o compañeros con pay:true).
   // La app del jugador nunca manda este campo → cae a 'card' (todo pago por app es tarjeta).
   // Solo el dashboard admin, al cobrar en persona, manda explícitamente 'cash'.
@@ -118,7 +169,10 @@ router.post('/', async (req: Request, res: Response, next: NextFunction) => {
     const available = await isSlotAvailable(slotId)
     if (!available) throw new AppError('Esta cancha ya no está disponible', 409)
 
-    const slot = await prisma.timeSlot.findUnique({ where: { id: slotId }, include: { court: true } })
+    const slot = await prisma.timeSlot.findUnique({
+      where: { id: slotId },
+      include: { court: true },
+    })
     if (!slot) throw new AppError('Slot no encontrado', 404)
 
     const blockExpired = slot.blockedExpiresAt && new Date() > slot.blockedExpiresAt
@@ -129,16 +183,30 @@ router.post('/', async (req: Request, res: Response, next: NextFunction) => {
       }
     }
 
-    if (await hasConflictingClass(slot.courtId, slot.date, toMinutes(slot.startTime), toMinutes(slot.endTime))) {
+    if (
+      await hasConflictingClass(
+        slot.courtId,
+        slot.date,
+        toMinutes(slot.startTime),
+        toMinutes(slot.endTime)
+      )
+    ) {
       throw new AppError('Esta pista tiene una clase programada a esa hora', 409)
     }
 
-    if (await hasConflictingMaintenance(slot.courtId, slot.date, toMinutes(slot.startTime), toMinutes(slot.endTime))) {
+    if (
+      await hasConflictingMaintenance(
+        slot.courtId,
+        slot.date,
+        toMinutes(slot.startTime),
+        toMinutes(slot.endTime)
+      )
+    ) {
       throw new AppError('Esta pista está en mantenimiento en ese horario', 409)
     }
 
-    const courtPrice    = slot.isPeak ? slot.peakPrice : slot.basePrice
-    const capacity      = slot.court.capacity || 4
+    const courtPrice = slot.isPeak ? slot.peakPrice : slot.basePrice
+    const capacity = slot.court.capacity || 4
     const pricePerPlayer = slot.pricePerPlayer ?? courtPrice / capacity
 
     const resolvedPricingType = pricingType || 'pay_per_use'
@@ -155,7 +223,10 @@ router.post('/', async (req: Request, res: Response, next: NextFunction) => {
     })
     if (sameTimeSlots.length > 0) {
       const conflictBookings = await prisma.booking.findMany({
-        where: { slotId: { in: sameTimeSlots.map((s) => s.id) }, status: { in: ['pending', 'confirmed'] } },
+        where: {
+          slotId: { in: sameTimeSlots.map((s) => s.id) },
+          status: { in: ['pending', 'confirmed'] },
+        },
         select: { userId: true, players: true },
       })
       const bookedIds = new Set<string>()
@@ -180,24 +251,47 @@ router.post('/', async (req: Request, res: Response, next: NextFunction) => {
     }
 
     // Resolver cobertura de cada jugador extra: cortesía explícita > membresía propia > crédito propio > lo que decida quien reserva
-    const extraPlayersData = await Promise.all(extraPlayers.map(async (p: any) => {
-      const coverage = p.courtesy
-        ? { amountOwed: pricePerPlayer, amountPaid: 0, paymentStatus: 'courtesy' as const, coveredBy: null, creditIdsUsed: undefined as string[] | undefined }
-        : p.userId
-          ? await resolvePlayerCoverage(p.userId, req.body.clubId, pricePerPlayer, !!p.pay, slot.date)
-          : { amountOwed: pricePerPlayer, amountPaid: p.pay ? pricePerPlayer : 0, paymentStatus: p.pay ? ('paid' as const) : ('pending' as const), coveredBy: null, creditIdsUsed: undefined as string[] | undefined }
-      return {
-        userId: p.userId ?? null, name: p.name, avatarUrl: p.avatarUrl ?? null,
-        ...(!p.userId && { guestId: randomUUID() }),
-        amountOwed: coverage.amountOwed,
-        amountPaid: coverage.amountPaid,
-        paymentStatus: coverage.paymentStatus,
-        ...(coverage.coveredBy && { coveredBy: coverage.coveredBy }),
-        ...(coverage.creditIdsUsed && { creditIdsUsed: coverage.creditIdsUsed }),
-        ...(p.courtesy && { courtesyReason }),
-        ...(coverage.paymentStatus === 'paid' && !coverage.coveredBy && { paymentMethod, paidAt: new Date().toISOString() }),
-      }
-    }))
+    const extraPlayersData = await Promise.all(
+      extraPlayers.map(async (p: any) => {
+        const coverage = p.courtesy
+          ? {
+              amountOwed: pricePerPlayer,
+              amountPaid: 0,
+              paymentStatus: 'courtesy' as const,
+              coveredBy: null,
+              creditIdsUsed: undefined as string[] | undefined,
+            }
+          : p.userId
+            ? await resolvePlayerCoverage(
+                p.userId,
+                req.body.clubId,
+                pricePerPlayer,
+                !!p.pay,
+                slot.date
+              )
+            : {
+                amountOwed: pricePerPlayer,
+                amountPaid: p.pay ? pricePerPlayer : 0,
+                paymentStatus: p.pay ? ('paid' as const) : ('pending' as const),
+                coveredBy: null,
+                creditIdsUsed: undefined as string[] | undefined,
+              }
+        return {
+          userId: p.userId ?? null,
+          name: p.name,
+          avatarUrl: p.avatarUrl ?? null,
+          ...(!p.userId && { guestId: randomUUID() }),
+          amountOwed: coverage.amountOwed,
+          amountPaid: coverage.amountPaid,
+          paymentStatus: coverage.paymentStatus,
+          ...(coverage.coveredBy && { coveredBy: coverage.coveredBy }),
+          ...(coverage.creditIdsUsed && { creditIdsUsed: coverage.creditIdsUsed }),
+          ...(p.courtesy && { courtesyReason }),
+          ...(coverage.paymentStatus === 'paid' &&
+            !coverage.coveredBy && { paymentMethod, paidAt: new Date().toISOString() }),
+        }
+      })
+    )
 
     // Cobertura del dueño: cortesía explícita > cobertura resuelta en servidor.
     // `resolvedPricingType` es solo lo que el cliente pidió (venía del preview de GET /pricing);
@@ -205,37 +299,65 @@ router.post('/', async (req: Request, res: Response, next: NextFunction) => {
     // compañeros — para que aplique el precio real (gratis, priceExtraSession, o completo)
     // y no se pueda forzar una reserva gratis enviando pricingType=membership_included sin
     // tener membresía.
-    const ownerWantsToPayNow = ownerPay === true || resolvedPricingType === 'membership_included' || resolvedPricingType === 'membership_extra'
+    const ownerWantsToPayNow =
+      ownerPay === true ||
+      resolvedPricingType === 'membership_included' ||
+      resolvedPricingType === 'membership_extra'
     const ownerCoverage = ownerCourtesy
-      ? { amountOwed: pricePerPlayer, amountPaid: 0, paymentStatus: 'courtesy' as const, coveredBy: null, creditIdsUsed: undefined as string[] | undefined }
-      : await resolvePlayerCoverage(userId, req.body.clubId, pricePerPlayer, ownerWantsToPayNow, slot.date)
+      ? {
+          amountOwed: pricePerPlayer,
+          amountPaid: 0,
+          paymentStatus: 'courtesy' as const,
+          coveredBy: null,
+          creditIdsUsed: undefined as string[] | undefined,
+        }
+      : await resolvePlayerCoverage(
+          userId,
+          req.body.clubId,
+          pricePerPlayer,
+          ownerWantsToPayNow,
+          slot.date
+        )
 
     const playersData = [
       {
-        userId, name: ownerName ?? userId, isOwner: true,
-        amountOwed: ownerCoverage.amountOwed, amountPaid: ownerCoverage.amountPaid, paymentStatus: ownerCoverage.paymentStatus,
+        userId,
+        name: ownerName ?? userId,
+        isOwner: true,
+        amountOwed: ownerCoverage.amountOwed,
+        amountPaid: ownerCoverage.amountPaid,
+        paymentStatus: ownerCoverage.paymentStatus,
         ...(ownerCoverage.coveredBy && { coveredBy: ownerCoverage.coveredBy }),
         ...(ownerCoverage.creditIdsUsed && { creditIdsUsed: ownerCoverage.creditIdsUsed }),
         ...(ownerCourtesy && { courtesyReason }),
-        ...(ownerCoverage.paymentStatus === 'paid' && !ownerCoverage.coveredBy && { paymentMethod, paidAt: new Date().toISOString() }),
+        ...(ownerCoverage.paymentStatus === 'paid' &&
+          !ownerCoverage.coveredBy && { paymentMethod, paidAt: new Date().toISOString() }),
       },
       ...extraPlayersData,
     ]
     // Excluye jugadores cubiertos por su propia membresía/crédito: no se cobran ahora en el método de pago de quien reserva.
-    const amount = playersData.filter((p) => p.paymentStatus === 'paid' && !p.coveredBy).reduce((sum, p) => sum + p.amountOwed, 0)
+    const amount = playersData
+      .filter((p) => p.paymentStatus === 'paid' && !p.coveredBy)
+      .reduce((sum, p) => sum + p.amountOwed, 0)
 
     // `pricingType` del booking refleja lo que realmente se resolvió para el dueño (server-side),
     // no lo que pidió el cliente — evita guardar una etiqueta falsa si el cliente mandó
     // pricingType=membership_included sin tener membresía real.
     const actualPricingType =
-      ownerCoverage.coveredBy === 'membership' ? 'membership_included'
-      : !ownerCourtesy && ownerCoverage.amountOwed > 0 && ownerCoverage.amountOwed < pricePerPlayer ? 'membership_extra'
-      : 'pay_per_use'
+      ownerCoverage.coveredBy === 'membership'
+        ? 'membership_included'
+        : !ownerCourtesy &&
+            ownerCoverage.amountOwed > 0 &&
+            ownerCoverage.amountOwed < pricePerPlayer
+          ? 'membership_extra'
+          : 'pay_per_use'
 
     // El estado agregado de pago de la reserva refleja si TODOS los jugadores están
     // resueltos (pagado/cortesía/cubierto), no solo si hay algo que cobrar ahora mismo
     // (un jugador puede elegir "pagar por app" más tarde y `amount` seguir siendo 0).
-    const allSettled = playersData.every((p) => p.paymentStatus === 'paid' || p.paymentStatus === 'courtesy')
+    const allSettled = playersData.every(
+      (p) => p.paymentStatus === 'paid' || p.paymentStatus === 'courtesy'
+    )
 
     // Crear reserva en estado PENDING. El chequeo `isSlotAvailable` de arriba (línea 118) es solo
     // un check-then-act sin lock — útil para fallar rápido antes de calcular precios/cobertura,
@@ -260,7 +382,8 @@ router.post('/', async (req: Request, res: Response, next: NextFunction) => {
           players: playersData,
           amountPaid: amount,
           currency: slot.currency,
-          paymentProvider: (paymentProvider === 'membership' ? 'stripe' : paymentProvider) || 'stripe',
+          paymentProvider:
+            (paymentProvider === 'membership' ? 'stripe' : paymentProvider) || 'stripe',
           paymentStatus: allSettled ? 'paid' : 'pending',
           pricingType: actualPricingType as any,
           membershipId: membershipId || null,
@@ -270,7 +393,10 @@ router.post('/', async (req: Request, res: Response, next: NextFunction) => {
 
     // Nada que cobrar ahora mismo (por membresía, crédito, o porque nadie eligió pagar ya) → confirmar directo
     if (amount === 0) {
-      const qrPayload = JSON.stringify({ bookingId: booking.id, exp: Date.now() + 48 * 60 * 60 * 1000 })
+      const qrPayload = JSON.stringify({
+        bookingId: booking.id,
+        exp: Date.now() + 48 * 60 * 60 * 1000,
+      })
       const QRCode = await import('qrcode')
       const qrCode = await QRCode.toDataURL(qrPayload)
       const confirmed = await prisma.booking.update({
@@ -281,7 +407,9 @@ router.post('/', async (req: Request, res: Response, next: NextFunction) => {
       // simplemente que nadie eligió pagar ahora (pagan después por la app).
       const coverageTypes = [...new Set(playersData.map((p) => p.coveredBy).filter(Boolean))]
       const provider = coverageTypes.length > 0 ? coverageTypes.join('+') : 'none'
-      return res.status(201).json({ success: true, data: { booking: confirmed, payment: { provider, charged: 0 } } })
+      return res
+        .status(201)
+        .json({ success: true, data: { booking: confirmed, payment: { provider, charged: 0 } } })
     }
 
     // Crear PaymentIntent con Stripe (o auto-confirmar en DEV sin Stripe)
@@ -296,7 +424,10 @@ router.post('/', async (req: Request, res: Response, next: NextFunction) => {
 
       // ── DEV MODE: Stripe no configurado → auto-confirmar sin cobro real ──
       if (paymentData.devMode || !isStripeConfigured) {
-        const qrPayload = JSON.stringify({ bookingId: booking.id, exp: Date.now() + 48 * 60 * 60 * 1000 })
+        const qrPayload = JSON.stringify({
+          bookingId: booking.id,
+          exp: Date.now() + 48 * 60 * 60 * 1000,
+        })
         const QRCodeLib = await import('qrcode')
         const qrCode = await QRCodeLib.toDataURL(qrPayload)
         const confirmed = await prisma.booking.update({
@@ -315,11 +446,17 @@ router.post('/', async (req: Request, res: Response, next: NextFunction) => {
           await Promise.all(
             playersData
               .filter((p) => p.paymentStatus === 'paid' && !p.coveredBy && p.amountOwed > 0)
-              .map((p) => recordPayment({
-                clubId: req.body.clubId, bookingId: booking.id,
-                playerUserId: p.userId, playerName: p.name,
-                amount: p.amountOwed, currency: slot.currency, method: paymentMethod,
-              }))
+              .map((p) =>
+                recordPayment({
+                  clubId: req.body.clubId,
+                  bookingId: booking.id,
+                  playerUserId: p.userId,
+                  playerName: p.name,
+                  amount: p.amountOwed,
+                  currency: slot.currency,
+                  method: paymentMethod,
+                })
+              )
           )
         }
 
@@ -375,9 +512,7 @@ router.post('/:id/confirm', async (req: Request, res: Response, next: NextFuncti
         paymentStatus: 'paid',
         paymentId: paymentIntentId,
         qrCode,
-        qrExpiresAt: slot
-          ? new Date(`${slot.date}T${slot.endTime}:00`).toISOString()
-          : undefined,
+        qrExpiresAt: slot ? new Date(`${slot.date}T${slot.endTime}:00`).toISOString() : undefined,
       },
     })
 
@@ -393,7 +528,8 @@ router.delete('/:id', async (req: Request, res: Response, next: NextFunction) =>
     const booking = await prisma.booking.findUnique({ where: { id: req.params.id } })
     if (!booking) throw new AppError('Reserva no encontrada', 404)
     if (booking.status === 'cancelled') throw new AppError('Ya está cancelada', 400)
-    if (booking.status === 'completed') throw new AppError('No se puede cancelar una reserva completada', 400)
+    if (booking.status === 'completed')
+      throw new AppError('No se puede cancelar una reserva completada', 400)
 
     // Verificar que quien cancela es el dueño (el gateway inyecta x-user-id desde el JWT)
     const requestingUserId = req.headers['x-user-id'] as string | undefined
@@ -466,7 +602,9 @@ router.get('/user/:userId', async (req: Request, res: Response, next: NextFuncti
 
     const merged = [...owned, ...asPlayer]
       .map((b) => ({ ...b, isOwnerBooking: b.userId === userId }))
-      .sort((a, b) => `${b.slot.date}T${b.slot.startTime}`.localeCompare(`${a.slot.date}T${a.slot.startTime}`))
+      .sort((a, b) =>
+        `${b.slot.date}T${b.slot.startTime}`.localeCompare(`${a.slot.date}T${a.slot.startTime}`)
+      )
 
     return res.json({ success: true, data: merged })
   } catch (err) {
@@ -482,26 +620,35 @@ router.patch('/:id/players', async (req: Request, res: Response, next: NextFunct
 
     const booking = await prisma.booking.findUnique({ where: { id: req.params.id } })
     if (!booking) throw new AppError('Reserva no encontrada', 404)
-    if (booking.status === 'cancelled') throw new AppError('No se puede modificar una reserva cancelada', 400)
+    if (booking.status === 'cancelled')
+      throw new AppError('No se puede modificar una reserva cancelada', 400)
 
     // Verificar autorización: dueño de la reserva O admin del club (por role o ClubAdmin en DB)
     const requestingUserId = req.headers['x-user-id'] as string | undefined
-    const requestingRole   = req.headers['x-user-role']  as string | undefined
+    const requestingRole = req.headers['x-user-role'] as string | undefined
     const isOwner = !requestingUserId || booking.userId === requestingUserId
     const isRoleAdmin = requestingRole === 'club_admin' || requestingRole === 'super_admin'
 
     if (!isOwner && !isRoleAdmin) {
       // Último recurso: verificar ClubAdmin en DB (cubre tokens sin campo role)
       let isClubAdmin = false
-      const slot = await prisma.timeSlot.findUnique({ where: { id: booking.slotId }, select: { court: { select: { clubId: true } } } })
+      const slot = await prisma.timeSlot.findUnique({
+        where: { id: booking.slotId },
+        select: { court: { select: { clubId: true } } },
+      })
       if (slot?.court?.clubId) {
-        const ca = await prisma.clubAdmin.findFirst({ where: { userId: requestingUserId, clubId: slot.court.clubId } })
+        const ca = await prisma.clubAdmin.findFirst({
+          where: { userId: requestingUserId, clubId: slot.court.clubId },
+        })
         isClubAdmin = !!ca
       }
       if (!isClubAdmin) throw new AppError('No autorizado', 403)
     }
 
-    const slotWithCourt = await prisma.timeSlot.findUnique({ where: { id: booking.slotId }, include: { court: true } })
+    const slotWithCourt = await prisma.timeSlot.findUnique({
+      where: { id: booking.slotId },
+      include: { court: true },
+    })
     if (!slotWithCourt) throw new AppError('Slot no encontrado', 404)
 
     const capacity = slotWithCourt.court.capacity || 4
@@ -512,37 +659,64 @@ router.patch('/:id/players', async (req: Request, res: Response, next: NextFunct
       throw new AppError(`Esta cancha admite máximo ${capacity} jugadores`, 400)
     }
 
-    const courtPrice     = slotWithCourt.isPeak ? slotWithCourt.peakPrice : slotWithCourt.basePrice
+    const courtPrice = slotWithCourt.isPeak ? slotWithCourt.peakPrice : slotWithCourt.basePrice
     const pricePerPlayer = slotWithCourt.pricePerPlayer ?? courtPrice / capacity
 
     // Merge: preserve payment data for existing players; para jugadores nuevos, resolver
     // cobertura por membresía/crédito igual que en la creación de la reserva.
-    const mergedPlayers = await Promise.all(players.map(async (p: any) => {
-      const existing = p.userId
-        ? existingPlayers.find((e: any) => e.userId && e.userId === p.userId)
-        : p.guestId
-          ? existingPlayers.find((e: any) => e.guestId && e.guestId === p.guestId)
-          : undefined
-      if (existing) return { ...existing, name: p.name, userId: p.userId ?? null }
+    const mergedPlayers = await Promise.all(
+      players.map(async (p: any) => {
+        const existing = p.userId
+          ? existingPlayers.find((e: any) => e.userId && e.userId === p.userId)
+          : p.guestId
+            ? existingPlayers.find((e: any) => e.guestId && e.guestId === p.guestId)
+            : undefined
+        if (existing) return { ...existing, name: p.name, userId: p.userId ?? null }
 
-      if (!p.userId) {
-        return { userId: null, guestId: randomUUID(), name: p.name, amountOwed: pricePerPlayer, amountPaid: 0, paymentStatus: 'pending' }
-      }
-      const coverage = await resolvePlayerCoverage(p.userId, slotWithCourt.court.clubId, pricePerPlayer, false, slotWithCourt.date)
-      return {
-        userId: p.userId, name: p.name,
-        amountOwed: coverage.amountOwed, amountPaid: coverage.amountPaid, paymentStatus: coverage.paymentStatus,
-        ...(coverage.coveredBy && { coveredBy: coverage.coveredBy }),
-        ...(coverage.creditIdsUsed && { creditIdsUsed: coverage.creditIdsUsed }),
-      }
-    }))
+        if (!p.userId) {
+          return {
+            userId: null,
+            guestId: randomUUID(),
+            name: p.name,
+            amountOwed: pricePerPlayer,
+            amountPaid: 0,
+            paymentStatus: 'pending',
+          }
+        }
+        const coverage = await resolvePlayerCoverage(
+          p.userId,
+          slotWithCourt.court.clubId,
+          pricePerPlayer,
+          false,
+          slotWithCourt.date
+        )
+        return {
+          userId: p.userId,
+          name: p.name,
+          amountOwed: coverage.amountOwed,
+          amountPaid: coverage.amountPaid,
+          paymentStatus: coverage.paymentStatus,
+          ...(coverage.coveredBy && { coveredBy: coverage.coveredBy }),
+          ...(coverage.creditIdsUsed && { creditIdsUsed: coverage.creditIdsUsed }),
+        }
+      })
+    )
 
-    const newAmountPaid = mergedPlayers.reduce((sum: number, p: any) => sum + (p.amountPaid ?? 0), 0)
-    const allSettled = mergedPlayers.every((p: any) => p.paymentStatus === 'paid' || p.paymentStatus === 'courtesy')
+    const newAmountPaid = mergedPlayers.reduce(
+      (sum: number, p: any) => sum + (p.amountPaid ?? 0),
+      0
+    )
+    const allSettled = mergedPlayers.every(
+      (p: any) => p.paymentStatus === 'paid' || p.paymentStatus === 'courtesy'
+    )
 
     const updated = await prisma.booking.update({
       where: { id: req.params.id },
-      data: { players: mergedPlayers, amountPaid: newAmountPaid, paymentStatus: allSettled ? 'paid' : 'pending' },
+      data: {
+        players: mergedPlayers,
+        amountPaid: newAmountPaid,
+        paymentStatus: allSettled ? 'paid' : 'pending',
+      },
       include: { slot: { include: { court: { include: { club: true } } } } },
     })
     return res.json({ success: true, data: updated })
@@ -557,7 +731,10 @@ router.patch('/:id/players', async (req: Request, res: Response, next: NextFunct
 router.patch('/:id/cancel', async (req: Request, res: Response, next: NextFunction) => {
   try {
     const { issueCredit, creditReason } = req.body ?? {}
-    const { booking: cancelled, credits } = await cancelBookingAndIssueCredit(req.params.id, { issueCredit, creditReason })
+    const { booking: cancelled, credits } = await cancelBookingAndIssueCredit(req.params.id, {
+      issueCredit,
+      creditReason,
+    })
     return res.json({ success: true, data: cancelled, credits })
   } catch (err) {
     return next(err)
@@ -567,145 +744,178 @@ router.patch('/:id/cancel', async (req: Request, res: Response, next: NextFuncti
 // PATCH /api/bookings/:id/players/:playerId/pay — Admin marca pago de un jugador (cobro
 // presencial desde el dashboard). :playerId matchea userId (jugador con cuenta) o guestId
 // (invitado sin cuenta). Body opcional: { paymentMethod: 'cash' | 'card' }.
-router.patch('/:id/players/:playerId/pay', async (req: Request, res: Response, next: NextFunction) => {
-  try {
-    const booking = await prisma.booking.findUnique({
-      where: { id: req.params.id },
-      include: { slot: { include: { court: true } } },
-    })
-    if (!booking) throw new AppError('Reserva no encontrada', 404)
+router.patch(
+  '/:id/players/:playerId/pay',
+  async (req: Request, res: Response, next: NextFunction) => {
+    try {
+      const booking = await prisma.booking.findUnique({
+        where: { id: req.params.id },
+        include: { slot: { include: { court: true } } },
+      })
+      if (!booking) throw new AppError('Reserva no encontrada', 404)
 
-    const players = (booking.players as any[]) || []
-    const idx = players.findIndex((p: any) => p.userId === req.params.playerId || p.guestId === req.params.playerId)
-    if (idx === -1) throw new AppError('Jugador no encontrado en esta reserva', 404)
+      const players = (booking.players as any[]) || []
+      const idx = players.findIndex(
+        (p: any) => p.userId === req.params.playerId || p.guestId === req.params.playerId
+      )
+      if (idx === -1) throw new AppError('Jugador no encontrado en esta reserva', 404)
 
-    const method = resolvePaymentMethodDefaultCash(req.body?.paymentMethod)
-    const amountToCollect = players[idx].amountOwed ?? booking.amountPaid
-    const paidAt = new Date().toISOString()
+      const method = resolvePaymentMethodDefaultCash(req.body?.paymentMethod)
+      const amountToCollect = players[idx].amountOwed ?? booking.amountPaid
+      const paidAt = new Date().toISOString()
 
-    players[idx] = { ...players[idx], amountPaid: amountToCollect, paymentStatus: 'paid', paymentMethod: method, paidAt }
+      players[idx] = {
+        ...players[idx],
+        amountPaid: amountToCollect,
+        paymentStatus: 'paid',
+        paymentMethod: method,
+        paidAt,
+      }
 
-    const newAmountPaid = players.reduce((sum: number, p: any) => sum + (p.amountPaid ?? 0), 0)
+      const newAmountPaid = players.reduce((sum: number, p: any) => sum + (p.amountPaid ?? 0), 0)
 
-    const updated = await prisma.booking.update({
-      where: { id: req.params.id },
-      data: { players, amountPaid: newAmountPaid },
-      include: { slot: { include: { court: { include: { club: true } } } } },
-    })
+      const updated = await prisma.booking.update({
+        where: { id: req.params.id },
+        data: { players, amountPaid: newAmountPaid },
+        include: { slot: { include: { court: { include: { club: true } } } } },
+      })
 
-    await recordPayment({
-      clubId: booking.slot.court.clubId, bookingId: booking.id,
-      playerUserId: players[idx].userId, playerName: players[idx].name,
-      amount: amountToCollect, currency: booking.currency, method,
-    })
+      await recordPayment({
+        clubId: booking.slot.court.clubId,
+        bookingId: booking.id,
+        playerUserId: players[idx].userId,
+        playerName: players[idx].name,
+        amount: amountToCollect,
+        currency: booking.currency,
+        method,
+      })
 
-    return res.json({ success: true, data: updated })
-  } catch (err) {
-    return next(err)
+      return res.json({ success: true, data: updated })
+    } catch (err) {
+      return next(err)
+    }
   }
-})
+)
 
 // PATCH /api/bookings/:id/players/:playerId/courtesy — Admin marca pago de cortesía (sin cobrar)
-router.patch('/:id/players/:playerId/courtesy', async (req: Request, res: Response, next: NextFunction) => {
-  try {
-    const { reason } = req.body
-    if (!reason?.trim()) throw new AppError('Se requiere una razón para la cortesía', 400)
+router.patch(
+  '/:id/players/:playerId/courtesy',
+  async (req: Request, res: Response, next: NextFunction) => {
+    try {
+      const { reason } = req.body
+      if (!reason?.trim()) throw new AppError('Se requiere una razón para la cortesía', 400)
 
-    const booking = await prisma.booking.findUnique({ where: { id: req.params.id } })
-    if (!booking) throw new AppError('Reserva no encontrada', 404)
+      const booking = await prisma.booking.findUnique({ where: { id: req.params.id } })
+      if (!booking) throw new AppError('Reserva no encontrada', 404)
 
-    const players = (booking.players as any[]) || []
-    const idx = players.findIndex((p: any) => p.userId === req.params.playerId || p.guestId === req.params.playerId)
-    if (idx === -1) throw new AppError('Jugador no encontrado en esta reserva', 404)
+      const players = (booking.players as any[]) || []
+      const idx = players.findIndex(
+        (p: any) => p.userId === req.params.playerId || p.guestId === req.params.playerId
+      )
+      if (idx === -1) throw new AppError('Jugador no encontrado en esta reserva', 404)
 
-    players[idx] = {
-      ...players[idx],
-      amountPaid: 0,
-      paymentStatus: 'courtesy',
-      courtesyReason: reason.trim(),
+      players[idx] = {
+        ...players[idx],
+        amountPaid: 0,
+        paymentStatus: 'courtesy',
+        courtesyReason: reason.trim(),
+      }
+
+      const newAmountPaid = players.reduce((sum: number, p: any) => sum + (p.amountPaid ?? 0), 0)
+
+      const updated = await prisma.booking.update({
+        where: { id: req.params.id },
+        data: { players, amountPaid: newAmountPaid },
+        include: { slot: { include: { court: { include: { club: true } } } } },
+      })
+      return res.json({ success: true, data: updated })
+    } catch (err) {
+      return next(err)
     }
-
-    const newAmountPaid = players.reduce((sum: number, p: any) => sum + (p.amountPaid ?? 0), 0)
-
-    const updated = await prisma.booking.update({
-      where: { id: req.params.id },
-      data: { players, amountPaid: newAmountPaid },
-      include: { slot: { include: { court: { include: { club: true } } } } },
-    })
-    return res.json({ success: true, data: updated })
-  } catch (err) {
-    return next(err)
   }
-})
+)
 
 // POST /api/bookings/:id/players/:playerId/guest-link — Genera (o reutiliza uno vigente)
 // un link de pago para que el invitado pague su parte con tarjeta desde una página pública,
 // sin necesitar cuenta. Solo aplica a jugadores sin userId (invitados).
-router.post('/:id/players/:playerId/guest-link', async (req: Request, res: Response, next: NextFunction) => {
-  try {
-    const booking = await prisma.booking.findUnique({ where: { id: req.params.id } })
-    if (!booking) throw new AppError('Reserva no encontrada', 404)
+router.post(
+  '/:id/players/:playerId/guest-link',
+  async (req: Request, res: Response, next: NextFunction) => {
+    try {
+      const booking = await prisma.booking.findUnique({ where: { id: req.params.id } })
+      if (!booking) throw new AppError('Reserva no encontrada', 404)
 
-    const players = (booking.players as any[]) || []
-    const player = players.find((p: any) => p.guestId === req.params.playerId)
-    if (!player) throw new AppError('Este jugador no es un invitado sin cuenta', 404)
-    if (player.paymentStatus === 'paid' || player.paymentStatus === 'courtesy') {
-      throw new AppError('Este jugador ya está resuelto (pagado o cortesía)', 400)
+      const players = (booking.players as any[]) || []
+      const player = players.find((p: any) => p.guestId === req.params.playerId)
+      if (!player) throw new AppError('Este jugador no es un invitado sin cuenta', 404)
+      if (player.paymentStatus === 'paid' || player.paymentStatus === 'courtesy') {
+        throw new AppError('Este jugador ya está resuelto (pagado o cortesía)', 400)
+      }
+
+      // Reutilizar un link vigente y sin pagar si ya existe, en vez de generar uno nuevo cada vez.
+      const existing = await prisma.guestPaymentLink.findFirst({
+        where: {
+          bookingId: booking.id,
+          playerGuestId: player.guestId,
+          status: 'pending',
+          expiresAt: { gt: new Date() },
+        },
+      })
+      const link =
+        existing ??
+        (await prisma.guestPaymentLink.create({
+          data: {
+            bookingId: booking.id,
+            playerGuestId: player.guestId,
+            playerName: player.name,
+            amount: player.amountOwed ?? 0,
+            currency: booking.currency,
+            expiresAt: new Date(Date.now() + GUEST_PAYMENT_LINK_TTL_HOURS * 60 * 60 * 1000),
+          },
+        }))
+
+      return res.status(existing ? 200 : 201).json({
+        success: true,
+        data: { link, url: `${WEB_URL}/pay/${link.token}` },
+      })
+    } catch (err) {
+      return next(err)
     }
-
-    // Reutilizar un link vigente y sin pagar si ya existe, en vez de generar uno nuevo cada vez.
-    const existing = await prisma.guestPaymentLink.findFirst({
-      where: { bookingId: booking.id, playerGuestId: player.guestId, status: 'pending', expiresAt: { gt: new Date() } },
-    })
-    const link = existing ?? await prisma.guestPaymentLink.create({
-      data: {
-        bookingId: booking.id,
-        playerGuestId: player.guestId,
-        playerName: player.name,
-        amount: player.amountOwed ?? 0,
-        currency: booking.currency,
-        expiresAt: new Date(Date.now() + GUEST_PAYMENT_LINK_TTL_HOURS * 60 * 60 * 1000),
-      },
-    })
-
-    return res.status(existing ? 200 : 201).json({
-      success: true,
-      data: { link, url: `${WEB_URL}/pay/${link.token}` },
-    })
-  } catch (err) {
-    return next(err)
   }
-})
+)
 
 // PATCH /api/bookings/:id/players/:guestId/link-user — Vincula un invitado sin cuenta (guestId)
 // a un User real (recién creado o existente), preservando su historial de pago (paymentStatus,
 // amountPaid, coveredBy, etc.) — a diferencia de PATCH /players, que trataría un userId nuevo
 // como un jugador distinto y perdería ese estado.
-router.patch('/:id/players/:guestId/link-user', async (req: Request, res: Response, next: NextFunction) => {
-  try {
-    const { userId } = req.body
-    if (!userId) throw new AppError('userId es requerido', 400)
+router.patch(
+  '/:id/players/:guestId/link-user',
+  async (req: Request, res: Response, next: NextFunction) => {
+    try {
+      const { userId } = req.body
+      if (!userId) throw new AppError('userId es requerido', 400)
 
-    const booking = await prisma.booking.findUnique({ where: { id: req.params.id } })
-    if (!booking) throw new AppError('Reserva no encontrada', 404)
+      const booking = await prisma.booking.findUnique({ where: { id: req.params.id } })
+      if (!booking) throw new AppError('Reserva no encontrada', 404)
 
-    const players = (booking.players as any[]) || []
-    const idx = players.findIndex((p: any) => p.guestId === req.params.guestId)
-    if (idx === -1) throw new AppError('Invitado no encontrado en esta reserva', 404)
+      const players = (booking.players as any[]) || []
+      const idx = players.findIndex((p: any) => p.guestId === req.params.guestId)
+      if (idx === -1) throw new AppError('Invitado no encontrado en esta reserva', 404)
 
-    const { guestId, ...rest } = players[idx]
-    players[idx] = { ...rest, userId }
+      const { guestId, ...rest } = players[idx]
+      players[idx] = { ...rest, userId }
 
-    const updated = await prisma.booking.update({
-      where: { id: req.params.id },
-      data: { players },
-      include: { slot: { include: { court: { include: { club: true } } } } },
-    })
-    return res.json({ success: true, data: updated })
-  } catch (err) {
-    return next(err)
+      const updated = await prisma.booking.update({
+        where: { id: req.params.id },
+        data: { players },
+        include: { slot: { include: { court: { include: { club: true } } } } },
+      })
+      return res.json({ success: true, data: updated })
+    } catch (err) {
+      return next(err)
+    }
   }
-})
+)
 
 // DELETE /api/bookings/:id/players/:playerId — Quitar jugador. Si ya pagó, opcionalmente emite crédito.
 // :playerId matchea userId (jugador con cuenta) o guestId (invitado sin cuenta).
@@ -719,19 +929,24 @@ router.delete('/:id/players/:playerId', async (req: Request, res: Response, next
     })
     if (!booking) throw new AppError('Reserva no encontrada', 404)
     if (booking.status === 'cancelled') throw new AppError('Ya está cancelada', 400)
-    if (booking.status === 'completed') throw new AppError('No se puede modificar una reserva completada', 400)
+    if (booking.status === 'completed')
+      throw new AppError('No se puede modificar una reserva completada', 400)
 
     // Puede quitar a un jugador: el propio jugador (self-leave) o un admin del club de la reserva
     // (el gateway inyecta x-user-id desde el JWT; si no hay header, se asume una llamada interna/confiable).
     // Un invitado (sin cuenta) nunca tiene x-user-id propio, así que solo un admin puede quitarlo.
     const requestingUserId = req.headers['x-user-id'] as string | undefined
     if (requestingUserId && requestingUserId !== req.params.playerId) {
-      const ca = await prisma.clubAdmin.findFirst({ where: { userId: requestingUserId, clubId: booking.slot.court.clubId } })
+      const ca = await prisma.clubAdmin.findFirst({
+        where: { userId: requestingUserId, clubId: booking.slot.court.clubId },
+      })
       if (!ca) throw new AppError('No autorizado para quitar a este jugador', 403)
     }
 
     const players = (booking.players as any[]) || []
-    const idx = players.findIndex((p: any) => p.userId === req.params.playerId || p.guestId === req.params.playerId)
+    const idx = players.findIndex(
+      (p: any) => p.userId === req.params.playerId || p.guestId === req.params.playerId
+    )
     if (idx === -1) throw new AppError('Jugador no encontrado en esta reserva', 404)
 
     const removedPlayer = players[idx]
@@ -745,7 +960,8 @@ router.delete('/:id/players/:playerId', async (req: Request, res: Response, next
     await restoreCoveredCredits([removedPlayer])
 
     let credit = null
-    const paidOutOfPocket = removedPlayer.userId && !removedPlayer.coveredBy && (removedPlayer.amountPaid ?? 0) > 0
+    const paidOutOfPocket =
+      removedPlayer.userId && !removedPlayer.coveredBy && (removedPlayer.amountPaid ?? 0) > 0
     if (issueCredit && paidOutOfPocket) {
       credit = await prisma.userCredit.create({
         data: {
@@ -760,7 +976,10 @@ router.delete('/:id/players/:playerId', async (req: Request, res: Response, next
       })
     }
 
-    const newAmountPaid = remainingPlayers.reduce((sum: number, p: any) => sum + (p.amountPaid ?? 0), 0)
+    const newAmountPaid = remainingPlayers.reduce(
+      (sum: number, p: any) => sum + (p.amountPaid ?? 0),
+      0
+    )
 
     const updated = await prisma.booking.update({
       where: { id: req.params.id },
@@ -791,7 +1010,15 @@ router.get('/:id', async (req: Request, res: Response, next: NextFunction) => {
 const MATCH_AUTO_CONFIRM_HOURS = 24
 
 // Determina si `userId` está en el equipo 1, equipo 2, o ninguno de un Match.
-function teamOf(match: { player1Id: string | null; player1PartnerId: string | null; player2Id: string | null; player2PartnerId: string | null }, userId: string): 1 | 2 | null {
+function teamOf(
+  match: {
+    player1Id: string | null
+    player1PartnerId: string | null
+    player2Id: string | null
+    player2PartnerId: string | null
+  },
+  userId: string
+): 1 | 2 | null {
   if (match.player1Id === userId || match.player1PartnerId === userId) return 1
   if (match.player2Id === userId || match.player2PartnerId === userId) return 2
   return null
@@ -804,17 +1031,31 @@ function teamOf(match: { player1Id: string | null; player1PartnerId: string | nu
 // automáticamente pasadas 24h (cron `autoConfirmPendingMatches`).
 router.post('/:id/match', async (req: Request, res: Response, next: NextFunction) => {
   try {
-    const { team1, team2, sets } = req.body as { team1: string[]; team2: string[]; sets: SetScore[] }
-    if (!Array.isArray(team1) || !Array.isArray(team2) || team1.length === 0 || team2.length === 0) {
+    const { team1, team2, sets } = req.body as {
+      team1: string[]
+      team2: string[]
+      sets: SetScore[]
+    }
+    if (
+      !Array.isArray(team1) ||
+      !Array.isArray(team2) ||
+      team1.length === 0 ||
+      team2.length === 0
+    ) {
       throw new AppError('team1 y team2 son requeridos (1 o 2 jugadores cada uno)', 400)
     }
-    if (team1.length > 2 || team2.length > 2) throw new AppError('Cada equipo admite máximo 2 jugadores', 400)
-    if (!Array.isArray(sets) || sets.length === 0) throw new AppError('El marcador (sets) es requerido', 400)
+    if (team1.length > 2 || team2.length > 2)
+      throw new AppError('Cada equipo admite máximo 2 jugadores', 400)
+    if (!Array.isArray(sets) || sets.length === 0)
+      throw new AppError('El marcador (sets) es requerido', 400)
 
     const reportedById = (req.headers['x-user-id'] as string | undefined) || req.body.reportedById
     if (!reportedById) throw new AppError('No se pudo identificar quién reporta el resultado', 400)
     if (![...team1, ...team2].includes(reportedById)) {
-      throw new AppError('Quien reporta el resultado debe ser uno de los jugadores del partido', 400)
+      throw new AppError(
+        'Quien reporta el resultado debe ser uno de los jugadores del partido',
+        400
+      )
     }
 
     const booking = await prisma.booking.findUnique({
@@ -828,17 +1069,21 @@ router.post('/:id/match', async (req: Request, res: Response, next: NextFunction
 
     const bookingPlayerIds = new Set<string>([
       booking.userId,
-      ...(((booking.players as any[]) || []).map((p) => p.userId).filter(Boolean)),
+      ...((booking.players as any[]) || []).map((p) => p.userId).filter(Boolean),
     ])
     const unknown = [...team1, ...team2].filter((id) => !bookingPlayerIds.has(id))
-    if (unknown.length > 0) throw new AppError('Todos los jugadores del resultado deben ser parte de la reserva', 400)
+    if (unknown.length > 0)
+      throw new AppError('Todos los jugadores del resultado deben ser parte de la reserva', 400)
 
     const winnerPos = determineWinner(sets)
     if (!winnerPos) throw new AppError('El marcador no define un ganador claro', 400)
 
     const existing = await prisma.match.findFirst({ where: { bookingId: booking.id } })
     if (existing?.scoreConfirmed) {
-      throw new AppError('Este resultado ya fue confirmado por ambos equipos y no se puede editar aquí', 409)
+      throw new AppError(
+        'Este resultado ya fue confirmado por ambos equipos y no se puede editar aquí',
+        409
+      )
     }
 
     const matchData = {
@@ -885,7 +1130,10 @@ router.post('/:id/match/confirm', async (req: Request, res: Response, next: Next
     if (!match) throw new AppError('Esta reserva no tiene un resultado reportado', 404)
     if (match.scoreConfirmed) throw new AppError('Este resultado ya estaba confirmado', 400)
     if (confirmerId === match.reportedById) {
-      throw new AppError('Quien reportó el resultado no puede confirmarlo — debe hacerlo el rival', 403)
+      throw new AppError(
+        'Quien reportó el resultado no puede confirmarlo — debe hacerlo el rival',
+        403
+      )
     }
     const reporterTeam = match.reportedById ? teamOf(match, match.reportedById) : null
     const confirmerTeam = teamOf(match, confirmerId)
@@ -913,7 +1161,8 @@ router.post('/:id/match/dispute', async (req: Request, res: Response, next: Next
 
     const match = await prisma.match.findFirst({ where: { bookingId: req.params.id } })
     if (!match) throw new AppError('Esta reserva no tiene un resultado reportado', 404)
-    if (match.scoreConfirmed) throw new AppError('Este resultado ya fue confirmado, no se puede objetar', 400)
+    if (match.scoreConfirmed)
+      throw new AppError('Este resultado ya fue confirmado, no se puede objetar', 400)
     const reporterTeam = match.reportedById ? teamOf(match, match.reportedById) : null
     const disputerTeam = teamOf(match, disputerId)
     if (!disputerTeam || disputerTeam === reporterTeam) {
@@ -921,7 +1170,11 @@ router.post('/:id/match/dispute', async (req: Request, res: Response, next: Next
     }
 
     await prisma.match.delete({ where: { id: match.id } })
-    return res.json({ success: true, data: null, message: 'Resultado descartado — cualquiera de los dos equipos puede reportarlo de nuevo' })
+    return res.json({
+      success: true,
+      data: null,
+      message: 'Resultado descartado — cualquiera de los dos equipos puede reportarlo de nuevo',
+    })
   } catch (err) {
     return next(err)
   }
@@ -947,7 +1200,10 @@ router.patch('/:id/complete', async (req: Request, res: Response, next: NextFunc
       throw new AppError('Solo una reserva confirmada puede marcarse como completada', 400)
     }
 
-    const updated = await prisma.booking.update({ where: { id: req.params.id }, data: { status: 'completed' } })
+    const updated = await prisma.booking.update({
+      where: { id: req.params.id },
+      data: { status: 'completed' },
+    })
     return res.json({ success: true, data: updated })
   } catch (err) {
     return next(err)

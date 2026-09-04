@@ -31,7 +31,9 @@ router.put('/:id/score', async (req: Request, res: Response, next: NextFunction)
     })
 
     return res.json({ success: true, data: updated })
-  } catch (err) { return next(err) }
+  } catch (err) {
+    return next(err)
+  }
 })
 
 // GET /api/matches/:id
@@ -47,7 +49,9 @@ router.get('/:id', async (req: Request, res: Response, next: NextFunction) => {
     })
     if (!match) throw new AppError('Partido no encontrado', 404)
     return res.json({ success: true, data: match })
-  } catch (err) { return next(err) }
+  } catch (err) {
+    return next(err)
+  }
 })
 
 export { router as matchesRouter }

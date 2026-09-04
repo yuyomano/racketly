@@ -11,6 +11,9 @@ export async function GET() {
     const data = await res.json()
     return NextResponse.json(data, { status: res.status })
   } catch {
-    return NextResponse.json({ success: false, error: 'No se pudieron cargar tus reservas' }, { status: 502 })
+    return NextResponse.json(
+      { success: false, error: 'No se pudieron cargar tus reservas' },
+      { status: 502 }
+    )
   }
 }

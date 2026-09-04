@@ -27,7 +27,9 @@ export const BOOKING_STATUS: Record<string, { tone: BadgeTone; gridClass: string
 }
 
 export function bookingStatusMeta(status: string) {
-  return BOOKING_STATUS[status] ?? { tone: 'gray' as BadgeTone, gridClass: 'bg-gray-50 text-gray-500' }
+  return (
+    BOOKING_STATUS[status] ?? { tone: 'gray' as BadgeTone, gridClass: 'bg-gray-50 text-gray-500' }
+  )
 }
 
 export function bookingStatusLabel(t: (key: string) => string, status: string): string {

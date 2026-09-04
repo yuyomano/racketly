@@ -22,10 +22,22 @@ router.get('/:id/slots', async (req: Request, res: Response, next: NextFunction)
       orderBy: { startTime: 'asc' },
     })
 
-    const data = await Promise.all(slots.map(async (s) => {
-      const underMaintenance = await hasConflictingMaintenance(s.courtId, s.date, toMinutes(s.startTime), toMinutes(s.endTime))
-      return { ...s, isAvailable: s.bookings.length === 0 && !underMaintenance, underMaintenance, bookings: undefined }
-    }))
+    const data = await Promise.all(
+      slots.map(async (s) => {
+        const underMaintenance = await hasConflictingMaintenance(
+          s.courtId,
+          s.date,
+          toMinutes(s.startTime),
+          toMinutes(s.endTime)
+        )
+        return {
+          ...s,
+          isAvailable: s.bookings.length === 0 && !underMaintenance,
+          underMaintenance,
+          bookings: undefined,
+        }
+      })
+    )
 
     return res.json({ success: true, data })
   } catch (err) {
@@ -37,10 +49,19 @@ router.get('/:id/slots', async (req: Request, res: Response, next: NextFunction)
 router.put('/:id', async (req: Request, res: Response, next: NextFunction) => {
   try {
     const {
-      name, isActive, hasLighting, isIndoor, surface, capacity,
-      basePrice, peakPrice, currency,
-      openTimeWeekday, closeTimeWeekday,
-      openTimeWeekend, closeTimeWeekend,
+      name,
+      isActive,
+      hasLighting,
+      isIndoor,
+      surface,
+      capacity,
+      basePrice,
+      peakPrice,
+      currency,
+      openTimeWeekday,
+      closeTimeWeekday,
+      openTimeWeekend,
+      closeTimeWeekend,
       slotDuration,
     } = req.body
 
@@ -51,20 +72,20 @@ router.put('/:id', async (req: Request, res: Response, next: NextFunction) => {
     const court = await prisma.court.update({
       where: { id: req.params.id },
       data: {
-        ...(name               !== undefined && { name }),
-        ...(isActive           !== undefined && { isActive }),
-        ...(hasLighting        !== undefined && { hasLighting }),
-        ...(isIndoor           !== undefined && { isIndoor }),
-        ...(surface            !== undefined && { surface }),
-        ...(capacity           !== undefined && { capacity: Number(capacity) }),
-        ...(basePrice          !== undefined && { basePrice: Number(basePrice) }),
-        ...(peakPrice          !== undefined && { peakPrice: Number(peakPrice) }),
-        ...(currency           !== undefined && { currency }),
-        ...(openTimeWeekday    !== undefined && { openTimeWeekday }),
-        ...(closeTimeWeekday   !== undefined && { closeTimeWeekday }),
-        ...(openTimeWeekend    !== undefined && { openTimeWeekend }),
-        ...(closeTimeWeekend   !== undefined && { closeTimeWeekend }),
-        ...(slotDuration       !== undefined && { slotDuration: Number(slotDuration) }),
+        ...(name !== undefined && { name }),
+        ...(isActive !== undefined && { isActive }),
+        ...(hasLighting !== undefined && { hasLighting }),
+        ...(isIndoor !== undefined && { isIndoor }),
+        ...(surface !== undefined && { surface }),
+        ...(capacity !== undefined && { capacity: Number(capacity) }),
+        ...(basePrice !== undefined && { basePrice: Number(basePrice) }),
+        ...(peakPrice !== undefined && { peakPrice: Number(peakPrice) }),
+        ...(currency !== undefined && { currency }),
+        ...(openTimeWeekday !== undefined && { openTimeWeekday }),
+        ...(closeTimeWeekday !== undefined && { closeTimeWeekday }),
+        ...(openTimeWeekend !== undefined && { openTimeWeekend }),
+        ...(closeTimeWeekend !== undefined && { closeTimeWeekend }),
+        ...(slotDuration !== undefined && { slotDuration: Number(slotDuration) }),
       },
     })
 
@@ -114,7 +135,8 @@ router.post('/:id/maintenance', async (req: Request, res: Response, next: NextFu
     const { startAt, endAt, description, createdBy } = req.body
 
     if (!startAt || !endAt) throw new AppError('Se requiere fecha/hora de inicio y fin', 400)
-    if (!description?.trim()) throw new AppError('Se requiere una descripción del mantenimiento', 400)
+    if (!description?.trim())
+      throw new AppError('Se requiere una descripción del mantenimiento', 400)
 
     const start = new Date(startAt)
     const end = new Date(endAt)
@@ -143,16 +165,20 @@ router.post('/:id/maintenance', async (req: Request, res: Response, next: NextFu
 })
 
 // DELETE /api/courts/:id/maintenance/:blockId — levantar un bloqueo antes de tiempo
-router.delete('/:id/maintenance/:blockId', async (req: Request, res: Response, next: NextFunction) => {
-  try {
-    const block = await prisma.maintenanceBlock.findUnique({ where: { id: req.params.blockId } })
-    if (!block || block.courtId !== req.params.id) throw new AppError('Bloqueo no encontrado', 404)
+router.delete(
+  '/:id/maintenance/:blockId',
+  async (req: Request, res: Response, next: NextFunction) => {
+    try {
+      const block = await prisma.maintenanceBlock.findUnique({ where: { id: req.params.blockId } })
+      if (!block || block.courtId !== req.params.id)
+        throw new AppError('Bloqueo no encontrado', 404)
 
-    await prisma.maintenanceBlock.delete({ where: { id: req.params.blockId } })
-    return res.json({ success: true, message: 'Bloqueo de mantenimiento eliminado.' })
-  } catch (err) {
-    return next(err)
+      await prisma.maintenanceBlock.delete({ where: { id: req.params.blockId } })
+      return res.json({ success: true, message: 'Bloqueo de mantenimiento eliminado.' })
+    } catch (err) {
+      return next(err)
+    }
   }
-})
+)
 
 export { router as courtsRouter }

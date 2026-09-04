@@ -43,20 +43,30 @@ async function fetchTournaments(status: string, sport: string): Promise<Tourname
 export function TournamentSearchClient({ userId: _userId }: { userId: string }) {
   const t = useTranslations('TournamentsApp.search')
   const locale = useLocale()
-  const [status, setStatus] = useState<typeof STATUS_TABS[number]>('open')
-  const [sport, setSport]   = useState<'all' | 'padel' | 'pickleball'>('all')
+  const [status, setStatus] = useState<(typeof STATUS_TABS)[number]>('open')
+  const [sport, setSport] = useState<'all' | 'padel' | 'pickleball'>('all')
 
-  const STATUS_TAB_LABEL: Record<typeof STATUS_TABS[number], string> = {
-    open: t('statusOpen'), in_progress: t('statusInProgress'), completed: t('statusCompleted'),
+  const STATUS_TAB_LABEL: Record<(typeof STATUS_TABS)[number], string> = {
+    open: t('statusOpen'),
+    in_progress: t('statusInProgress'),
+    completed: t('statusCompleted'),
   }
   const SPORT_TAB_LABEL: Record<'all' | 'padel' | 'pickleball', string> = {
-    all: t('sportAll'), padel: t('sportPadel'), pickleball: t('sportPickleball'),
+    all: t('sportAll'),
+    padel: t('sportPadel'),
+    pickleball: t('sportPickleball'),
   }
   const GENDER_LABEL: Record<Tournament['genderCategory'], string> = {
-    masculino: t('genderMasculino'), femenino: t('genderFemenino'), mixto: t('genderMixto'),
+    masculino: t('genderMasculino'),
+    femenino: t('genderFemenino'),
+    mixto: t('genderMixto'),
   }
 
-  const { data: tournaments, isLoading, error } = useQuery({
+  const {
+    data: tournaments,
+    isLoading,
+    error,
+  } = useQuery({
     queryKey: ['tournaments', { status, sport }],
     queryFn: () => fetchTournaments(status, sport),
   })
@@ -80,8 +90,14 @@ export function TournamentSearchClient({ userId: _userId }: { userId: string }) 
         <div className="flex border border-gray-200 rounded-xl overflow-hidden w-fit">
           {STATUS_TABS.map((v) => (
             <button
-              key={v} onClick={() => setStatus(v)}
-              className={cn('px-4 py-2 text-sm font-semibold transition-colors', status === v ? 'bg-emerald-600 text-white' : 'bg-white text-gray-500 hover:bg-gray-50')}
+              key={v}
+              onClick={() => setStatus(v)}
+              className={cn(
+                'px-4 py-2 text-sm font-semibold transition-colors',
+                status === v
+                  ? 'bg-emerald-600 text-white'
+                  : 'bg-white text-gray-500 hover:bg-gray-50'
+              )}
             >
               {STATUS_TAB_LABEL[v]}
             </button>
@@ -90,8 +106,14 @@ export function TournamentSearchClient({ userId: _userId }: { userId: string }) 
         <div className="flex border border-gray-200 rounded-xl overflow-hidden w-fit">
           {(['all', 'padel', 'pickleball'] as const).map((v) => (
             <button
-              key={v} onClick={() => setSport(v)}
-              className={cn('px-4 py-2 text-sm font-semibold transition-colors', sport === v ? 'bg-emerald-600 text-white' : 'bg-white text-gray-500 hover:bg-gray-50')}
+              key={v}
+              onClick={() => setSport(v)}
+              className={cn(
+                'px-4 py-2 text-sm font-semibold transition-colors',
+                sport === v
+                  ? 'bg-emerald-600 text-white'
+                  : 'bg-white text-gray-500 hover:bg-gray-50'
+              )}
             >
               {SPORT_TAB_LABEL[v]}
             </button>
@@ -100,7 +122,9 @@ export function TournamentSearchClient({ userId: _userId }: { userId: string }) 
       </div>
 
       {isLoading ? (
-        <div className="flex items-center justify-center py-16 text-gray-400"><Loader2 className="w-5 h-5 animate-spin" /></div>
+        <div className="flex items-center justify-center py-16 text-gray-400">
+          <Loader2 className="w-5 h-5 animate-spin" />
+        </div>
       ) : error ? (
         <p className="text-sm text-red-600 bg-red-50 rounded-xl px-4 py-3">{t('loadError')}</p>
       ) : !tournaments || tournaments.length === 0 ? (
@@ -112,7 +136,11 @@ export function TournamentSearchClient({ userId: _userId }: { userId: string }) 
               <Card className="p-5 h-full hover:border-emerald-200 hover:shadow-md transition-all cursor-pointer">
                 <div className="flex items-start justify-between gap-2">
                   <h3 className="font-bold text-gray-900 leading-snug">{t.name}</h3>
-                  {t.sport === 'padel' ? <PadelIcon size={16} className="text-gray-300 shrink-0" /> : <PickleballIcon size={16} className="text-gray-300 shrink-0" />}
+                  {t.sport === 'padel' ? (
+                    <PadelIcon size={16} className="text-gray-300 shrink-0" />
+                  ) : (
+                    <PickleballIcon size={16} className="text-gray-300 shrink-0" />
+                  )}
                 </div>
                 <p className="flex items-center gap-1 text-xs text-gray-400 mt-1">
                   <MapPin className="w-3 h-3" /> {t.club?.name ?? t.location}
@@ -120,11 +148,22 @@ export function TournamentSearchClient({ userId: _userId }: { userId: string }) 
                 <div className="flex items-center gap-1.5 flex-wrap mt-3">
                   <Badge tone="violet">{t.category}</Badge>
                   <Badge tone="blue">{GENDER_LABEL[t.genderCategory]}</Badge>
-                  {t.entryFee > 0 && <Badge tone="gray">{t.currency} {t.entryFee.toFixed(0)}</Badge>}
+                  {t.entryFee > 0 && (
+                    <Badge tone="gray">
+                      {t.currency} {t.entryFee.toFixed(0)}
+                    </Badge>
+                  )}
                 </div>
                 <div className="flex items-center justify-between mt-3 text-xs text-gray-400">
-                  <span className="flex items-center gap-1"><Users className="w-3.5 h-3.5" /> {t.currentParticipants}/{t.maxParticipants}</span>
-                  <span>{new Date(t.startDate).toLocaleDateString(locale, { day: 'numeric', month: 'short' })}</span>
+                  <span className="flex items-center gap-1">
+                    <Users className="w-3.5 h-3.5" /> {t.currentParticipants}/{t.maxParticipants}
+                  </span>
+                  <span>
+                    {new Date(t.startDate).toLocaleDateString(locale, {
+                      day: 'numeric',
+                      month: 'short',
+                    })}
+                  </span>
                 </div>
               </Card>
             </Link>

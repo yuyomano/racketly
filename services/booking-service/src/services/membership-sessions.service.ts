@@ -12,7 +12,7 @@ export async function countMembershipSessionsForDate(
   prisma: PrismaClient,
   playerUserId: string,
   clubId: string,
-  date: string, // YYYY-MM-DD — la fecha del slot que se está por reservar/cotizar
+  date: string // YYYY-MM-DD — la fecha del slot que se está por reservar/cotizar
 ): Promise<number> {
   const bookingsOnDate = await prisma.booking.findMany({
     where: {

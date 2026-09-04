@@ -16,7 +16,9 @@ type Booking = {
   status: 'pending' | 'confirmed' | 'cancelled' | 'completed'
   isOwnerBooking: boolean
   slot: {
-    date: string; startTime: string; endTime: string
+    date: string
+    startTime: string
+    endTime: string
     court: { name: string; club: { id: string; name: string; city: string } }
   }
 }
@@ -35,7 +37,7 @@ export function MyBookingsClient() {
   const [tab, setTab] = useState<'upcoming' | 'past'>('upcoming')
 
   const STATUS_LABEL: Record<Booking['status'], { label: string; tone: BadgeTone }> = {
-    pending:   { label: t('statusPending'),   tone: 'amber' },
+    pending: { label: t('statusPending'), tone: 'amber' },
     confirmed: { label: t('statusConfirmed'), tone: 'emerald' },
     cancelled: { label: t('statusCancelled'), tone: 'red' },
     completed: { label: t('statusCompleted'), tone: 'gray' },
@@ -48,7 +50,11 @@ export function MyBookingsClient() {
 
   const cancelMutation = useMutation({
     mutationFn: async (bookingId: string) => {
-      const res = await fetch(`/api/bookings/${bookingId}/cancel`, { method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: '{}' })
+      const res = await fetch(`/api/bookings/${bookingId}/cancel`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: '{}',
+      })
       const data = await res.json()
       if (!res.ok) throw new Error(data.error ?? t('cancelError'))
       return data.data
@@ -62,22 +68,37 @@ export function MyBookingsClient() {
 
   const now = Date.now()
   const isPast = (b: Booking) => new Date(`${b.slot.date}T${b.slot.startTime}`).getTime() < now
-  const filtered = (bookings ?? [])
-    .filter((b) => (tab === 'upcoming' ? !isPast(b) && b.status !== 'cancelled' : isPast(b) || b.status === 'cancelled'))
+  const filtered = (bookings ?? []).filter((b) =>
+    tab === 'upcoming'
+      ? !isPast(b) && b.status !== 'cancelled'
+      : isPast(b) || b.status === 'cancelled'
+  )
 
   return (
     <div className="space-y-6">
-      <Link href="/booking" className="flex items-center gap-1.5 text-sm text-gray-400 hover:text-gray-600 transition-colors">
+      <Link
+        href="/booking"
+        className="flex items-center gap-1.5 text-sm text-gray-400 hover:text-gray-600 transition-colors"
+      >
         <ArrowLeft className="w-4 h-4" /> {t('backToClubs')}
       </Link>
 
       <h1 className="text-xl font-black text-gray-900 tracking-tight">{t('title')}</h1>
 
       <div className="flex border border-gray-200 rounded-xl overflow-hidden w-fit">
-        {([['upcoming', t('tabUpcoming')], ['past', t('tabPast')]] as const).map(([v, l]) => (
+        {(
+          [
+            ['upcoming', t('tabUpcoming')],
+            ['past', t('tabPast')],
+          ] as const
+        ).map(([v, l]) => (
           <button
-            key={v} onClick={() => setTab(v)}
-            className={cn('px-4 py-2 text-sm font-semibold transition-colors', tab === v ? 'bg-emerald-600 text-white' : 'bg-white text-gray-500 hover:bg-gray-50')}
+            key={v}
+            onClick={() => setTab(v)}
+            className={cn(
+              'px-4 py-2 text-sm font-semibold transition-colors',
+              tab === v ? 'bg-emerald-600 text-white' : 'bg-white text-gray-500 hover:bg-gray-50'
+            )}
           >
             {l}
           </button>
@@ -85,17 +106,24 @@ export function MyBookingsClient() {
       </div>
 
       {isLoading ? (
-        <div className="flex items-center justify-center py-16 text-gray-400"><Loader2 className="w-5 h-5 animate-spin" /></div>
+        <div className="flex items-center justify-center py-16 text-gray-400">
+          <Loader2 className="w-5 h-5 animate-spin" />
+        </div>
       ) : filtered.length === 0 ? (
         <EmptyState
           icon={CalendarDays}
           title={tab === 'upcoming' ? t('emptyUpcomingTitle') : t('emptyPastTitle')}
           description={tab === 'upcoming' ? t('emptyUpcomingDescription') : undefined}
-          action={tab === 'upcoming' ? (
-            <Link href="/booking" className="text-sm font-semibold text-white bg-emerald-600 hover:bg-emerald-700 rounded-xl px-5 py-2.5 transition-colors">
-              {t('searchClubs')}
-            </Link>
-          ) : undefined}
+          action={
+            tab === 'upcoming' ? (
+              <Link
+                href="/booking"
+                className="text-sm font-semibold text-white bg-emerald-600 hover:bg-emerald-700 rounded-xl px-5 py-2.5 transition-colors"
+              >
+                {t('searchClubs')}
+              </Link>
+            ) : undefined
+          }
         />
       ) : (
         <div className="space-y-3">

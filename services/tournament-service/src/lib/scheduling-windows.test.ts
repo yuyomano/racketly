@@ -14,7 +14,9 @@ describe('sanitizeSchedulingWindows', () => {
   })
 
   it('descarta franjas donde closeTime <= openTime', () => {
-    const result = sanitizeSchedulingWindows([{ date: '2026-08-14', openTime: '22:00', closeTime: '18:00' }])
+    const result = sanitizeSchedulingWindows([
+      { date: '2026-08-14', openTime: '22:00', closeTime: '18:00' },
+    ])
     expect(result).toBeNull()
   })
 
@@ -55,7 +57,7 @@ describe('nextPlayable', () => {
       { date: '2026-08-14', openTime: '18:00', closeTime: '22:00' },
       { date: '2026-08-15', openTime: '08:00', closeTime: '21:00' },
     ],
-    'America/Santo_Domingo',
+    'America/Santo_Domingo'
   )
 
   it('devuelve el mismo instante si ya cae dentro de una franja', () => {

@@ -4,7 +4,18 @@ const prisma = new PrismaClient()
 
 const FRANKFURTER = 'https://api.frankfurter.app'
 
-export const DEFAULT_CURRENCIES = ['COP', 'EUR', 'MXN', 'CLP', 'ARS', 'BRL', 'PEN', 'GBP', 'CAD', 'DOP']
+export const DEFAULT_CURRENCIES = [
+  'COP',
+  'EUR',
+  'MXN',
+  'CLP',
+  'ARS',
+  'BRL',
+  'PEN',
+  'GBP',
+  'CAD',
+  'DOP',
+]
 
 // Frankfurter (BCE) solo cubre ~30 monedas de referencia del Banco Central Europeo y
 // no incluye varias monedas latinoamericanas que sí usan clubes reales (COP, DOP, ARS,
@@ -12,11 +23,32 @@ export const DEFAULT_CURRENCIES = ['COP', 'EUR', 'MXN', 'CLP', 'ARS', 'BRL', 'PE
 // tasa manual, se usa esta tabla aproximada como respaldo (mismos valores orientativos
 // que ya usa `apps/web/lib/utils.ts` para las conversiones del lado del cliente).
 const FALLBACK_RATES_TO_USD: Record<string, number> = {
-  COP: 0.000238, ARS: 0.00098, CLP: 0.00105, PEN: 0.265, DOP: 0.017,
-  UYU: 0.025, BOB: 0.145, CRC: 0.00193, GTQ: 0.129, HNL: 0.04, PYG: 0.000135,
-  AED: 0.272, SAR: 0.267, QAR: 0.274, KWD: 3.25, BHD: 2.65, OMR: 2.60,
-  ILS: 0.272, TRY: 0.031, ZAR: 0.054, NGN: 0.00063, EGP: 0.02, MAD: 0.098,
-  KES: 0.0077, GHS: 0.063, VND: 0.000039,
+  COP: 0.000238,
+  ARS: 0.00098,
+  CLP: 0.00105,
+  PEN: 0.265,
+  DOP: 0.017,
+  UYU: 0.025,
+  BOB: 0.145,
+  CRC: 0.00193,
+  GTQ: 0.129,
+  HNL: 0.04,
+  PYG: 0.000135,
+  AED: 0.272,
+  SAR: 0.267,
+  QAR: 0.274,
+  KWD: 3.25,
+  BHD: 2.65,
+  OMR: 2.6,
+  ILS: 0.272,
+  TRY: 0.031,
+  ZAR: 0.054,
+  NGN: 0.00063,
+  EGP: 0.02,
+  MAD: 0.098,
+  KES: 0.0077,
+  GHS: 0.063,
+  VND: 0.000039,
 }
 
 // Sincroniza tasas → USD para las monedas pedidas: primero contra Frankfurter (ECB);
@@ -24,7 +56,9 @@ const FALLBACK_RATES_TO_USD: Record<string, number> = {
 // de respaldo aproximada, marcadas con source='fallback' para que se distingan en el
 // panel de tasas de cambio. Usado tanto por POST /api/exchange-rates/sync como al
 // crear un club con una moneda que todavía no tenemos guardada.
-export async function syncCurrencies(currencies: string[]): Promise<{ rows: any[]; date: string | null }> {
+export async function syncCurrencies(
+  currencies: string[]
+): Promise<{ rows: any[]; date: string | null }> {
   const toSync = [...new Set(currencies.map((c) => c.toUpperCase()))].filter((c) => c !== 'USD')
   if (toSync.length === 0) return { rows: [], date: null }
 
@@ -71,11 +105,13 @@ export async function getTrackedCurrencies(): Promise<string[]> {
     prisma.exchangeRate.findMany({ select: { from: true } }),
     prisma.club.findMany({ select: { currency: true }, distinct: ['currency'] }),
   ])
-  return [...new Set([
-    ...DEFAULT_CURRENCIES,
-    ...existing.map((r) => r.from),
-    ...clubCurrencies.map((c) => c.currency),
-  ])]
+  return [
+    ...new Set([
+      ...DEFAULT_CURRENCIES,
+      ...existing.map((r) => r.from),
+      ...clubCurrencies.map((c) => c.currency),
+    ]),
+  ]
 }
 
 // Best-effort: si la moneda de un club recién creado no está entre las tasas ya
@@ -84,7 +120,9 @@ export async function getTrackedCurrencies(): Promise<string[]> {
 export async function ensureCurrencyTracked(currency: string): Promise<void> {
   try {
     if (currency === 'USD') return
-    const existing = await prisma.exchangeRate.findUnique({ where: { from_to: { from: currency, to: 'USD' } } })
+    const existing = await prisma.exchangeRate.findUnique({
+      where: { from_to: { from: currency, to: 'USD' } },
+    })
     if (existing) return
     await syncCurrencies([currency])
     console.info(`[exchange-rate-sync] Moneda nueva sincronizada: ${currency}`)

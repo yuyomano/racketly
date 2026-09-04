@@ -17,7 +17,9 @@ app.use(cors({ origin: process.env.ALLOWED_ORIGINS?.split(','), credentials: tru
 app.use(express.json({ limit: '10mb' }))
 app.use(morgan(process.env.NODE_ENV === 'production' ? 'combined' : 'dev'))
 
-app.get('/health', (_req, res) => res.json({ success: true, service: 'community-service', status: 'ok' }))
+app.get('/health', (_req, res) =>
+  res.json({ success: true, service: 'community-service', status: 'ok' })
+)
 
 app.use('/api/posts', postsRouter)
 app.use('/api/groups', groupsRouter)

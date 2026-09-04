@@ -22,9 +22,22 @@ router.get('/:id', async (req: Request, res: Response, next: NextFunction) => {
     // Auto-expire blocks
     const isExpired = slot.blockedExpiresAt && new Date() > slot.blockedExpiresAt
     const isBlocked = slot.isBlocked && !isExpired
-    const underMaintenance = await hasConflictingMaintenance(slot.courtId, slot.date, toMinutes(slot.startTime), toMinutes(slot.endTime))
+    const underMaintenance = await hasConflictingMaintenance(
+      slot.courtId,
+      slot.date,
+      toMinutes(slot.startTime),
+      toMinutes(slot.endTime)
+    )
 
-    return res.json({ success: true, data: { ...slot, isBlocked, underMaintenance, isAvailable: !active && !isBlocked && !underMaintenance } })
+    return res.json({
+      success: true,
+      data: {
+        ...slot,
+        isBlocked,
+        underMaintenance,
+        isAvailable: !active && !isBlocked && !underMaintenance,
+      },
+    })
   } catch (err) {
     return next(err)
   }
@@ -55,7 +68,11 @@ router.patch('/:id/block', async (req: Request, res: Response, next: NextFunctio
       },
     })
 
-    return res.json({ success: true, data: updated, message: 'Slot bloqueado hasta mañana a esta hora.' })
+    return res.json({
+      success: true,
+      data: updated,
+      message: 'Slot bloqueado hasta mañana a esta hora.',
+    })
   } catch (err) {
     return next(err)
   }

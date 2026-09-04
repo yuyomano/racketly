@@ -47,6 +47,8 @@ export async function cancelIncompleteRosterBookings(): Promise<void> {
   }
 
   if (cancelledCount > 0) {
-    console.info(`[roster-completion-cron] Canceladas ${cancelledCount} reservas por cupo incompleto`)
+    console.info(
+      `[roster-completion-cron] Canceladas ${cancelledCount} reservas por cupo incompleto`
+    )
   }
 }

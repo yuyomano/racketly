@@ -2,7 +2,19 @@
 
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
-import { LayoutDashboard, CalendarDays, CircleDot, Trophy, BarChart3, Users, Building2, Contact, CreditCard, Wallet, GraduationCap } from 'lucide-react'
+import {
+  LayoutDashboard,
+  CalendarDays,
+  CircleDot,
+  Trophy,
+  BarChart3,
+  Users,
+  Building2,
+  Contact,
+  CreditCard,
+  Wallet,
+  GraduationCap,
+} from 'lucide-react'
 import { cn } from '@/lib/utils'
 
 const ICONS = {
@@ -42,9 +54,15 @@ export function NavLink({ href, label, icon }: { href: string; label: string; ic
           : 'text-white/55 hover:bg-white/5 hover:text-white/90'
       )}
     >
-      <Icon className={cn('w-[18px] h-[18px] shrink-0 transition-colors', isActive ? 'text-emerald-400' : 'text-white/40 group-hover:text-white/70')} strokeWidth={2} />
+      <Icon
+        className={cn(
+          'w-[18px] h-[18px] shrink-0 transition-colors',
+          isActive ? 'text-ball-500' : 'text-white/40 group-hover:text-white/70'
+        )}
+        strokeWidth={2}
+      />
       {label}
-      {isActive && <span className="ml-auto w-1.5 h-1.5 rounded-full bg-emerald-400" />}
+      {isActive && <span className="ml-auto w-1.5 h-1.5 rounded-full bg-ball-500" />}
     </Link>
   )
 }

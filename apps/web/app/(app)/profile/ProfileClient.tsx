@@ -14,12 +14,21 @@ import { useToast } from '@/components/ui/Toast'
 const COUNTRY_CODES = ['DO', 'CO', 'MX', 'ES', 'AR', 'US'] as const
 
 type PlayerProfile = {
-  userId: string; displayName: string; bio: string | null; sport: string
-  country: string; city: string; eloPadel: number; eloPickleball: number
-  category: string; xpPoints: number; level: number
+  userId: string
+  displayName: string
+  bio: string | null
+  sport: string
+  country: string
+  city: string
+  eloPadel: number
+  eloPickleball: number
+  category: string
+  xpPoints: number
+  level: number
 }
 type ProfileStats = {
-  profile: PlayerProfile; category: string
+  profile: PlayerProfile
+  category: string
   stats: { totalMatches: number; wins: number; losses: number; winRate: number }
 }
 
@@ -30,7 +39,15 @@ async function fetchStats(userId: string, fallbackError: string): Promise<Profil
   return data.data
 }
 
-export function ProfileClient({ userId, email, initial }: { userId: string; email: string; initial: ProfileStats | null }) {
+export function ProfileClient({
+  userId,
+  email,
+  initial,
+}: {
+  userId: string
+  email: string
+  initial: ProfileStats | null
+}) {
   const t = useTranslations('Profile')
   const queryClient = useQueryClient()
   const toast = useToast()
@@ -52,7 +69,14 @@ export function ProfileClient({ userId, email, initial }: { userId: string; emai
   }))
 
   function startEdit() {
-    if (data) setForm({ displayName: data.profile.displayName, bio: data.profile.bio ?? '', city: data.profile.city, country: data.profile.country, sport: data.profile.sport as any })
+    if (data)
+      setForm({
+        displayName: data.profile.displayName,
+        bio: data.profile.bio ?? '',
+        city: data.profile.city,
+        country: data.profile.country,
+        sport: data.profile.sport as any,
+      })
     setEditing(true)
   }
 
@@ -78,7 +102,9 @@ export function ProfileClient({ userId, email, initial }: { userId: string; emai
 
   if (!data) {
     return (
-      <div className="flex items-center justify-center py-16 text-gray-400"><Loader2 className="w-5 h-5 animate-spin" /></div>
+      <div className="flex items-center justify-center py-16 text-gray-400">
+        <Loader2 className="w-5 h-5 animate-spin" />
+      </div>
     )
   }
 
@@ -95,7 +121,9 @@ export function ProfileClient({ userId, email, initial }: { userId: string; emai
               {profile.displayName.charAt(0).toUpperCase()}
             </div>
             <div>
-              <h1 className="text-xl font-black text-gray-900 tracking-tight">{profile.displayName}</h1>
+              <h1 className="text-xl font-black text-gray-900 tracking-tight">
+                {profile.displayName}
+              </h1>
               <p className="flex items-center gap-1 text-sm text-gray-400 mt-0.5">
                 <MapPin className="w-3.5 h-3.5" /> {profile.city}, {profile.country}
               </p>
@@ -103,7 +131,10 @@ export function ProfileClient({ userId, email, initial }: { userId: string; emai
             </div>
           </div>
           {!editing && (
-            <button onClick={startEdit} className="flex items-center gap-1.5 text-xs font-semibold text-gray-500 hover:text-gray-700 bg-gray-50 hover:bg-gray-100 rounded-lg px-3 py-2 transition-colors shrink-0">
+            <button
+              onClick={startEdit}
+              className="flex items-center gap-1.5 text-xs font-semibold text-gray-500 hover:text-gray-700 bg-gray-50 hover:bg-gray-100 rounded-lg px-3 py-2 transition-colors shrink-0"
+            >
               <Pencil className="w-3.5 h-3.5" /> {t('editButton')}
             </button>
           )}
@@ -114,10 +145,14 @@ export function ProfileClient({ userId, email, initial }: { userId: string; emai
         <div className="flex items-center gap-1.5 flex-wrap mt-4">
           <Badge tone="violet">{t('categoryBadge', { category })}</Badge>
           {(profile.sport === 'padel' || profile.sport === 'both') && (
-            <span className="flex items-center gap-1 text-[11px] font-semibold text-gray-500 bg-gray-50 rounded-full px-2.5 py-1"><PadelIcon size={13} /> {t('sports.padel')}</span>
+            <span className="flex items-center gap-1 text-[11px] font-semibold text-gray-500 bg-gray-50 rounded-full px-2.5 py-1">
+              <PadelIcon size={13} /> {t('sports.padel')}
+            </span>
           )}
           {(profile.sport === 'pickleball' || profile.sport === 'both') && (
-            <span className="flex items-center gap-1 text-[11px] font-semibold text-gray-500 bg-gray-50 rounded-full px-2.5 py-1"><PickleballIcon size={13} /> {t('sports.pickleball')}</span>
+            <span className="flex items-center gap-1 text-[11px] font-semibold text-gray-500 bg-gray-50 rounded-full px-2.5 py-1">
+              <PickleballIcon size={13} /> {t('sports.pickleball')}
+            </span>
           )}
         </div>
 
@@ -129,44 +164,93 @@ export function ProfileClient({ userId, email, initial }: { userId: string; emai
               </p>
             )}
             <div>
-              <label className="block text-xs font-semibold text-gray-600 mb-1.5">{t('form.nameLabel')}</label>
-              <input value={form.displayName} onChange={(e) => setForm({ ...form, displayName: e.target.value })}
-                className="w-full border border-gray-200 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500/40" />
+              <label className="block text-xs font-semibold text-gray-600 mb-1.5">
+                {t('form.nameLabel')}
+              </label>
+              <input
+                value={form.displayName}
+                onChange={(e) => setForm({ ...form, displayName: e.target.value })}
+                className="w-full border border-gray-200 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500/40"
+              />
             </div>
             <div>
-              <label className="block text-xs font-semibold text-gray-600 mb-1.5">{t('form.bioLabel')}</label>
-              <textarea value={form.bio} onChange={(e) => setForm({ ...form, bio: e.target.value })} rows={2} maxLength={300}
-                className="w-full border border-gray-200 rounded-xl px-3 py-2.5 text-sm resize-none focus:outline-none focus:ring-2 focus:ring-emerald-500/40" />
+              <label className="block text-xs font-semibold text-gray-600 mb-1.5">
+                {t('form.bioLabel')}
+              </label>
+              <textarea
+                value={form.bio}
+                onChange={(e) => setForm({ ...form, bio: e.target.value })}
+                rows={2}
+                maxLength={300}
+                className="w-full border border-gray-200 rounded-xl px-3 py-2.5 text-sm resize-none focus:outline-none focus:ring-2 focus:ring-emerald-500/40"
+              />
             </div>
             <div className="grid grid-cols-2 gap-3">
               <div>
-                <label className="block text-xs font-semibold text-gray-600 mb-1.5">{t('form.countryLabel')}</label>
-                <select value={form.country} onChange={(e) => setForm({ ...form, country: e.target.value })}
-                  className="w-full border border-gray-200 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500/40">
-                  {COUNTRY_CODES.map((code) => <option key={code} value={code}>{t(`countries.${code}`)}</option>)}
+                <label className="block text-xs font-semibold text-gray-600 mb-1.5">
+                  {t('form.countryLabel')}
+                </label>
+                <select
+                  value={form.country}
+                  onChange={(e) => setForm({ ...form, country: e.target.value })}
+                  className="w-full border border-gray-200 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500/40"
+                >
+                  {COUNTRY_CODES.map((code) => (
+                    <option key={code} value={code}>
+                      {t(`countries.${code}`)}
+                    </option>
+                  ))}
                 </select>
               </div>
               <div>
-                <label className="block text-xs font-semibold text-gray-600 mb-1.5">{t('form.cityLabel')}</label>
-                <input value={form.city} onChange={(e) => setForm({ ...form, city: e.target.value })}
-                  className="w-full border border-gray-200 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500/40" />
+                <label className="block text-xs font-semibold text-gray-600 mb-1.5">
+                  {t('form.cityLabel')}
+                </label>
+                <input
+                  value={form.city}
+                  onChange={(e) => setForm({ ...form, city: e.target.value })}
+                  className="w-full border border-gray-200 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500/40"
+                />
               </div>
             </div>
             <div>
-              <label className="block text-xs font-semibold text-gray-600 mb-1.5">{t('form.sportLabel')}</label>
+              <label className="block text-xs font-semibold text-gray-600 mb-1.5">
+                {t('form.sportLabel')}
+              </label>
               <div className="flex border border-gray-200 rounded-xl overflow-hidden">
                 {(['padel', 'pickleball', 'both'] as const).map((v) => (
-                  <button key={v} type="button" onClick={() => setForm({ ...form, sport: v })}
-                    className={`flex-1 py-2.5 text-sm font-semibold transition-colors ${form.sport === v ? 'bg-emerald-600 text-white' : 'bg-white text-gray-500 hover:bg-gray-50'}`}>
+                  <button
+                    key={v}
+                    type="button"
+                    onClick={() => setForm({ ...form, sport: v })}
+                    className={`flex-1 py-2.5 text-sm font-semibold transition-colors ${form.sport === v ? 'bg-emerald-600 text-white' : 'bg-white text-gray-500 hover:bg-gray-50'}`}
+                  >
                     {t(`sports.${v}`)}
                   </button>
                 ))}
               </div>
             </div>
             <div className="flex gap-3">
-              <Button variant="secondary" onClick={() => { setEditing(false); setError('') }} className="flex-1">{t('form.cancel')}</Button>
-              <Button onClick={() => saveMutation.mutate()} disabled={saveMutation.isPending} className="flex-1">
-                {saveMutation.isPending ? <Loader2 className="w-4 h-4 animate-spin" /> : t('form.save')}
+              <Button
+                variant="secondary"
+                onClick={() => {
+                  setEditing(false)
+                  setError('')
+                }}
+                className="flex-1"
+              >
+                {t('form.cancel')}
+              </Button>
+              <Button
+                onClick={() => saveMutation.mutate()}
+                disabled={saveMutation.isPending}
+                className="flex-1"
+              >
+                {saveMutation.isPending ? (
+                  <Loader2 className="w-4 h-4 animate-spin" />
+                ) : (
+                  t('form.save')
+                )}
               </Button>
             </div>
           </div>
@@ -175,25 +259,35 @@ export function ProfileClient({ userId, email, initial }: { userId: string; emai
 
       <div className="grid grid-cols-2 gap-4">
         <Card className="p-5">
-          <p className="flex items-center gap-1.5 text-xs font-semibold text-gray-400 uppercase tracking-wide"><Trophy className="w-3.5 h-3.5" /> {t('stats.eloPadel')}</p>
+          <p className="flex items-center gap-1.5 text-xs font-semibold text-gray-400 uppercase tracking-wide">
+            <Trophy className="w-3.5 h-3.5" /> {t('stats.eloPadel')}
+          </p>
           <p className="text-2xl font-black text-gray-900 mt-1.5">{profile.eloPadel}</p>
         </Card>
         <Card className="p-5">
-          <p className="flex items-center gap-1.5 text-xs font-semibold text-gray-400 uppercase tracking-wide"><Trophy className="w-3.5 h-3.5" /> {t('stats.eloPickleball')}</p>
+          <p className="flex items-center gap-1.5 text-xs font-semibold text-gray-400 uppercase tracking-wide">
+            <Trophy className="w-3.5 h-3.5" /> {t('stats.eloPickleball')}
+          </p>
           <p className="text-2xl font-black text-gray-900 mt-1.5">{profile.eloPickleball}</p>
         </Card>
       </div>
 
       <Card className="p-6">
-        <p className="flex items-center gap-1.5 text-xs font-semibold text-gray-400 uppercase tracking-wide mb-2"><Zap className="w-3.5 h-3.5" /> {t('stats.level', { level: profile.level })}</p>
+        <p className="flex items-center gap-1.5 text-xs font-semibold text-gray-400 uppercase tracking-wide mb-2">
+          <Zap className="w-3.5 h-3.5" /> {t('stats.level', { level: profile.level })}
+        </p>
         <div className="h-2 bg-gray-100 rounded-full overflow-hidden">
           <div className="h-full bg-emerald-500" style={{ width: `${xp.percent}%` }} />
         </div>
-        <p className="text-xs text-gray-400 mt-1.5">{t('stats.xpProgress', { current: profile.xpPoints, total: xp.next })}</p>
+        <p className="text-xs text-gray-400 mt-1.5">
+          {t('stats.xpProgress', { current: profile.xpPoints, total: xp.next })}
+        </p>
       </Card>
 
       <Card className="p-6">
-        <p className="flex items-center gap-1.5 text-xs font-semibold text-gray-400 uppercase tracking-wide mb-3"><Target className="w-3.5 h-3.5" /> {t('matches.title')}</p>
+        <p className="flex items-center gap-1.5 text-xs font-semibold text-gray-400 uppercase tracking-wide mb-3">
+          <Target className="w-3.5 h-3.5" /> {t('matches.title')}
+        </p>
         <div className="grid grid-cols-4 gap-3 text-center">
           <div>
             <p className="text-xl font-black text-gray-900">{stats.totalMatches}</p>

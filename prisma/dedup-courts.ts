@@ -25,13 +25,17 @@ async function main() {
   console.log(`Found ${toDelete.length} duplicate court(s) to remove.`)
 
   for (const courtId of toDelete) {
-    const court = courts.find(c => c.id === courtId)!
+    const court = courts.find((c) => c.id === courtId)!
     // Delete bookings whose slot belongs to this court
     const slots = await prisma.timeSlot.findMany({ where: { courtId }, select: { id: true } })
-    const slotIds = slots.map(s => s.id)
+    const slotIds = slots.map((s) => s.id)
     if (slotIds.length > 0) {
-      const deletedBookings = await prisma.booking.deleteMany({ where: { slotId: { in: slotIds } } })
-      console.log(`  Deleted ${deletedBookings.count} booking(s) on duplicate slots of "${court.name}"`)
+      const deletedBookings = await prisma.booking.deleteMany({
+        where: { slotId: { in: slotIds } },
+      })
+      console.log(
+        `  Deleted ${deletedBookings.count} booking(s) on duplicate slots of "${court.name}"`
+      )
       await prisma.timeSlot.deleteMany({ where: { courtId } })
       console.log(`  Deleted ${slotIds.length} time slot(s)`)
     }
@@ -42,4 +46,6 @@ async function main() {
   console.log('Done.')
 }
 
-main().catch(console.error).finally(() => prisma.$disconnect())
+main()
+  .catch(console.error)
+  .finally(() => prisma.$disconnect())

@@ -28,10 +28,16 @@ router.post('/stripe', async (req: Request, res: Response) => {
       const intent = event.data.object as { id: string; metadata?: Record<string, string> }
       const bookingId = intent.metadata?.bookingId
       if (bookingId) {
-        const booking = await prisma.booking.findUnique({ where: { id: bookingId }, include: { slot: true } })
+        const booking = await prisma.booking.findUnique({
+          where: { id: bookingId },
+          include: { slot: true },
+        })
         // Idempotente: si /confirm ya la marcó (el camino normal), no hay nada que hacer.
         if (booking && booking.status === 'pending') {
-          const qrPayload = JSON.stringify({ bookingId: booking.id, exp: Date.now() + 30 * 60 * 1000 })
+          const qrPayload = JSON.stringify({
+            bookingId: booking.id,
+            exp: Date.now() + 30 * 60 * 1000,
+          })
           const qrCode = await QRCode.toDataURL(qrPayload)
           await prisma.booking.update({
             where: { id: booking.id },
@@ -45,14 +51,18 @@ router.post('/stripe', async (req: Request, res: Response) => {
                 : undefined,
             },
           })
-          console.info(`[stripe-webhook] Booking ${booking.id} confirmado vía webhook (el cliente nunca llamó a /confirm)`)
+          console.info(
+            `[stripe-webhook] Booking ${booking.id} confirmado vía webhook (el cliente nunca llamó a /confirm)`
+          )
         }
       }
     }
 
     if (event.type === 'payment_intent.payment_failed') {
       const intent = event.data.object as { id: string; metadata?: Record<string, string> }
-      console.warn(`[stripe-webhook] Pago fallido: PaymentIntent ${intent.id} (bookingId: ${intent.metadata?.bookingId ?? 'desconocido'})`)
+      console.warn(
+        `[stripe-webhook] Pago fallido: PaymentIntent ${intent.id} (bookingId: ${intent.metadata?.bookingId ?? 'desconocido'})`
+      )
     }
 
     return res.json({ received: true })

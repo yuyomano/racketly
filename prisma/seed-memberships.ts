@@ -55,4 +55,6 @@ async function main() {
   console.log('Done. Marco Rios y Natalia Reyes tienen membresia en Bogota Padel Club.')
 }
 
-main().catch(console.error).finally(() => prisma.$disconnect())
+main()
+  .catch(console.error)
+  .finally(() => prisma.$disconnect())

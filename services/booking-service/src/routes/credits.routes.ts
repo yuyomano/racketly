@@ -89,8 +89,10 @@ router.get('/club/:clubId', async (req: Request, res: Response, next: NextFuncti
       orderBy: { createdAt: 'desc' },
       take: 100,
     })
-    const totalAvailable = credits.filter(c => c.status === 'available').reduce((s, c) => s + c.amount, 0)
-    const totalUsed = credits.filter(c => c.status === 'used').reduce((s, c) => s + c.amount, 0)
+    const totalAvailable = credits
+      .filter((c) => c.status === 'available')
+      .reduce((s, c) => s + c.amount, 0)
+    const totalUsed = credits.filter((c) => c.status === 'used').reduce((s, c) => s + c.amount, 0)
     return res.json({ success: true, data: credits, summary: { totalAvailable, totalUsed } })
   } catch (err) {
     return next(err)

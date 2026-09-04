@@ -15,19 +15,19 @@ tiempo libre haya disponible en el club.
 
 ## 2. Definiciones
 
-| Término | Definición |
-|---|---|
-| **Pareja** | Los dos integrantes de una inscripción (`playerId` + `partnerId`), identificados sin importar el orden. En torneos de tipo `singles` (sin pareja), la "pareja" es el jugador individual. |
-| **Jornada / día** | Fecha calendario (UTC) del instante en que arranca el partido — `YYYY-MM-DD`. |
-| **Media jornada** | Mitad de la jornada: **mañana** (antes de las 12:00 UTC) o **tarde** (12:00 UTC en adelante). La frontera es fija a mediodía — no depende de las franjas horarias (`schedulingWindows`) que el organizador configuró para ese día, que pueden variar de una fecha a otra. |
-| **Set completo** | Un set jugado hasta el final según su modalidad (ej. 6 games con diferencia de 2, o el pro-set correspondiente). Un **super tie-break** (usado para decidir el partido en la modalidad "2 sets + super tie-break" cuando queda 1-1) **no cuenta como set completo** — decide el partido, pero no es un set. |
+| Término           | Definición                                                                                                                                                                                                                                                                                                  |
+| ----------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **Pareja**        | Los dos integrantes de una inscripción (`playerId` + `partnerId`), identificados sin importar el orden. En torneos de tipo `singles` (sin pareja), la "pareja" es el jugador individual.                                                                                                                    |
+| **Jornada / día** | Fecha calendario (UTC) del instante en que arranca el partido — `YYYY-MM-DD`.                                                                                                                                                                                                                               |
+| **Media jornada** | Mitad de la jornada: **mañana** (antes de las 12:00 UTC) o **tarde** (12:00 UTC en adelante). La frontera es fija a mediodía — no depende de las franjas horarias (`schedulingWindows`) que el organizador configuró para ese día, que pueden variar de una fecha a otra.                                   |
+| **Set completo**  | Un set jugado hasta el final según su modalidad (ej. 6 games con diferencia de 2, o el pro-set correspondiente). Un **super tie-break** (usado para decidir el partido en la modalidad "2 sets + super tie-break" cuando queda 1-1) **no cuenta como set completo** — decide el partido, pero no es un set. |
 
 ## 3. Límites
 
-| Restricción | Por jornada completa | Por media jornada |
-|---|---|---|
-| Partidos por pareja | **máximo 3** | **máximo 2** |
-| Sets completos por pareja | **máximo 6** | **máximo 4** |
+| Restricción               | Por jornada completa | Por media jornada |
+| ------------------------- | -------------------- | ----------------- |
+| Partidos por pareja       | **máximo 3**         | **máximo 2**      |
+| Sets completos por pareja | **máximo 6**         | **máximo 4**      |
 
 Ambos límites (partidos y sets) se evalúan **de forma independiente** — un partido
 puede bloquearse por exceso de partidos aunque no exceda sets, o viceversa.
@@ -36,15 +36,15 @@ Los sets que consume un partido dependen de su modalidad. Como el resultado real
 no se conoce al momento de agendar, el algoritmo **reserva el peor caso** (el
 máximo de sets completos que esa modalidad puede llegar a producir):
 
-| Modalidad | Sets completos (peor caso) |
-|---|---|
-| `best_of_3_full` — 3 sets completos | 3 |
-| `two_sets_super_tb` — 2 sets + super tie-break | 2 *(el super tie-break no cuenta)* |
-| `pro_set_8` — Pro set a 8 games | 1 |
-| `pro_set_10` — Pro set a 10 games | 1 |
-| `single_set_6` — Set único a 6 games | 1 |
-| `timed_30` — Tiempo fijo, 30 min | 1 |
-| `timed_40` — Tiempo fijo, 40 min | 1 |
+| Modalidad                                      | Sets completos (peor caso)         |
+| ---------------------------------------------- | ---------------------------------- |
+| `best_of_3_full` — 3 sets completos            | 3                                  |
+| `two_sets_super_tb` — 2 sets + super tie-break | 2 _(el super tie-break no cuenta)_ |
+| `pro_set_8` — Pro set a 8 games                | 1                                  |
+| `pro_set_10` — Pro set a 10 games              | 1                                  |
+| `single_set_6` — Set único a 6 games           | 1                                  |
+| `timed_30` — Tiempo fijo, 30 min               | 1                                  |
+| `timed_40` — Tiempo fijo, 40 min               | 1                                  |
 
 > Reservar el peor caso es intencional: garantiza que la pareja **nunca pueda
 > terminar** superando su cupo real de sets, sin importar cómo se desarrollen los

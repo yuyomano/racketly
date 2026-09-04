@@ -8,7 +8,10 @@ import { AlertTriangle, RotateCcw } from 'lucide-react'
 // Fallback compartido para los error.tsx de cada segmento de ruta (Next.js App Router
 // monta el error.tsx del segmento más cercano a donde ocurrió el error de render).
 export function ErrorFallback({
-  error, reset, homeHref, homeLabel,
+  error,
+  reset,
+  homeHref,
+  homeLabel,
 }: {
   error: Error & { digest?: string }
   reset: () => void
@@ -28,9 +31,7 @@ export function ErrorFallback({
           <AlertTriangle className="w-6 h-6 text-red-500" strokeWidth={1.75} />
         </div>
         <h1 className="text-lg font-bold text-gray-900">{t('title')}</h1>
-        <p className="text-sm text-gray-400 mt-1.5">
-          {t('description')}
-        </p>
+        <p className="text-sm text-gray-400 mt-1.5">{t('description')}</p>
         <div className="flex items-center justify-center gap-3 mt-6">
           <button
             onClick={reset}

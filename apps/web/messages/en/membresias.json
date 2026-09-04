@@ -64,10 +64,19 @@
     },
     "ratioVerdict": {
       "noData": { "label": "No data", "hint": "Free or unpriced plan — not applicable." },
-      "veryBelow": { "label": "🔴 Well below value", "hint": "Using much more court value than they pay for. Consider raising the price or lowering included sessions/day." },
-      "atLimit": { "label": "🟡 At the limit", "hint": "Getting slightly more value than they pay for." },
+      "veryBelow": {
+        "label": "🔴 Well below value",
+        "hint": "Using much more court value than they pay for. Consider raising the price or lowering included sessions/day."
+      },
+      "atLimit": {
+        "label": "🟡 At the limit",
+        "hint": "Getting slightly more value than they pay for."
+      },
       "balanced": { "label": "🟢 Balanced", "hint": "Healthy usage relative to the plan price." },
-      "underused": { "label": "🔵 Underused", "hint": "Paying more than they play — risk of cancelling if they don't find value in it." }
+      "underused": {
+        "label": "🔵 Underused",
+        "hint": "Paying more than they play — risk of cancelling if they don't find value in it."
+      }
     },
     "subscribers": {
       "heading": "Subscribers",

@@ -15,7 +15,9 @@ router.post('/', async (req: Request, res: Response, next: NextFunction) => {
       data: { ...req.body, status: 'open', expiresAt: expiresAt.toISOString() },
     })
     return res.status(201).json({ success: true, data: request })
-  } catch (err) { return next(err) }
+  } catch (err) {
+    return next(err)
+  }
 })
 
 // GET /api/match-requests
@@ -30,14 +32,23 @@ router.get('/', async (req: Request, res: Response, next: NextFunction) => {
     const requests = await prisma.matchRequest.findMany({
       where,
       include: {
-        requester: { select: { id: true, playerProfile: { select: { displayName: true, avatarUrl: true, category: true, eloPadel: true } } } },
+        requester: {
+          select: {
+            id: true,
+            playerProfile: {
+              select: { displayName: true, avatarUrl: true, category: true, eloPadel: true },
+            },
+          },
+        },
         _count: { select: { applications: true } },
       },
       orderBy: { createdAt: 'desc' },
       take: 50,
     })
     return res.json({ success: true, data: requests })
-  } catch (err) { return next(err) }
+  } catch (err) {
+    return next(err)
+  }
 })
 
 // GET /api/match-requests/mine?userId= — mis solicitudes publicadas (con aplicantes)
@@ -51,7 +62,14 @@ router.get('/mine', async (req: Request, res: Response, next: NextFunction) => {
       include: {
         applications: {
           include: {
-            applicant: { select: { id: true, playerProfile: { select: { displayName: true, avatarUrl: true, category: true, eloPadel: true } } } },
+            applicant: {
+              select: {
+                id: true,
+                playerProfile: {
+                  select: { displayName: true, avatarUrl: true, category: true, eloPadel: true },
+                },
+              },
+            },
           },
           orderBy: { createdAt: 'desc' },
         },
@@ -60,7 +78,9 @@ router.get('/mine', async (req: Request, res: Response, next: NextFunction) => {
       take: 30,
     })
     return res.json({ success: true, data: requests })
-  } catch (err) { return next(err) }
+  } catch (err) {
+    return next(err)
+  }
 })
 
 // POST /api/match-requests/:id/apply — aplicar a una solicitud
@@ -70,7 +90,8 @@ router.post('/:id/apply', async (req: Request, res: Response, next: NextFunction
     const request = await prisma.matchRequest.findUnique({ where: { id: req.params.id } })
     if (!request) throw new AppError('Solicitud no encontrada', 404)
     if (request.status !== 'open') throw new AppError('Esta solicitud ya no está disponible', 400)
-    if (request.requesterId === applicantId) throw new AppError('No puedes aplicar a tu propia solicitud', 400)
+    if (request.requesterId === applicantId)
+      throw new AppError('No puedes aplicar a tu propia solicitud', 400)
 
     const existing = await prisma.matchApplication.findFirst({
       where: { requestId: req.params.id, applicantId },
@@ -81,7 +102,9 @@ router.post('/:id/apply', async (req: Request, res: Response, next: NextFunction
       data: { requestId: req.params.id, applicantId, message, status: 'pending' },
     })
     return res.status(201).json({ success: true, data: application })
-  } catch (err) { return next(err) }
+  } catch (err) {
+    return next(err)
+  }
 })
 
 // PUT /api/match-applications/:id/respond — aceptar o rechazar aplicación
@@ -110,7 +133,9 @@ router.put('/applications/:id/respond', async (req: Request, res: Response, next
     }
 
     return res.json({ success: true, data: application })
-  } catch (err) { return next(err) }
+  } catch (err) {
+    return next(err)
+  }
 })
 
 export { router as partnerRouter }

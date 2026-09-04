@@ -103,12 +103,7 @@ export function formatCurrency(amount: number, currency: string, locale = 'es-CO
 /**
  * Calcula la distancia en km entre dos coordenadas (Haversine).
  */
-export function distanceKm(
-  lat1: number,
-  lon1: number,
-  lat2: number,
-  lon2: number
-): number {
+export function distanceKm(lat1: number, lon1: number, lat2: number, lon2: number): number {
   const R = 6371
   const dLat = ((lat2 - lat1) * Math.PI) / 180
   const dLon = ((lon2 - lon1) * Math.PI) / 180
@@ -134,9 +129,7 @@ export function slugify(text: string): string {
 }
 
 export function generateQrPayload(bookingId: string, expiresAt: Date): string {
-  return Buffer.from(
-    JSON.stringify({ bookingId, exp: expiresAt.getTime() })
-  ).toString('base64')
+  return Buffer.from(JSON.stringify({ bookingId, exp: expiresAt.getTime() })).toString('base64')
 }
 
 export function truncate(text: string, maxLength: number): string {
@@ -220,24 +213,24 @@ export type MatchFormat =
   | 'timed_40'
 
 export const MATCH_FORMAT_LABELS: Record<MatchFormat, string> = {
-  best_of_3_full:    '3 sets completos',
+  best_of_3_full: '3 sets completos',
   two_sets_super_tb: '2 sets + super tie-break',
-  pro_set_8:         'Pro set a 8 games',
-  pro_set_10:        'Pro set a 10 games',
-  single_set_6:      'Set único a 6 games',
-  timed_30:          'Tiempo fijo — 30 min',
-  timed_40:          'Tiempo fijo — 40 min',
+  pro_set_8: 'Pro set a 8 games',
+  pro_set_10: 'Pro set a 10 games',
+  single_set_6: 'Set único a 6 games',
+  timed_30: 'Tiempo fijo — 30 min',
+  timed_40: 'Tiempo fijo — 40 min',
 }
 
 // Duración estimada por partido (minutos), usada para planificar pistas y horarios.
 export const MATCH_FORMAT_DURATION_MINUTES: Record<MatchFormat, number> = {
-  best_of_3_full:    90,
+  best_of_3_full: 90,
   two_sets_super_tb: 60,
-  pro_set_8:         40,
-  pro_set_10:        50,
-  single_set_6:      30,
-  timed_30:          30,
-  timed_40:          40,
+  pro_set_8: 40,
+  pro_set_10: 50,
+  single_set_6: 30,
+  timed_30: 30,
+  timed_40: 40,
 }
 
 export function matchFormatDurationMinutes(format: string): number {
@@ -252,7 +245,12 @@ export function matchFormatDurationMinutes(format: string): number {
 
 export type KnockoutStageKey = 'round_of_16' | 'quarterfinal' | 'semifinal' | 'final'
 
-export const KNOCKOUT_STAGE_KEYS: KnockoutStageKey[] = ['round_of_16', 'quarterfinal', 'semifinal', 'final']
+export const KNOCKOUT_STAGE_KEYS: KnockoutStageKey[] = [
+  'round_of_16',
+  'quarterfinal',
+  'semifinal',
+  'final',
+]
 
 export const KNOCKOUT_STAGE_LABELS: Record<KnockoutStageKey, string> = {
   round_of_16: 'Octavos',
@@ -300,13 +298,13 @@ export const PAIR_HALF_DAY_SET_LIMIT = 4
 // El super tie-break de "two_sets_super_tb" decide el partido pero no es un set
 // completo, así que esa modalidad reserva 2, no 3.
 export const MATCH_FORMAT_MAX_SETS: Record<MatchFormat, number> = {
-  best_of_3_full:    3,
+  best_of_3_full: 3,
   two_sets_super_tb: 2,
-  pro_set_8:         1,
-  pro_set_10:        1,
-  single_set_6:      1,
-  timed_30:          1,
-  timed_40:          1,
+  pro_set_8: 1,
+  pro_set_10: 1,
+  single_set_6: 1,
+  timed_30: 1,
+  timed_40: 1,
 }
 
 export function matchFormatMaxSets(format: string): number {
@@ -347,33 +345,45 @@ export function nextHalfDayBoundary(ms: number): number {
 // con los partidos que ya tenían horario ANTES de esta corrida del agendador, para
 // que re-agendar parcialmente (sin tocar lo ya fijado) siga respetando el límite.
 export class PairWorkloadTracker {
-  private byDay  = new Map<string, Map<string, { matches: number; sets: number }>>()
+  private byDay = new Map<string, Map<string, { matches: number; sets: number }>>()
   private byHalf = new Map<string, Map<string, { matches: number; sets: number }>>()
 
-  private bucket(store: Map<string, Map<string, { matches: number; sets: number }>>, key: string, sub: string) {
+  private bucket(
+    store: Map<string, Map<string, { matches: number; sets: number }>>,
+    key: string,
+    sub: string
+  ) {
     let inner = store.get(key)
-    if (!inner) { inner = new Map(); store.set(key, inner) }
+    if (!inner) {
+      inner = new Map()
+      store.set(key, inner)
+    }
     let entry = inner.get(sub)
-    if (!entry) { entry = { matches: 0, sets: 0 }; inner.set(sub, entry) }
+    if (!entry) {
+      entry = { matches: 0, sets: 0 }
+      inner.set(sub, entry)
+    }
     return entry
   }
 
   /** ¿Puede esta pareja jugar un partido que arranca en `startMs` y reserva `sets` sets? */
   fits(key: string, startMs: number, sets: number): boolean {
-    const day  = this.bucket(this.byDay,  key, dayKeyOf(startMs))
+    const day = this.bucket(this.byDay, key, dayKeyOf(startMs))
     const half = this.bucket(this.byHalf, key, halfDayKeyOf(startMs))
-    if (day.matches  + 1    > PAIR_DAILY_MATCH_LIMIT)    return false
-    if (day.sets     + sets > PAIR_DAILY_SET_LIMIT)      return false
-    if (half.matches + 1    > PAIR_HALF_DAY_MATCH_LIMIT) return false
-    if (half.sets    + sets > PAIR_HALF_DAY_SET_LIMIT)   return false
+    if (day.matches + 1 > PAIR_DAILY_MATCH_LIMIT) return false
+    if (day.sets + sets > PAIR_DAILY_SET_LIMIT) return false
+    if (half.matches + 1 > PAIR_HALF_DAY_MATCH_LIMIT) return false
+    if (half.sets + sets > PAIR_HALF_DAY_SET_LIMIT) return false
     return true
   }
 
   register(key: string, startMs: number, sets: number): void {
-    const day  = this.bucket(this.byDay,  key, dayKeyOf(startMs))
+    const day = this.bucket(this.byDay, key, dayKeyOf(startMs))
     const half = this.bucket(this.byHalf, key, halfDayKeyOf(startMs))
-    day.matches += 1;  day.sets  += sets
-    half.matches += 1; half.sets += sets
+    day.matches += 1
+    day.sets += sets
+    half.matches += 1
+    half.sets += sets
   }
 }
 
@@ -399,7 +409,9 @@ export function findWorkloadEligibleStart(opts: {
     if (!blocked) return courtTime
     candidate = nextHalfDayBoundary(courtTime)
   }
-  throw new Error('No se encontró un horario que respete el límite de partidos/sets por jornada de una pareja — faltan pistas, días u horarios disponibles')
+  throw new Error(
+    'No se encontró un horario que respete el límite de partidos/sets por jornada de una pareja — faltan pistas, días u horarios disponibles'
+  )
 }
 
 // Normaliza un set de un Match.score a { p1, p2 } — el score se ha guardado en dos
@@ -409,20 +421,36 @@ export function findWorkloadEligibleStart(opts: {
 // resultado) debe pasar cada set por aquí en vez de leer set.player1/set.p1 directo.
 export function normalizeSetScore(s: unknown): { p1: number; p2: number } {
   if (Array.isArray(s)) return { p1: Number(s[0]) || 0, p2: Number(s[1]) || 0 }
-  const obj = s as { p1?: unknown; p2?: unknown; player1?: unknown; player2?: unknown } | null | undefined
-  return { p1: Number(obj?.p1 ?? obj?.player1 ?? 0) || 0, p2: Number(obj?.p2 ?? obj?.player2 ?? 0) || 0 }
+  const obj = s as
+    { p1?: unknown; p2?: unknown; player1?: unknown; player2?: unknown } | null | undefined
+  return {
+    p1: Number(obj?.p1 ?? obj?.player1 ?? 0) || 0,
+    p2: Number(obj?.p2 ?? obj?.player2 ?? 0) || 0,
+  }
 }
 
 // Offset (ms) de una zona horaria IANA en un instante dado, respecto a UTC.
 function tzOffsetMs(instantMs: number, timeZone: string): number {
   const dtf = new Intl.DateTimeFormat('en-US', {
-    timeZone, hourCycle: 'h23',
-    year: 'numeric', month: '2-digit', day: '2-digit',
-    hour: '2-digit', minute: '2-digit', second: '2-digit',
+    timeZone,
+    hourCycle: 'h23',
+    year: 'numeric',
+    month: '2-digit',
+    day: '2-digit',
+    hour: '2-digit',
+    minute: '2-digit',
+    second: '2-digit',
   })
   const parts = dtf.formatToParts(new Date(instantMs))
   const get = (type: string) => Number(parts.find((p) => p.type === type)?.value ?? 0)
-  const asIfUtc = Date.UTC(get('year'), get('month') - 1, get('day'), get('hour'), get('minute'), get('second'))
+  const asIfUtc = Date.UTC(
+    get('year'),
+    get('month') - 1,
+    get('day'),
+    get('hour'),
+    get('minute'),
+    get('second')
+  )
   return asIfUtc - instantMs
 }
 

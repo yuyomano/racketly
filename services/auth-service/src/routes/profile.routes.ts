@@ -25,27 +25,32 @@ router.get('/:userId', async (req: Request, res: Response, next: NextFunction) =
 })
 
 // PUT /api/profile — actualizar mi perfil
-router.put('/', authenticate, validate(updateProfileSchema), async (req: Request, res: Response, next: NextFunction) => {
-  try {
-    // Whitelist explícita: nunca permitir que el cliente modifique ELO, category, level o xpPoints
-    const { displayName, bio, city, country, sport, avatarUrl } = req.body
-    const data: Record<string, unknown> = {}
-    if (displayName !== undefined) data.displayName = displayName
-    if (bio          !== undefined) data.bio = bio
-    if (city         !== undefined) data.city = city
-    if (country      !== undefined) data.country = country
-    if (sport        !== undefined) data.sport = sport
-    if (avatarUrl    !== undefined) data.avatarUrl = avatarUrl
+router.put(
+  '/',
+  authenticate,
+  validate(updateProfileSchema),
+  async (req: Request, res: Response, next: NextFunction) => {
+    try {
+      // Whitelist explícita: nunca permitir que el cliente modifique ELO, category, level o xpPoints
+      const { displayName, bio, city, country, sport, avatarUrl } = req.body
+      const data: Record<string, unknown> = {}
+      if (displayName !== undefined) data.displayName = displayName
+      if (bio !== undefined) data.bio = bio
+      if (city !== undefined) data.city = city
+      if (country !== undefined) data.country = country
+      if (sport !== undefined) data.sport = sport
+      if (avatarUrl !== undefined) data.avatarUrl = avatarUrl
 
-    const updated = await prisma.playerProfile.update({
-      where: { userId: req.user!.userId },
-      data,
-    })
-    return res.json({ success: true, data: updated })
-  } catch (err) {
-    return next(err)
+      const updated = await prisma.playerProfile.update({
+        where: { userId: req.user!.userId },
+        data,
+      })
+      return res.json({ success: true, data: updated })
+    } catch (err) {
+      return next(err)
+    }
   }
-})
+)
 
 // GET /api/profile/:userId/stats
 router.get('/:userId/stats', async (req: Request, res: Response, next: NextFunction) => {

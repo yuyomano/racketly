@@ -14,7 +14,9 @@ router.get('/:clubId', async (req: Request, res: Response, next: NextFunction) =
       orderBy: { name: 'asc' },
     })
     return res.json({ success: true, data: professors })
-  } catch (err) { return next(err) }
+  } catch (err) {
+    return next(err)
+  }
 })
 
 // ─── POST /api/professors — dar de alta un profesor (club o externo) ─────────
@@ -24,16 +26,24 @@ router.get('/:clubId', async (req: Request, res: Response, next: NextFunction) =
 // cuenta) puede quedar con nombre libre y sin userId.
 router.post('/', async (req: Request, res: Response, next: NextFunction) => {
   try {
-    const { clubId, userId, name, avatarUrl, bio, phone, sport, isExternal, hourlyRate, currency } = req.body
+    const { clubId, userId, name, avatarUrl, bio, phone, sport, isExternal, hourlyRate, currency } =
+      req.body
     if (!clubId) throw new AppError('clubId es requerido', 400)
-    if (typeof hourlyRate !== 'number' || hourlyRate < 0) throw new AppError('Tarifa por hora inválida', 400)
+    if (typeof hourlyRate !== 'number' || hourlyRate < 0)
+      throw new AppError('Tarifa por hora inválida', 400)
 
     let resolvedName = name?.trim()
     if (!isExternal) {
       if (!userId) throw new AppError('Selecciona el jugador que será el profesor', 400)
-      const user = await prisma.user.findUnique({ where: { id: userId }, select: { firstName: true, lastName: true, email: true } })
+      const user = await prisma.user.findUnique({
+        where: { id: userId },
+        select: { firstName: true, lastName: true, email: true },
+      })
       if (!user) throw new AppError('Jugador no encontrado', 404)
-      const fullName = user.firstName || user.lastName ? `${user.firstName ?? ''} ${user.lastName ?? ''}`.trim() : null
+      const fullName =
+        user.firstName || user.lastName
+          ? `${user.firstName ?? ''} ${user.lastName ?? ''}`.trim()
+          : null
       resolvedName = resolvedName || fullName || user.email?.split('@')[0] || ''
     }
     if (!resolvedName) throw new AppError('El nombre del profesor es requerido', 400)
@@ -42,7 +52,10 @@ router.post('/', async (req: Request, res: Response, next: NextFunction) => {
       data: {
         clubId,
         userId: isExternal ? null : userId,
-        name: resolvedName, avatarUrl, bio, phone,
+        name: resolvedName,
+        avatarUrl,
+        bio,
+        phone,
         sport: sport || 'padel',
         isExternal: !!isExternal,
         hourlyRate,
@@ -50,13 +63,26 @@ router.post('/', async (req: Request, res: Response, next: NextFunction) => {
       },
     })
     return res.status(201).json({ success: true, data: professor })
-  } catch (err) { return next(err) }
+  } catch (err) {
+    return next(err)
+  }
 })
 
 // ─── PATCH /api/professors/:id — editar / activar / desactivar ───────────────
 router.patch('/:id', async (req: Request, res: Response, next: NextFunction) => {
   try {
-    const { userId, name, avatarUrl, bio, phone, sport, isExternal, hourlyRate, currency, isActive } = req.body
+    const {
+      userId,
+      name,
+      avatarUrl,
+      bio,
+      phone,
+      sport,
+      isExternal,
+      hourlyRate,
+      currency,
+      isActive,
+    } = req.body
 
     const existing = await prisma.clubProfessor.findUnique({ where: { id: req.params.id } })
     if (!existing) throw new AppError('Profesor no encontrado', 404)
@@ -68,7 +94,8 @@ router.patch('/:id', async (req: Request, res: Response, next: NextFunction) => 
     // tarifa no rompe profesores legacy que quedaron sin userId antes de este cambio.
     const data: Record<string, unknown> = {}
     if (userId !== undefined || isExternal !== undefined) {
-      if (!nextIsExternal && !nextUserId) throw new AppError('Selecciona el jugador que será el profesor', 400)
+      if (!nextIsExternal && !nextUserId)
+        throw new AppError('Selecciona el jugador que será el profesor', 400)
       if (nextIsExternal) data.userId = null
       else if (userId !== undefined) data.userId = userId
     }
@@ -84,7 +111,9 @@ router.patch('/:id', async (req: Request, res: Response, next: NextFunction) => 
 
     const professor = await prisma.clubProfessor.update({ where: { id: req.params.id }, data })
     return res.json({ success: true, data: professor })
-  } catch (err) { return next(err) }
+  } catch (err) {
+    return next(err)
+  }
 })
 
 export { router as professorsRouter }

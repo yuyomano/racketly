@@ -8,13 +8,23 @@ import { ChevronLeft, Loader2, MapPin, Calendar, Radio, Trophy, Users } from 'lu
 import { Card, CardBody } from '@/components/ui/Card'
 import { Badge } from '@/components/ui/Badge'
 import { EmptyState } from '@/components/ui/EmptyState'
-import { MATCH_FORMAT_LABELS, KNOCKOUT_STAGE_KEYS, KNOCKOUT_STAGE_LABELS, type MatchFormat, type MatchFormatOverrides } from '@racketly/utils'
+import {
+  MATCH_FORMAT_LABELS,
+  KNOCKOUT_STAGE_KEYS,
+  KNOCKOUT_STAGE_LABELS,
+  type MatchFormat,
+  type MatchFormatOverrides,
+} from '@racketly/utils'
 
 const GW = process.env.NEXT_PUBLIC_GATEWAY_URL || 'http://localhost:3000'
 
 type ApiPlayer = { displayName: string; avatarUrl: string | null } | null
 
-type SetScore = { player1: number; player2: number; tiebreak?: { player1: number; player2: number } }
+type SetScore = {
+  player1: number
+  player2: number
+  tiebreak?: { player1: number; player2: number }
+}
 
 type ApiMatch = {
   id: string
@@ -52,7 +62,12 @@ type GroupStanding = {
 
 type GroupData = {
   groupNumber: number
-  entrants: { playerId: string; partnerId: string | null; displayName: string; partnerName: string | null }[]
+  entrants: {
+    playerId: string
+    partnerId: string | null
+    displayName: string
+    partnerName: string | null
+  }[]
   matches: ApiMatch[]
   standings: GroupStanding[]
   isComplete: boolean
@@ -102,7 +117,13 @@ function formatScore(score: SetScore[]): string {
 }
 
 function formatMatchDateTime(scheduledAt: string): string {
-  return new Date(scheduledAt).toLocaleString('es-CO', { weekday: 'short', day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' })
+  return new Date(scheduledAt).toLocaleString('es-CO', {
+    weekday: 'short',
+    day: 'numeric',
+    month: 'short',
+    hour: '2-digit',
+    minute: '2-digit',
+  })
 }
 
 function roundLabel(round: number, maxRound: number): string {
@@ -121,7 +142,13 @@ const TABS = [
   { key: 'players', label: 'Jugadores' },
 ] as const
 
-export function PublicTournamentClient({ clubId, tournamentId }: { clubId: string; tournamentId: string }) {
+export function PublicTournamentClient({
+  clubId,
+  tournamentId,
+}: {
+  clubId: string
+  tournamentId: string
+}) {
   const qc = useQueryClient()
   const [tab, setTab] = useState<'info' | 'groups' | 'bracket' | 'players'>('info')
   const socketRef = useRef<Socket | null>(null)
@@ -215,11 +242,16 @@ export function PublicTournamentClient({ clubId, tournamentId }: { clubId: strin
   return (
     <div className="min-h-screen bg-gray-50">
       <div className="bg-emerald-800 text-white px-5 pt-10 pb-6">
-        <Link href={`/torneos/${clubId}`} className="inline-flex items-center gap-1 text-emerald-200 text-sm mb-3 hover:text-white">
+        <Link
+          href={`/torneos/${clubId}`}
+          className="inline-flex items-center gap-1 text-emerald-200 text-sm mb-3 hover:text-white"
+        >
           <ChevronLeft className="w-4 h-4" /> {tournament.club?.name ?? 'Torneos del club'}
         </Link>
         <div className="flex items-center gap-2 mb-2">
-          <Badge tone={tournament.sport === 'padel' ? 'emerald' : 'amber'}>{tournament.sport}</Badge>
+          <Badge tone={tournament.sport === 'padel' ? 'emerald' : 'amber'}>
+            {tournament.sport}
+          </Badge>
           <Badge tone="violet">{tournament.category}</Badge>
           {isLive && (
             <Badge tone="red" dot>
@@ -252,55 +284,95 @@ export function PublicTournamentClient({ clubId, tournamentId }: { clubId: strin
           {tab === 'info' && (
             <Card>
               <CardBody className="space-y-3 text-sm">
-                {tournament.description && <p className="text-gray-600">{tournament.description}</p>}
-                <InfoRow icon={Calendar} label="Fecha" value={new Date(tournament.startDate).toLocaleDateString('es-CO')} />
-                <InfoRow icon={Trophy} label="Modalidad" value={MATCH_FORMAT_LABELS[tournament.matchFormat] ?? tournament.matchFormat} />
-                {tournament.matchFormatOverrides && Object.keys(tournament.matchFormatOverrides).length > 0 && (
-                  <div className="pl-6 space-y-1">
-                    {KNOCKOUT_STAGE_KEYS.filter((k) => tournament.matchFormatOverrides?.[k]).map((k) => (
-                      <p key={k} className="text-xs text-gray-500">
-                        {KNOCKOUT_STAGE_LABELS[k]}: <span className="font-semibold text-gray-700">{MATCH_FORMAT_LABELS[tournament.matchFormatOverrides![k]!]}</span>
-                      </p>
-                    ))}
-                  </div>
+                {tournament.description && (
+                  <p className="text-gray-600">{tournament.description}</p>
                 )}
-                <InfoRow icon={Users} label="Inscritos" value={`${tournament._count.participants} jugadores`} />
-                {tournament.prizeInfo && <InfoRow icon={Trophy} label="Premios" value={tournament.prizeInfo} />}
+                <InfoRow
+                  icon={Calendar}
+                  label="Fecha"
+                  value={new Date(tournament.startDate).toLocaleDateString('es-CO')}
+                />
+                <InfoRow
+                  icon={Trophy}
+                  label="Modalidad"
+                  value={MATCH_FORMAT_LABELS[tournament.matchFormat] ?? tournament.matchFormat}
+                />
+                {tournament.matchFormatOverrides &&
+                  Object.keys(tournament.matchFormatOverrides).length > 0 && (
+                    <div className="pl-6 space-y-1">
+                      {KNOCKOUT_STAGE_KEYS.filter((k) => tournament.matchFormatOverrides?.[k]).map(
+                        (k) => (
+                          <p key={k} className="text-xs text-gray-500">
+                            {KNOCKOUT_STAGE_LABELS[k]}:{' '}
+                            <span className="font-semibold text-gray-700">
+                              {MATCH_FORMAT_LABELS[tournament.matchFormatOverrides![k]!]}
+                            </span>
+                          </p>
+                        )
+                      )}
+                    </div>
+                  )}
+                <InfoRow
+                  icon={Users}
+                  label="Inscritos"
+                  value={`${tournament._count.participants} jugadores`}
+                />
+                {tournament.prizeInfo && (
+                  <InfoRow icon={Trophy} label="Premios" value={tournament.prizeInfo} />
+                )}
                 {tournament.entryFee > 0 && (
-                  <InfoRow icon={Trophy} label="Inscripción" value={`${tournament.entryFee} ${tournament.currency}`} />
+                  <InfoRow
+                    icon={Trophy}
+                    label="Inscripción"
+                    value={`${tournament.entryFee} ${tournament.currency}`}
+                  />
                 )}
               </CardBody>
             </Card>
           )}
 
-          {tab === 'groups' && (
-            !hasStarted ? (
-              <EmptyState icon={Users} title="El torneo aún no ha comenzado" description="Los grupos se publicarán cuando arranque." />
+          {tab === 'groups' &&
+            (!hasStarted ? (
+              <EmptyState
+                icon={Users}
+                title="El torneo aún no ha comenzado"
+                description="Los grupos se publicarán cuando arranque."
+              />
             ) : !groups || groups.length === 0 ? (
-              <div className="flex justify-center py-10"><Loader2 className="w-5 h-5 text-emerald-500 animate-spin" /></div>
+              <div className="flex justify-center py-10">
+                <Loader2 className="w-5 h-5 text-emerald-500 animate-spin" />
+              </div>
             ) : (
               groups.map((g) => <GroupCard key={g.groupNumber} group={g} />)
-            )
-          )}
+            ))}
 
-          {tab === 'bracket' && (
-            !hasStarted ? (
-              <EmptyState icon={Trophy} title="El cuadro aún no está disponible" description="Se generará cuando el torneo pase a fase eliminatoria." />
+          {tab === 'bracket' &&
+            (!hasStarted ? (
+              <EmptyState
+                icon={Trophy}
+                title="El cuadro aún no está disponible"
+                description="Se generará cuando el torneo pase a fase eliminatoria."
+              />
             ) : !bracket || Object.keys(bracket).length === 0 ? (
-              <div className="flex justify-center py-10"><Loader2 className="w-5 h-5 text-emerald-500 animate-spin" /></div>
+              <div className="flex justify-center py-10">
+                <Loader2 className="w-5 h-5 text-emerald-500 animate-spin" />
+              </div>
             ) : (
               <div className="flex gap-4 overflow-x-auto pb-2">
-                {Object.entries(bracket).sort(([a], [b]) => Number(a) - Number(b)).map(([round, matches]) => (
-                  <div key={round} className="flex-shrink-0 w-64 space-y-2">
-                    <p className="text-xs font-bold text-gray-500 uppercase tracking-wide px-1">
-                      {roundLabel(Number(round), maxRound)}
-                    </p>
-                    {matches.map((m) => <MatchCard key={m.id} match={m} />)}
-                  </div>
-                ))}
+                {Object.entries(bracket)
+                  .sort(([a], [b]) => Number(a) - Number(b))
+                  .map(([round, matches]) => (
+                    <div key={round} className="flex-shrink-0 w-64 space-y-2">
+                      <p className="text-xs font-bold text-gray-500 uppercase tracking-wide px-1">
+                        {roundLabel(Number(round), maxRound)}
+                      </p>
+                      {matches.map((m) => (
+                        <MatchCard key={m.id} match={m} />
+                      ))}
+                    </div>
+                  ))}
               </div>
-            )
-          )}
+            ))}
 
           {tab === 'players' && (
             <Card>
@@ -314,7 +386,9 @@ export function PublicTournamentClient({ clubId, tournamentId }: { clubId: strin
                         <p className="text-sm font-semibold text-gray-900">
                           {p.player?.displayName}
                           {p.partnerId && ' / '}
-                          {p.partnerId && tournament.participants.find((pp) => pp.playerId === p.partnerId)?.player?.displayName}
+                          {p.partnerId &&
+                            tournament.participants.find((pp) => pp.playerId === p.partnerId)
+                              ?.player?.displayName}
                         </p>
                         <p className="text-xs text-gray-400">{p.player?.category}</p>
                       </div>
@@ -331,7 +405,15 @@ export function PublicTournamentClient({ clubId, tournamentId }: { clubId: strin
   )
 }
 
-function InfoRow({ icon: Icon, label, value }: { icon: typeof Calendar; label: string; value: string }) {
+function InfoRow({
+  icon: Icon,
+  label,
+  value,
+}: {
+  icon: typeof Calendar
+  label: string
+  value: string
+}) {
   return (
     <div className="flex items-center gap-2.5">
       <Icon className="w-4 h-4 text-emerald-600 shrink-0" />
@@ -352,10 +434,14 @@ function MatchCard({ match }: { match: ApiMatch }) {
             <Radio className="w-3 h-3" /> En vivo
           </Badge>
         )}
-        <p className={`text-sm ${match.winnerId === match.player1Id ? 'font-bold text-gray-900' : 'text-gray-600'}`}>
+        <p
+          className={`text-sm ${match.winnerId === match.player1Id ? 'font-bold text-gray-900' : 'text-gray-600'}`}
+        >
           {pairName(match, 'player1')}
         </p>
-        <p className={`text-sm ${match.winnerId === match.player2Id ? 'font-bold text-gray-900' : 'text-gray-600'}`}>
+        <p
+          className={`text-sm ${match.winnerId === match.player2Id ? 'font-bold text-gray-900' : 'text-gray-600'}`}
+        >
           {pairName(match, 'player2')}
         </p>
         {done && match.score?.length > 0 && (
@@ -393,12 +479,15 @@ function GroupCard({ group }: { group: GroupData }) {
                 <tr key={s.playerId} className="border-t border-gray-100">
                   <td className="py-1.5">
                     <span className={i < 2 ? 'font-semibold text-emerald-700' : 'text-gray-700'}>
-                      {i + 1}. {s.displayName}{s.partnerName ? ` / ${s.partnerName}` : ''}
+                      {i + 1}. {s.displayName}
+                      {s.partnerName ? ` / ${s.partnerName}` : ''}
                     </span>
                   </td>
                   <td className="py-1.5 text-center font-semibold">{s.points}</td>
                   <td className="py-1.5 text-center text-gray-500">{s.played}</td>
-                  <td className="py-1.5 text-center text-gray-500">{s.setsWon}-{s.setsLost}</td>
+                  <td className="py-1.5 text-center text-gray-500">
+                    {s.setsWon}-{s.setsLost}
+                  </td>
                 </tr>
               ))}
             </tbody>
@@ -420,9 +509,13 @@ function GroupCard({ group }: { group: GroupData }) {
                 )}
               </div>
               {m.status === 'in_progress' ? (
-                <Badge tone="red" dot>Vivo</Badge>
+                <Badge tone="red" dot>
+                  Vivo
+                </Badge>
               ) : m.score?.length > 0 ? (
-                <span className="text-emerald-700 font-semibold shrink-0">{formatScore(m.score)}</span>
+                <span className="text-emerald-700 font-semibold shrink-0">
+                  {formatScore(m.score)}
+                </span>
               ) : (
                 <span className="text-gray-400 shrink-0">Pendiente</span>
               )}

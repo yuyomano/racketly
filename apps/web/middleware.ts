@@ -18,7 +18,9 @@ function decodeExpiryMs(token: string): number | null {
   }
 }
 
-async function tryRefresh(refreshToken: string): Promise<{ accessToken: string; refreshToken: string } | null> {
+async function tryRefresh(
+  refreshToken: string
+): Promise<{ accessToken: string; refreshToken: string } | null> {
   try {
     const res = await fetch(`${GATEWAY}/api/auth/refresh`, {
       method: 'POST',
@@ -34,12 +36,23 @@ async function tryRefresh(refreshToken: string): Promise<{ accessToken: string; 
   }
 }
 
-function applySessionCookies(response: NextResponse, tokens: { accessToken: string; refreshToken: string }) {
+function applySessionCookies(
+  response: NextResponse,
+  tokens: { accessToken: string; refreshToken: string }
+) {
   response.cookies.set('racketly_token', tokens.accessToken, {
-    httpOnly: true, sameSite: 'lax', secure: SECURE_COOKIE, maxAge: 15 * 60, path: '/',
+    httpOnly: true,
+    sameSite: 'lax',
+    secure: SECURE_COOKIE,
+    maxAge: 15 * 60,
+    path: '/',
   })
   response.cookies.set('racketly_refresh', tokens.refreshToken, {
-    httpOnly: true, sameSite: 'lax', secure: SECURE_COOKIE, maxAge: 60 * 60 * 24 * 30, path: '/',
+    httpOnly: true,
+    sameSite: 'lax',
+    secure: SECURE_COOKIE,
+    maxAge: 60 * 60 * 24 * 30,
+    path: '/',
   })
 }
 

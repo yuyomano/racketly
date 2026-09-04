@@ -21,7 +21,12 @@ type Club = {
   recentlyBooked?: boolean
 }
 
-async function fetchClubs(search: string, sport: string, userId: string, fetchErrorMessage: string): Promise<Club[]> {
+async function fetchClubs(
+  search: string,
+  sport: string,
+  userId: string,
+  fetchErrorMessage: string
+): Promise<Club[]> {
   const params = new URLSearchParams({ userId })
   if (search) params.set('search', search)
   if (sport !== 'all') params.set('sport', sport)
@@ -34,9 +39,13 @@ async function fetchClubs(search: string, sport: string, userId: string, fetchEr
 export function ClubSearchClient({ userId }: { userId: string }) {
   const t = useTranslations('Booking.search')
   const [search, setSearch] = useState('')
-  const [sport, setSport]   = useState<'all' | 'padel' | 'pickleball'>('all')
+  const [sport, setSport] = useState<'all' | 'padel' | 'pickleball'>('all')
 
-  const { data: clubs, isLoading, error } = useQuery({
+  const {
+    data: clubs,
+    isLoading,
+    error,
+  } = useQuery({
     queryKey: ['clubs', { search, sport, userId }],
     queryFn: () => fetchClubs(search, sport, userId, t('fetchError')),
   })
@@ -75,10 +84,14 @@ export function ClubSearchClient({ userId }: { userId: string }) {
         <div className="flex border border-gray-200 rounded-xl overflow-hidden shrink-0">
           {sportOptions.map(([v, l]) => (
             <button
-              key={v} type="button" onClick={() => setSport(v)}
+              key={v}
+              type="button"
+              onClick={() => setSport(v)}
               className={cn(
                 'px-4 py-2.5 text-sm font-semibold transition-colors',
-                sport === v ? 'bg-emerald-600 text-white' : 'bg-white text-gray-500 hover:bg-gray-50'
+                sport === v
+                  ? 'bg-emerald-600 text-white'
+                  : 'bg-white text-gray-500 hover:bg-gray-50'
               )}
             >
               {l}
@@ -118,7 +131,9 @@ export function ClubSearchClient({ userId }: { userId: string }) {
                       <PickleballIcon size={13} /> {t('sportPickleball')}
                     </span>
                   )}
-                  <span className="text-[11px] text-gray-400 ml-auto">{t('courtsCount', { count: club.courts?.length ?? 0 })}</span>
+                  <span className="text-[11px] text-gray-400 ml-auto">
+                    {t('courtsCount', { count: club.courts?.length ?? 0 })}
+                  </span>
                 </div>
               </Card>
             </Link>

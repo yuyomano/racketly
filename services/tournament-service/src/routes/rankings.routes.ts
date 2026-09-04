@@ -13,7 +13,8 @@ router.get('/', async (req: Request, res: Response, next: NextFunction) => {
     if (country) where.country = country
     if (city) where.city = { contains: city as string, mode: 'insensitive' }
 
-    const orderBy = sport === 'pickleball' ? { eloPickleball: 'desc' as const } : { eloPadel: 'desc' as const }
+    const orderBy =
+      sport === 'pickleball' ? { eloPickleball: 'desc' as const } : { eloPadel: 'desc' as const }
 
     const [players, total] = await Promise.all([
       prisma.playerProfile.findMany({
@@ -22,16 +23,27 @@ router.get('/', async (req: Request, res: Response, next: NextFunction) => {
         take: Number(limit),
         skip: (Number(page) - 1) * Number(limit),
         select: {
-          userId: true, displayName: true, avatarUrl: true,
-          eloPadel: true, eloPickleball: true, category: true,
-          country: true, city: true,
+          userId: true,
+          displayName: true,
+          avatarUrl: true,
+          eloPadel: true,
+          eloPickleball: true,
+          category: true,
+          country: true,
+          city: true,
         },
       }),
       prisma.playerProfile.count({ where }),
     ])
 
-    return res.json({ success: true, data: players, pagination: { page: Number(page), pageSize: Number(limit), total } })
-  } catch (err) { return next(err) }
+    return res.json({
+      success: true,
+      data: players,
+      pagination: { page: Number(page), pageSize: Number(limit), total },
+    })
+  } catch (err) {
+    return next(err)
+  }
 })
 
 // GET /api/rankings/elo-history/:userId
@@ -43,7 +55,9 @@ router.get('/elo-history/:userId', async (req: Request, res: Response, next: Nex
       take: 20,
     })
     return res.json({ success: true, data: history })
-  } catch (err) { return next(err) }
+  } catch (err) {
+    return next(err)
+  }
 })
 
 export { router as rankingsRouter }

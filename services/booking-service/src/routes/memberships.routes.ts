@@ -36,55 +36,73 @@ router.get('/:clubId/membership-plans', async (req: Request, res: Response, next
 
 // ─── POST /api/clubs/:clubId/membership-plans ────────────────────────────────
 // Crear un plan de membresía para el club (uso admin)
-router.post('/:clubId/membership-plans', async (req: Request, res: Response, next: NextFunction) => {
-  try {
-    const { name, description, price, currency, sessionsPerDay, priceExtraSession } = req.body
-    if (!name?.trim()) throw new AppError('El nombre del plan es requerido', 400)
-    if (price === undefined || Number(price) < 0) throw new AppError('El precio es requerido', 400)
-    if (!sessionsPerDay || Number(sessionsPerDay) < 1) throw new AppError('sessionsPerDay debe ser al menos 1', 400)
+router.post(
+  '/:clubId/membership-plans',
+  async (req: Request, res: Response, next: NextFunction) => {
+    try {
+      const { name, description, price, currency, sessionsPerDay, priceExtraSession } = req.body
+      if (!name?.trim()) throw new AppError('El nombre del plan es requerido', 400)
+      if (price === undefined || Number(price) < 0)
+        throw new AppError('El precio es requerido', 400)
+      if (!sessionsPerDay || Number(sessionsPerDay) < 1)
+        throw new AppError('sessionsPerDay debe ser al menos 1', 400)
 
-    const club = await prisma.club.findUnique({ where: { id: req.params.clubId }, select: { currency: true } })
+      const club = await prisma.club.findUnique({
+        where: { id: req.params.clubId },
+        select: { currency: true },
+      })
 
-    const plan = await prisma.clubMembershipPlan.create({
-      data: {
-        clubId: req.params.clubId,
-        name: name.trim(),
-        description: description?.trim() || null,
-        price: Number(price),
-        currency: currency?.trim() || club?.currency || 'USD',
-        sessionsPerDay: Number(sessionsPerDay),
-        priceExtraSession: Number(priceExtraSession ?? 0),
-      },
-    })
-    return res.status(201).json({ success: true, data: plan })
-  } catch (err) {
-    return next(err)
+      const plan = await prisma.clubMembershipPlan.create({
+        data: {
+          clubId: req.params.clubId,
+          name: name.trim(),
+          description: description?.trim() || null,
+          price: Number(price),
+          currency: currency?.trim() || club?.currency || 'USD',
+          sessionsPerDay: Number(sessionsPerDay),
+          priceExtraSession: Number(priceExtraSession ?? 0),
+        },
+      })
+      return res.status(201).json({ success: true, data: plan })
+    } catch (err) {
+      return next(err)
+    }
   }
-})
+)
 
 // ─── PATCH /api/clubs/:clubId/membership-plans/:planId ───────────────────────
 // Editar o activar/desactivar un plan
-router.patch('/:clubId/membership-plans/:planId', async (req: Request, res: Response, next: NextFunction) => {
-  try {
-    const existing = await prisma.clubMembershipPlan.findUnique({ where: { id: req.params.planId } })
-    if (!existing || existing.clubId !== req.params.clubId) throw new AppError('Plan no encontrado', 404)
+router.patch(
+  '/:clubId/membership-plans/:planId',
+  async (req: Request, res: Response, next: NextFunction) => {
+    try {
+      const existing = await prisma.clubMembershipPlan.findUnique({
+        where: { id: req.params.planId },
+      })
+      if (!existing || existing.clubId !== req.params.clubId)
+        throw new AppError('Plan no encontrado', 404)
 
-    const { name, description, price, currency, sessionsPerDay, priceExtraSession, isActive } = req.body
-    const data: Record<string, unknown> = {}
-    if (name              !== undefined) data.name              = String(name).trim()
-    if (description       !== undefined) data.description       = description?.trim() || null
-    if (price             !== undefined) data.price             = Number(price)
-    if (currency          !== undefined) data.currency          = String(currency).trim()
-    if (sessionsPerDay    !== undefined) data.sessionsPerDay    = Number(sessionsPerDay)
-    if (priceExtraSession !== undefined) data.priceExtraSession = Number(priceExtraSession)
-    if (isActive          !== undefined) data.isActive          = !!isActive
+      const { name, description, price, currency, sessionsPerDay, priceExtraSession, isActive } =
+        req.body
+      const data: Record<string, unknown> = {}
+      if (name !== undefined) data.name = String(name).trim()
+      if (description !== undefined) data.description = description?.trim() || null
+      if (price !== undefined) data.price = Number(price)
+      if (currency !== undefined) data.currency = String(currency).trim()
+      if (sessionsPerDay !== undefined) data.sessionsPerDay = Number(sessionsPerDay)
+      if (priceExtraSession !== undefined) data.priceExtraSession = Number(priceExtraSession)
+      if (isActive !== undefined) data.isActive = !!isActive
 
-    const plan = await prisma.clubMembershipPlan.update({ where: { id: req.params.planId }, data })
-    return res.json({ success: true, data: plan })
-  } catch (err) {
-    return next(err)
+      const plan = await prisma.clubMembershipPlan.update({
+        where: { id: req.params.planId },
+        data,
+      })
+      return res.json({ success: true, data: plan })
+    } catch (err) {
+      return next(err)
+    }
   }
-})
+)
 
 // ─── GET /api/clubs/:clubId/memberships ───────────────────────────────────────
 // Suscriptores del club (uso admin) — todas las membresías, con plan y usuario
@@ -97,14 +115,22 @@ router.get('/:clubId/memberships', async (req: Request, res: Response, next: Nex
     })
     const userIds = [...new Set(memberships.map((m) => m.userId))]
     const users = userIds.length
-      ? await prisma.user.findMany({ where: { id: { in: userIds } }, select: { id: true, email: true, firstName: true, lastName: true } })
+      ? await prisma.user.findMany({
+          where: { id: { in: userIds } },
+          select: { id: true, email: true, firstName: true, lastName: true },
+        })
       : []
     const userById = new Map(users.map((u) => [u.id, u]))
 
     const data = memberships.map((m) => {
       const u = userById.get(m.userId)
-      const fullName = u && (u.firstName || u.lastName) ? `${u.firstName ?? ''} ${u.lastName ?? ''}`.trim() : null
-      return { ...m, userName: fullName || u?.email?.split('@')[0] || 'Desconocido', userEmail: u?.email ?? null }
+      const fullName =
+        u && (u.firstName || u.lastName) ? `${u.firstName ?? ''} ${u.lastName ?? ''}`.trim() : null
+      return {
+        ...m,
+        userName: fullName || u?.email?.split('@')[0] || 'Desconocido',
+        userEmail: u?.email ?? null,
+      }
     })
 
     return res.json({ success: true, data })
@@ -125,7 +151,8 @@ router.post('/:clubId/memberships', async (req: Request, res: Response, next: Ne
     if (!userId || !planId) throw new AppError('userId y planId requeridos', 400)
 
     const plan = await prisma.clubMembershipPlan.findUnique({ where: { id: planId } })
-    if (!plan || plan.clubId !== clubId || !plan.isActive) throw new AppError('Plan no disponible', 404)
+    if (!plan || plan.clubId !== clubId || !plan.isActive)
+      throw new AppError('Plan no disponible', 404)
 
     const user = await prisma.user.findUnique({
       where: { id: userId },
@@ -133,7 +160,9 @@ router.post('/:clubId/memberships', async (req: Request, res: Response, next: Ne
     })
     if (!user) throw new AppError('Jugador no encontrado', 404)
 
-    const existing = await prisma.userClubMembership.findFirst({ where: { userId, clubId, status: 'active' } })
+    const existing = await prisma.userClubMembership.findFirst({
+      where: { userId, clubId, status: 'active' },
+    })
     if (existing) throw new AppError('Este jugador ya tiene una membresía activa en el club', 409)
 
     const isCourtesy = !paymentMethod && plan.price > 0
@@ -158,7 +187,10 @@ router.post('/:clubId/memberships', async (req: Request, res: Response, next: Ne
 
     let paid = false
     if (paymentMethod) {
-      const fullName = user.firstName || user.lastName ? `${user.firstName ?? ''} ${user.lastName ?? ''}`.trim() : undefined
+      const fullName =
+        user.firstName || user.lastName
+          ? `${user.firstName ?? ''} ${user.lastName ?? ''}`.trim()
+          : undefined
       await recordPayment({
         clubId,
         membershipId: membership.id,
@@ -186,33 +218,34 @@ router.get('/:clubId/players', async (req: Request, res: Response, next: NextFun
   try {
     const { clubId } = req.params
 
-    const [club, bookings, memberships, creditSums, tournamentParticipants, professors] = await Promise.all([
-      prisma.club.findUnique({ where: { id: clubId }, select: { name: true, currency: true } }),
-      prisma.booking.findMany({
-        where: { slot: { court: { clubId } }, status: { not: 'cancelled' } },
-        select: { players: true, slot: { select: { date: true } } },
-      }),
-      prisma.userClubMembership.findMany({
-        where: { clubId },
-        include: { plan: { select: { name: true } }, club: { select: { name: true } } },
-        orderBy: { createdAt: 'desc' },
-      }),
-      prisma.userCredit.groupBy({
-        by: ['userId'],
-        where: { clubId, status: 'available' },
-        _sum: { amount: true },
-      }),
-      prisma.tournamentParticipant.findMany({
-        where: { tournament: { clubId } },
-        select: { playerId: true, registeredAt: true },
-      }),
-      // Profesores "del club" atados a un jugador registrado — cuentan como
-      // jugadores activos del club aunque no tengan reservas/membresía propias.
-      prisma.clubProfessor.findMany({
-        where: { clubId, userId: { not: null } },
-        select: { userId: true },
-      }),
-    ])
+    const [club, bookings, memberships, creditSums, tournamentParticipants, professors] =
+      await Promise.all([
+        prisma.club.findUnique({ where: { id: clubId }, select: { name: true, currency: true } }),
+        prisma.booking.findMany({
+          where: { slot: { court: { clubId } }, status: { not: 'cancelled' } },
+          select: { players: true, slot: { select: { date: true } } },
+        }),
+        prisma.userClubMembership.findMany({
+          where: { clubId },
+          include: { plan: { select: { name: true } }, club: { select: { name: true } } },
+          orderBy: { createdAt: 'desc' },
+        }),
+        prisma.userCredit.groupBy({
+          by: ['userId'],
+          where: { clubId, status: 'available' },
+          _sum: { amount: true },
+        }),
+        prisma.tournamentParticipant.findMany({
+          where: { tournament: { clubId } },
+          select: { playerId: true, registeredAt: true },
+        }),
+        // Profesores "del club" atados a un jugador registrado — cuentan como
+        // jugadores activos del club aunque no tengan reservas/membresía propias.
+        prisma.clubProfessor.findMany({
+          where: { clubId, userId: { not: null } },
+          select: { userId: true },
+        }),
+      ])
 
     type Row = {
       userId: string
@@ -227,7 +260,13 @@ router.get('/:clubId/players', async (req: Request, res: Response, next: NextFun
       const players = (b.players as any[]) || []
       for (const p of players) {
         if (!p.userId) continue
-        const row = byUser.get(p.userId) ?? { userId: p.userId, name: null, bookingsCount: 0, lastBookingDate: null, totalPaid: 0 }
+        const row = byUser.get(p.userId) ?? {
+          userId: p.userId,
+          name: null,
+          bookingsCount: 0,
+          lastBookingDate: null,
+          totalPaid: 0,
+        }
         row.bookingsCount++
         row.totalPaid += p.amountPaid ?? 0
         if (p.name) row.name = p.name
@@ -279,7 +318,8 @@ router.get('/:clubId/players', async (req: Request, res: Response, next: NextFun
       const availableCredit = creditByUser.get(userId) ?? 0
       const tournamentsCount = tournamentCountByUser.get(userId) ?? 0
 
-      const fullName = u && (u.firstName || u.lastName) ? `${u.firstName ?? ''} ${u.lastName ?? ''}`.trim() : null
+      const fullName =
+        u && (u.firstName || u.lastName) ? `${u.firstName ?? ''} ${u.lastName ?? ''}`.trim() : null
       const name = row?.name || fullName || u?.email?.split('@')[0] || 'Desconocido'
 
       return {
@@ -304,7 +344,8 @@ router.get('/:clubId/players', async (req: Request, res: Response, next: NextFun
     })
 
     const otherRows = otherUsers.map((u) => {
-      const fullName = u.firstName || u.lastName ? `${u.firstName ?? ''} ${u.lastName ?? ''}`.trim() : null
+      const fullName =
+        u.firstName || u.lastName ? `${u.firstName ?? ''} ${u.lastName ?? ''}`.trim() : null
       return {
         userId: u.id,
         name: fullName || u.email?.split('@')[0] || 'Desconocido',
@@ -337,149 +378,180 @@ router.get('/:clubId/players', async (req: Request, res: Response, next: NextFun
 
 // ─── GET /api/clubs/:clubId/players/:userId/bookings ─────────────────────────
 // Historial y reservas activas de un jugador puntual en el club
-router.get('/:clubId/players/:userId/bookings', async (req: Request, res: Response, next: NextFunction) => {
-  try {
-    const { clubId, userId } = req.params
+router.get(
+  '/:clubId/players/:userId/bookings',
+  async (req: Request, res: Response, next: NextFunction) => {
+    try {
+      const { clubId, userId } = req.params
 
-    const [club, bookings] = await Promise.all([
-      prisma.club.findUnique({ where: { id: clubId }, select: { name: true } }),
-      prisma.booking.findMany({
-        where: { slot: { court: { clubId } } },
-        include: { slot: { include: { court: { select: { name: true, sport: true } } } } },
-        orderBy: { createdAt: 'desc' },
-      }),
-    ])
+      const [club, bookings] = await Promise.all([
+        prisma.club.findUnique({ where: { id: clubId }, select: { name: true } }),
+        prisma.booking.findMany({
+          where: { slot: { court: { clubId } } },
+          include: { slot: { include: { court: { select: { name: true, sport: true } } } } },
+          orderBy: { createdAt: 'desc' },
+        }),
+      ])
 
-    const today = new Date().toISOString().slice(0, 10)
+      const today = new Date().toISOString().slice(0, 10)
 
-    const rows = bookings
-      .map((b) => {
-        const players = (b.players as any[]) || []
-        const me = players.find((p) => p.userId === userId)
-        if (!me) return null
-        return {
-          id: b.id,
-          date: b.slot.date,
-          startTime: b.slot.startTime,
-          endTime: b.slot.endTime,
-          courtName: b.slot.court.name,
-          sport: b.slot.court.sport,
-          clubName: club?.name ?? null,
-          status: b.status,
-          amountPaid: me.amountPaid ?? 0,
-          currency: b.currency,
-          paymentStatus: me.paymentStatus ?? null,
-          isUpcoming: b.slot.date >= today && b.status !== 'cancelled',
-        }
-      })
-      .filter((r): r is NonNullable<typeof r> => r !== null)
+      const rows = bookings
+        .map((b) => {
+          const players = (b.players as any[]) || []
+          const me = players.find((p) => p.userId === userId)
+          if (!me) return null
+          return {
+            id: b.id,
+            date: b.slot.date,
+            startTime: b.slot.startTime,
+            endTime: b.slot.endTime,
+            courtName: b.slot.court.name,
+            sport: b.slot.court.sport,
+            clubName: club?.name ?? null,
+            status: b.status,
+            amountPaid: me.amountPaid ?? 0,
+            currency: b.currency,
+            paymentStatus: me.paymentStatus ?? null,
+            isUpcoming: b.slot.date >= today && b.status !== 'cancelled',
+          }
+        })
+        .filter((r): r is NonNullable<typeof r> => r !== null)
 
-    rows.sort((a, b) => (b.date + b.startTime).localeCompare(a.date + a.startTime))
+      rows.sort((a, b) => (b.date + b.startTime).localeCompare(a.date + a.startTime))
 
-    return res.json({ success: true, data: rows })
-  } catch (err) {
-    return next(err)
+      return res.json({ success: true, data: rows })
+    } catch (err) {
+      return next(err)
+    }
   }
-})
+)
 
 // ─── GET /api/clubs/:clubId/membership-analytics ─────────────────────────────
 // Rentabilidad de cada membresía activa este mes: cuántas sesiones cubrió la
 // membresía y cuánto habrían costado a precio normal (pay-per-use), comparado
 // contra lo que paga el socio por el plan. Sirve para detectar planes demasiado
 // baratos (el club "regala" más valor en pistas del que cobra por la suscripción).
-router.get('/:clubId/membership-analytics', async (req: Request, res: Response, next: NextFunction) => {
-  try {
-    const clubId = req.params.clubId
-    const now = new Date()
-    const monthStart = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-01`
-    const nextMonth = new Date(now.getFullYear(), now.getMonth() + 1, 1)
-    const monthEnd = nextMonth.toISOString().slice(0, 10) // límite exclusivo YYYY-MM-DD
+router.get(
+  '/:clubId/membership-analytics',
+  async (req: Request, res: Response, next: NextFunction) => {
+    try {
+      const clubId = req.params.clubId
+      const now = new Date()
+      const monthStart = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-01`
+      const nextMonth = new Date(now.getFullYear(), now.getMonth() + 1, 1)
+      const monthEnd = nextMonth.toISOString().slice(0, 10) // límite exclusivo YYYY-MM-DD
 
-    const memberships = await prisma.userClubMembership.findMany({
-      where: { clubId, status: 'active' },
-      include: { plan: true },
-    })
+      const memberships = await prisma.userClubMembership.findMany({
+        where: { clubId, status: 'active' },
+        include: { plan: true },
+      })
 
-    if (memberships.length === 0) {
-      return res.json({ success: true, data: { periodStart: monthStart, members: [], byPlan: [] } })
+      if (memberships.length === 0) {
+        return res.json({
+          success: true,
+          data: { periodStart: monthStart, members: [], byPlan: [] },
+        })
+      }
+
+      const userIds = [...new Set(memberships.map((m) => m.userId))]
+
+      const [bookings, users] = await Promise.all([
+        prisma.booking.findMany({
+          where: {
+            status: { not: 'cancelled' },
+            slot: { court: { clubId }, date: { gte: monthStart, lt: monthEnd } },
+          },
+          include: { slot: { include: { court: true } } },
+        }),
+        prisma.user.findMany({
+          where: { id: { in: userIds } },
+          select: { id: true, email: true, firstName: true, lastName: true },
+        }),
+      ])
+      const userById = new Map(users.map((u) => [u.id, u]))
+
+      const members = memberships.map((m) => {
+        let sessionsThisMonth = 0
+        let valueProvided = 0
+        for (const b of bookings) {
+          const players = (b.players as any[]) || []
+          const mine = players.find((p) => p.userId === m.userId && p.coveredBy === 'membership')
+          if (!mine) continue
+          sessionsThisMonth++
+          const courtPrice = b.slot.isPeak ? b.slot.peakPrice : b.slot.basePrice
+          const pricePerPlayer = b.slot.pricePerPlayer ?? courtPrice / (b.slot.court.capacity || 4)
+          valueProvided += pricePerPlayer
+        }
+        const ratio = m.plan.price > 0 ? valueProvided / m.plan.price : null
+        const u = userById.get(m.userId)
+        const fullName =
+          u && (u.firstName || u.lastName)
+            ? `${u.firstName ?? ''} ${u.lastName ?? ''}`.trim()
+            : null
+
+        return {
+          membershipId: m.id,
+          userId: m.userId,
+          userName: fullName || u?.email?.split('@')[0] || 'Desconocido',
+          planId: m.planId,
+          planName: m.plan.name,
+          planPrice: m.plan.price,
+          currency: m.plan.currency,
+          sessionsPerDayAllowed: m.plan.sessionsPerDay,
+          sessionsThisMonth,
+          valueProvided: Math.round(valueProvided * 100) / 100,
+          ratio,
+        }
+      })
+
+      const byPlanMap = new Map<
+        string,
+        {
+          planId: string
+          planName: string
+          planPrice: number
+          currency: string
+          subscribers: number
+          totalSessions: number
+          totalValueProvided: number
+        }
+      >()
+      for (const mem of members) {
+        const agg = byPlanMap.get(mem.planId) ?? {
+          planId: mem.planId,
+          planName: mem.planName,
+          planPrice: mem.planPrice,
+          currency: mem.currency,
+          subscribers: 0,
+          totalSessions: 0,
+          totalValueProvided: 0,
+        }
+        agg.subscribers += 1
+        agg.totalSessions += mem.sessionsThisMonth
+        agg.totalValueProvided += mem.valueProvided
+        byPlanMap.set(mem.planId, agg)
+      }
+
+      const byPlan = [...byPlanMap.values()].map((agg) => {
+        const avgSessionsPerMonth = agg.subscribers ? agg.totalSessions / agg.subscribers : 0
+        const avgValueProvided = agg.subscribers ? agg.totalValueProvided / agg.subscribers : 0
+        const totalRevenue = agg.subscribers * agg.planPrice
+        return {
+          ...agg,
+          avgSessionsPerMonth: Math.round(avgSessionsPerMonth * 10) / 10,
+          avgValueProvided: Math.round(avgValueProvided * 100) / 100,
+          totalRevenue,
+          netForClub: Math.round((totalRevenue - agg.totalValueProvided) * 100) / 100,
+          avgRatio: agg.planPrice > 0 ? avgValueProvided / agg.planPrice : null,
+        }
+      })
+
+      return res.json({ success: true, data: { periodStart: monthStart, members, byPlan } })
+    } catch (err) {
+      return next(err)
     }
-
-    const userIds = [...new Set(memberships.map((m) => m.userId))]
-
-    const [bookings, users] = await Promise.all([
-      prisma.booking.findMany({
-        where: {
-          status: { not: 'cancelled' },
-          slot: { court: { clubId }, date: { gte: monthStart, lt: monthEnd } },
-        },
-        include: { slot: { include: { court: true } } },
-      }),
-      prisma.user.findMany({ where: { id: { in: userIds } }, select: { id: true, email: true, firstName: true, lastName: true } }),
-    ])
-    const userById = new Map(users.map((u) => [u.id, u]))
-
-    const members = memberships.map((m) => {
-      let sessionsThisMonth = 0
-      let valueProvided = 0
-      for (const b of bookings) {
-        const players = (b.players as any[]) || []
-        const mine = players.find((p) => p.userId === m.userId && p.coveredBy === 'membership')
-        if (!mine) continue
-        sessionsThisMonth++
-        const courtPrice = b.slot.isPeak ? b.slot.peakPrice : b.slot.basePrice
-        const pricePerPlayer = b.slot.pricePerPlayer ?? courtPrice / (b.slot.court.capacity || 4)
-        valueProvided += pricePerPlayer
-      }
-      const ratio = m.plan.price > 0 ? valueProvided / m.plan.price : null
-      const u = userById.get(m.userId)
-      const fullName = u && (u.firstName || u.lastName) ? `${u.firstName ?? ''} ${u.lastName ?? ''}`.trim() : null
-
-      return {
-        membershipId: m.id,
-        userId: m.userId,
-        userName: fullName || u?.email?.split('@')[0] || 'Desconocido',
-        planId: m.planId,
-        planName: m.plan.name,
-        planPrice: m.plan.price,
-        currency: m.plan.currency,
-        sessionsPerDayAllowed: m.plan.sessionsPerDay,
-        sessionsThisMonth,
-        valueProvided: Math.round(valueProvided * 100) / 100,
-        ratio,
-      }
-    })
-
-    const byPlanMap = new Map<string, { planId: string; planName: string; planPrice: number; currency: string; subscribers: number; totalSessions: number; totalValueProvided: number }>()
-    for (const mem of members) {
-      const agg = byPlanMap.get(mem.planId) ?? {
-        planId: mem.planId, planName: mem.planName, planPrice: mem.planPrice, currency: mem.currency,
-        subscribers: 0, totalSessions: 0, totalValueProvided: 0,
-      }
-      agg.subscribers += 1
-      agg.totalSessions += mem.sessionsThisMonth
-      agg.totalValueProvided += mem.valueProvided
-      byPlanMap.set(mem.planId, agg)
-    }
-
-    const byPlan = [...byPlanMap.values()].map((agg) => {
-      const avgSessionsPerMonth = agg.subscribers ? agg.totalSessions / agg.subscribers : 0
-      const avgValueProvided = agg.subscribers ? agg.totalValueProvided / agg.subscribers : 0
-      const totalRevenue = agg.subscribers * agg.planPrice
-      return {
-        ...agg,
-        avgSessionsPerMonth: Math.round(avgSessionsPerMonth * 10) / 10,
-        avgValueProvided: Math.round(avgValueProvided * 100) / 100,
-        totalRevenue,
-        netForClub: Math.round((totalRevenue - agg.totalValueProvided) * 100) / 100,
-        avgRatio: agg.planPrice > 0 ? avgValueProvided / agg.planPrice : null,
-      }
-    })
-
-    return res.json({ success: true, data: { periodStart: monthStart, members, byPlan } })
-  } catch (err) {
-    return next(err)
   }
-})
+)
 
 // ─── GET /api/clubs/:clubId/membership-payment-issues ────────────────────────
 // Reservas de socios (membresía activa en el club) cuya parte quedó sin resolver:
@@ -487,60 +559,69 @@ router.get('/:clubId/membership-analytics', async (req: Request, res: Response, 
 // volvió, o el cobro automático falló) o 'failed' (Stripe rechazó el cargo).
 // Permite al admin ver el problema y resolverlo a mano desde el tab de Membresías
 // (marcar como pagado) sin tener que ir a buscarlo en Reservas.
-router.get('/:clubId/membership-payment-issues', async (req: Request, res: Response, next: NextFunction) => {
-  try {
-    const clubId = req.params.clubId
+router.get(
+  '/:clubId/membership-payment-issues',
+  async (req: Request, res: Response, next: NextFunction) => {
+    try {
+      const clubId = req.params.clubId
 
-    const memberships = await prisma.userClubMembership.findMany({
-      where: { clubId, status: 'active' },
-      select: { userId: true },
-    })
-    const memberIds = new Set(memberships.map((m) => m.userId))
-    if (memberIds.size === 0) return res.json({ success: true, data: [] })
+      const memberships = await prisma.userClubMembership.findMany({
+        where: { clubId, status: 'active' },
+        select: { userId: true },
+      })
+      const memberIds = new Set(memberships.map((m) => m.userId))
+      if (memberIds.size === 0) return res.json({ success: true, data: [] })
 
-    const bookings = await prisma.booking.findMany({
-      where: { status: { not: 'cancelled' }, slot: { court: { clubId } } },
-      select: {
-        id: true, currency: true, createdAt: true, players: true,
-        slot: { select: { date: true, startTime: true, court: { select: { name: true } } } },
-      },
-      orderBy: { createdAt: 'desc' },
-      take: 300,
-    })
+      const bookings = await prisma.booking.findMany({
+        where: { status: { not: 'cancelled' }, slot: { court: { clubId } } },
+        select: {
+          id: true,
+          currency: true,
+          createdAt: true,
+          players: true,
+          slot: { select: { date: true, startTime: true, court: { select: { name: true } } } },
+        },
+        orderBy: { createdAt: 'desc' },
+        take: 300,
+      })
 
-    const users = await prisma.user.findMany({
-      where: { id: { in: [...memberIds] } },
-      select: { id: true, email: true, firstName: true, lastName: true },
-    })
-    const userById = new Map(users.map((u) => [u.id, u]))
+      const users = await prisma.user.findMany({
+        where: { id: { in: [...memberIds] } },
+        select: { id: true, email: true, firstName: true, lastName: true },
+      })
+      const userById = new Map(users.map((u) => [u.id, u]))
 
-    const issues: any[] = []
-    for (const b of bookings) {
-      const players = (b.players as any[]) || []
-      for (const p of players) {
-        if (!p.userId || !memberIds.has(p.userId)) continue
-        if (p.paymentStatus !== 'pending' && p.paymentStatus !== 'failed') continue
-        const u = userById.get(p.userId)
-        const fullName = u && (u.firstName || u.lastName) ? `${u.firstName ?? ''} ${u.lastName ?? ''}`.trim() : null
-        issues.push({
-          bookingId: b.id,
-          playerUserId: p.userId,
-          playerName: fullName || u?.email?.split('@')[0] || p.name || 'Desconocido',
-          amountOwed: p.amountOwed ?? 0,
-          paymentStatus: p.paymentStatus,
-          currency: b.currency,
-          date: b.slot?.date ?? null,
-          startTime: b.slot?.startTime ?? null,
-          courtName: b.slot?.court?.name ?? null,
-        })
+      const issues: any[] = []
+      for (const b of bookings) {
+        const players = (b.players as any[]) || []
+        for (const p of players) {
+          if (!p.userId || !memberIds.has(p.userId)) continue
+          if (p.paymentStatus !== 'pending' && p.paymentStatus !== 'failed') continue
+          const u = userById.get(p.userId)
+          const fullName =
+            u && (u.firstName || u.lastName)
+              ? `${u.firstName ?? ''} ${u.lastName ?? ''}`.trim()
+              : null
+          issues.push({
+            bookingId: b.id,
+            playerUserId: p.userId,
+            playerName: fullName || u?.email?.split('@')[0] || p.name || 'Desconocido',
+            amountOwed: p.amountOwed ?? 0,
+            paymentStatus: p.paymentStatus,
+            currency: b.currency,
+            date: b.slot?.date ?? null,
+            startTime: b.slot?.startTime ?? null,
+            courtName: b.slot?.court?.name ?? null,
+          })
+        }
       }
-    }
 
-    return res.json({ success: true, data: issues })
-  } catch (err) {
-    return next(err)
+      return res.json({ success: true, data: issues })
+    } catch (err) {
+      return next(err)
+    }
   }
-})
+)
 
 // ─── GET /api/memberships/pricing ────────────────────────────────────────────
 // Calcula el precio real de una reserva según la membresía del usuario
@@ -609,9 +690,8 @@ router.get('/pricing', async (req: Request, res: Response, next: NextFunction) =
     }
 
     // Superó sesiones/día → cobra por jugador (precio extra de membresía o pricePerPlayer)
-    const extraPrice = membership.plan.priceExtraSession > 0
-      ? membership.plan.priceExtraSession
-      : pricePerPlayer
+    const extraPrice =
+      membership.plan.priceExtraSession > 0 ? membership.plan.priceExtraSession : pricePerPlayer
 
     return res.json({
       success: true,
@@ -708,7 +788,8 @@ router.delete('/:id/cancel', async (req: Request, res: Response, next: NextFunct
     })
     if (!membership) throw new AppError('Membresía no encontrada', 404)
     if (membership.status !== 'active') throw new AppError('La membresía no está activa', 400)
-    if (membership.cancelAtPeriodEnd) throw new AppError('Esta membresía ya está en proceso de cancelación', 400)
+    if (membership.cancelAtPeriodEnd)
+      throw new AppError('Esta membresía ya está en proceso de cancelación', 400)
 
     const updated = await prisma.userClubMembership.update({
       where: { id: membership.id },

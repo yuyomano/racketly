@@ -11,7 +11,10 @@ export async function GET(req: NextRequest) {
     const data = await res.json()
     return NextResponse.json(data, { status: res.status })
   } catch {
-    return NextResponse.json({ success: false, error: 'No se pudo cargar la lista de clubes' }, { status: 502 })
+    return NextResponse.json(
+      { success: false, error: 'No se pudo cargar la lista de clubes' },
+      { status: 502 }
+    )
   }
 }
 

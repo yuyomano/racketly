@@ -25,7 +25,9 @@ export function LanguageSwitcher({ className }: { className?: string }) {
             key={l}
             onClick={() => setLocale(l)}
             className={`px-2.5 py-1 rounded-lg transition-colors ${
-              l === locale ? 'bg-white text-emerald-700 shadow-sm' : 'text-gray-500 hover:text-gray-700'
+              l === locale
+                ? 'bg-white text-emerald-700 shadow-sm'
+                : 'text-gray-500 hover:text-gray-700'
             }`}
           >
             {l.toUpperCase()}

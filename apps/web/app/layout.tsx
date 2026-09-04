@@ -1,14 +1,25 @@
 import type { Metadata, Viewport } from 'next'
-import { Inter } from 'next/font/google'
+import { Archivo, IBM_Plex_Sans } from 'next/font/google'
 import { NextIntlClientProvider } from 'next-intl'
 import { getLocale, getMessages } from 'next-intl/server'
 import './globals.css'
 import { Providers } from './providers'
 
-const inter = Inter({ subsets: ['latin'] })
+// Archivo — titulares, KPIs y marcadores. IBM Plex Sans — UI y cuerpo. Ver la
+// auditoría de diseño ("Marcador") para por qué se reemplazó Inter por este par.
+const display = Archivo({
+  subsets: ['latin'],
+  weight: ['700', '800', '900'],
+  variable: '--font-display',
+})
+const body = IBM_Plex_Sans({
+  subsets: ['latin'],
+  weight: ['400', '500', '600'],
+  variable: '--font-body',
+})
 
 export const viewport: Viewport = {
-  themeColor: '#10b981', // emerald-500
+  themeColor: '#1B6B63', // court-600
   // Explícito (en vez de confiar en el default de Next.js) para que la página siempre se
   // renderice al ancho real del dispositivo/ventana — sin esto, algunos navegadores/OS
   // pueden aplicar un ancho de viewport "de escritorio" simulado que hace que todo el texto
@@ -19,7 +30,8 @@ export const viewport: Viewport = {
 
 export const metadata: Metadata = {
   title: { default: 'Racketly', template: '%s | Racketly' },
-  description: 'La plataforma todo-en-uno para pádel y pickleball. Reserva pistas, juega torneos y conecta con la comunidad.',
+  description:
+    'La plataforma todo-en-uno para pádel y pickleball. Reserva pistas, juega torneos y conecta con la comunidad.',
   keywords: ['padel', 'pickleball', 'pistas', 'torneos', 'reservas', 'liga'],
   openGraph: {
     title: 'Racketly',
@@ -37,8 +49,8 @@ export default async function RootLayout({ children }: { children: React.ReactNo
   const messages = await getMessages()
 
   return (
-    <html lang={locale} suppressHydrationWarning>
-      <body className={inter.className}>
+    <html lang={locale} suppressHydrationWarning className={`${display.variable} ${body.variable}`}>
+      <body className={body.className}>
         <NextIntlClientProvider messages={messages}>
           <Providers>{children}</Providers>
         </NextIntlClientProvider>

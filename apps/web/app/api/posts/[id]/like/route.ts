@@ -13,6 +13,9 @@ export async function POST(req: Request, { params }: { params: Promise<{ id: str
     const data = await res.json()
     return NextResponse.json(data, { status: res.status })
   } catch {
-    return NextResponse.json({ success: false, error: 'No se pudo procesar el like' }, { status: 502 })
+    return NextResponse.json(
+      { success: false, error: 'No se pudo procesar el like' },
+      { status: 502 }
+    )
   }
 }

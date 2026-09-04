@@ -6,7 +6,9 @@ const prisma = new PrismaClient()
 // Aplica el ELO de un partido ya confirmado (por el rival o por aceptación tácita del cron).
 // Compara el promedio de ELO de cada pareja/equipo — igual que Playtomic, el resultado solo
 // afecta el nivel de los jugadores una vez que se confirma, nunca al momento de reportarlo.
-export async function applyMatchElo(matchId: string): Promise<Record<string, { before: number; after: number; delta: number }> | null> {
+export async function applyMatchElo(
+  matchId: string
+): Promise<Record<string, { before: number; after: number; delta: number }> | null> {
   const match = await prisma.match.findUnique({ where: { id: matchId } })
   if (!match || match.winningSide == null) return null
 
@@ -20,7 +22,8 @@ export async function applyMatchElo(matchId: string): Promise<Record<string, { b
     prisma.playerProfile.findMany({ where: { userId: { in: team1Ids } } }),
     prisma.playerProfile.findMany({ where: { userId: { in: team2Ids } } }),
   ])
-  if (team1Profiles.length !== team1Ids.length || team2Profiles.length !== team2Ids.length) return null
+  if (team1Profiles.length !== team1Ids.length || team2Profiles.length !== team2Ids.length)
+    return null
 
   const avg1 = team1Profiles.reduce((s, p) => s + (p as any)[eloField], 0) / team1Profiles.length
   const avg2 = team2Profiles.reduce((s, p) => s + (p as any)[eloField], 0) / team2Profiles.length
@@ -30,15 +33,30 @@ export async function applyMatchElo(matchId: string): Promise<Record<string, { b
   const updates: Promise<any>[] = []
   const historyRows: any[] = []
 
-  for (const [profiles, delta] of [[team1Profiles, delta1], [team2Profiles, delta2]] as const) {
+  for (const [profiles, delta] of [
+    [team1Profiles, delta1],
+    [team2Profiles, delta2],
+  ] as const) {
     for (const p of profiles) {
       const before = (p as any)[eloField]
       const after = before + delta
-      updates.push(prisma.playerProfile.update({
-        where: { userId: p.userId },
-        data: { [eloField]: after, ...(match.sport === 'padel' ? { category: eloToCategory(after) } : {}) },
-      }))
-      historyRows.push({ playerId: p.userId, matchId: match.id, sport: match.sport, eloBefore: before, eloAfter: after, delta })
+      updates.push(
+        prisma.playerProfile.update({
+          where: { userId: p.userId },
+          data: {
+            [eloField]: after,
+            ...(match.sport === 'padel' ? { category: eloToCategory(after) } : {}),
+          },
+        })
+      )
+      historyRows.push({
+        playerId: p.userId,
+        matchId: match.id,
+        sport: match.sport,
+        eloBefore: before,
+        eloAfter: after,
+        delta,
+      })
       eloChanges[p.userId] = { before, after, delta }
     }
   }

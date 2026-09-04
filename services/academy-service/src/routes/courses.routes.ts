@@ -28,8 +28,14 @@ router.get('/', async (req: Request, res: Response, next: NextFunction) => {
       }),
       prisma.course.count({ where }),
     ])
-    return res.json({ success: true, data: courses, pagination: { page: Number(page), pageSize: Number(limit), total } })
-  } catch (err) { return next(err) }
+    return res.json({
+      success: true,
+      data: courses,
+      pagination: { page: Number(page), pageSize: Number(limit), total },
+    })
+  } catch (err) {
+    return next(err)
+  }
 })
 
 // GET /api/courses/:id
@@ -45,7 +51,9 @@ router.get('/:id', async (req: Request, res: Response, next: NextFunction) => {
     })
     if (!course) return res.status(404).json({ success: false, error: 'Curso no encontrado' })
     return res.json({ success: true, data: course })
-  } catch (err) { return next(err) }
+  } catch (err) {
+    return next(err)
+  }
 })
 
 // GET /api/courses/enrollments/user/:userId — mis cursos (con progreso)
@@ -56,7 +64,11 @@ router.get('/enrollments/user/:userId', async (req: Request, res: Response, next
       include: {
         course: {
           select: {
-            id: true, title: true, sport: true, level: true, thumbnailUrl: true,
+            id: true,
+            title: true,
+            sport: true,
+            level: true,
+            thumbnailUrl: true,
             instructor: { select: { displayName: true } },
             _count: { select: { lessons: true } },
           },
@@ -65,7 +77,9 @@ router.get('/enrollments/user/:userId', async (req: Request, res: Response, next
       orderBy: { enrolledAt: 'desc' },
     })
     return res.json({ success: true, data: enrollments })
-  } catch (err) { return next(err) }
+  } catch (err) {
+    return next(err)
+  }
 })
 
 // POST /api/courses/:id/enroll
@@ -81,7 +95,9 @@ router.post('/:id/enroll', async (req: Request, res: Response, next: NextFunctio
       data: { userId, courseId: req.params.id, progressPercent: 0 },
     })
     return res.status(201).json({ success: true, data: enrollment })
-  } catch (err) { return next(err) }
+  } catch (err) {
+    return next(err)
+  }
 })
 
 // PUT /api/courses/enrollments/:id/progress
@@ -97,21 +113,30 @@ router.put('/enrollments/:id/progress', async (req: Request, res: Response, next
       },
     })
     return res.json({ success: true, data: enrollment })
-  } catch (err) { return next(err) }
+  } catch (err) {
+    return next(err)
+  }
 })
 
 // POST /api/courses/upload-video — obtener URL de upload para Mux
 router.post('/upload-video', async (_req: Request, res: Response, next: NextFunction) => {
   try {
     if (!mux) {
-      return res.status(503).json({ success: false, error: 'Servicio de video no configurado (MUX_TOKEN_ID requerido)' })
+      return res
+        .status(503)
+        .json({
+          success: false,
+          error: 'Servicio de video no configurado (MUX_TOKEN_ID requerido)',
+        })
     }
     const upload = await mux.video.uploads.create({
       cors_origin: process.env.ALLOWED_ORIGINS?.split(',')[0] || 'http://localhost:3000',
       new_asset_settings: { playback_policy: ['public'], encoding_tier: 'smart' },
     })
     return res.json({ success: true, data: { uploadUrl: upload.url, uploadId: upload.id } })
-  } catch (err) { return next(err) }
+  } catch (err) {
+    return next(err)
+  }
 })
 
 export { router as coursesRouter }

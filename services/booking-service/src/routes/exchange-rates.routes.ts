@@ -11,7 +11,9 @@ router.get('/', async (_req: Request, res: Response, next: NextFunction) => {
   try {
     const rates = await prisma.exchangeRate.findMany({ orderBy: { from: 'asc' } })
     return res.json({ success: true, data: rates })
-  } catch (err) { return next(err) }
+  } catch (err) {
+    return next(err)
+  }
 })
 
 // PUT /api/exchange-rates — upsert manual rate
@@ -20,7 +22,8 @@ router.put('/', async (req: Request, res: Response, next: NextFunction) => {
   try {
     const { from, to = 'USD', rate } = req.body
     if (!from || rate == null) throw new AppError('Se requieren from y rate', 400)
-    if (typeof rate !== 'number' || rate <= 0) throw new AppError('rate debe ser un número positivo', 400)
+    if (typeof rate !== 'number' || rate <= 0)
+      throw new AppError('rate debe ser un número positivo', 400)
 
     const saved = await prisma.exchangeRate.upsert({
       where: { from_to: { from: from.toUpperCase(), to: to.toUpperCase() } },
@@ -28,7 +31,9 @@ router.put('/', async (req: Request, res: Response, next: NextFunction) => {
       create: { from: from.toUpperCase(), to: to.toUpperCase(), rate, source: 'manual' },
     })
     return res.json({ success: true, data: saved })
-  } catch (err) { return next(err) }
+  } catch (err) {
+    return next(err)
+  }
 })
 
 // POST /api/exchange-rates/sync — obtener tasas actualizadas de Frankfurter (ECB)
@@ -43,7 +48,8 @@ router.post('/sync', async (req: Request, res: Response, next: NextFunction) => 
     const { rows, date } = await syncCurrencies(toSync)
     return res.json({ success: true, synced: rows.length, date, data: rows })
   } catch (err) {
-    if (err instanceof Error && err.message.includes('Frankfurter')) return next(new AppError(err.message, 502))
+    if (err instanceof Error && err.message.includes('Frankfurter'))
+      return next(new AppError(err.message, 502))
     return next(err)
   }
 })

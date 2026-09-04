@@ -7,7 +7,11 @@ const NOTIFICATION_SERVICE_URL = process.env.NOTIFICATION_SERVICE_URL || 'http:/
 // con el `AbortSignal` de @types/node en este tsconfig (sin lib "dom").
 function postJson(url: string, body: unknown, timeoutMs = 3000): Promise<unknown> {
   return Promise.race([
-    fetch(url, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) }),
+    fetch(url, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(body),
+    }),
     new Promise((_, reject) => setTimeout(() => reject(new Error('timeout')), timeoutMs)),
   ])
 }
@@ -22,17 +26,27 @@ export async function notifyPlayer(
   body: string,
   data: Record<string, unknown> = {}
 ): Promise<void> {
-  const user = await prisma.user.findUnique({ where: { id: userId }, select: { email: true, pushToken: true } })
+  const user = await prisma.user.findUnique({
+    where: { id: userId },
+    select: { email: true, pushToken: true },
+  })
   if (!user) return
 
   await Promise.allSettled([
     user.pushToken
       ? postJson(`${NOTIFICATION_SERVICE_URL}/api/notifications/send`, {
-          userId, token: user.pushToken, type: 'booking_warning', title, body, data,
+          userId,
+          token: user.pushToken,
+          type: 'booking_warning',
+          title,
+          body,
+          data,
         }).catch(() => {})
       : Promise.resolve(),
     postJson(`${NOTIFICATION_SERVICE_URL}/api/notifications/email`, {
-      to: user.email, subject: title, html: `<p>${body}</p>`,
+      to: user.email,
+      subject: title,
+      html: `<p>${body}</p>`,
     }).catch(() => {}),
   ])
 }

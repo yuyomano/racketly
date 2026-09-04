@@ -17,9 +17,9 @@ type ToastContextValue = {
 const ToastContext = createContext<ToastContextValue | null>(null)
 
 const KIND_STYLE: Record<ToastKind, { icon: typeof CheckCircle2; classes: string }> = {
-  success: { icon: CheckCircle2, classes: 'bg-emerald-600 text-white' },
-  error:   { icon: XCircle,      classes: 'bg-red-600 text-white' },
-  info:    { icon: Info,         classes: 'bg-gray-900 text-white' },
+  success: { icon: CheckCircle2, classes: 'bg-court-600 text-white' },
+  error: { icon: XCircle, classes: 'bg-referee-600 text-white' },
+  info: { icon: Info, classes: 'bg-ink-900 text-white' },
 }
 
 const AUTO_DISMISS_MS = 4500
@@ -32,11 +32,14 @@ export function ToastProvider({ children }: { children: React.ReactNode }) {
     setToasts((prev) => prev.filter((t) => t.id !== id))
   }, [])
 
-  const showToast = useCallback((message: string, kind: ToastKind = 'info') => {
-    const id = ++nextId.current
-    setToasts((prev) => [...prev, { id, kind, message }])
-    setTimeout(() => dismiss(id), AUTO_DISMISS_MS)
-  }, [dismiss])
+  const showToast = useCallback(
+    (message: string, kind: ToastKind = 'info') => {
+      const id = ++nextId.current
+      setToasts((prev) => [...prev, { id, kind, message }])
+      setTimeout(() => dismiss(id), AUTO_DISMISS_MS)
+    },
+    [dismiss]
+  )
 
   const value: ToastContextValue = {
     showToast,
@@ -55,11 +58,18 @@ export function ToastProvider({ children }: { children: React.ReactNode }) {
             <div
               key={t.id}
               role="status"
-              className={cn('toast-enter flex items-start gap-2.5 rounded-xl px-4 py-3 shadow-lg', classes)}
+              className={cn(
+                'toast-enter flex items-start gap-2.5 rounded-xl px-4 py-3 shadow-lg',
+                classes
+              )}
             >
               <Icon className="w-4.5 h-4.5 shrink-0 mt-0.5" />
               <p className="text-sm font-medium flex-1">{t.message}</p>
-              <button onClick={() => dismiss(t.id)} className="shrink-0 opacity-70 hover:opacity-100 transition-opacity" aria-label="Cerrar">
+              <button
+                onClick={() => dismiss(t.id)}
+                className="shrink-0 opacity-70 hover:opacity-100 transition-opacity"
+                aria-label="Cerrar"
+              >
                 <X className="w-4 h-4" />
               </button>
             </div>

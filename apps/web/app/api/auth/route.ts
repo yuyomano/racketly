@@ -44,7 +44,9 @@ export async function DELETE() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ refreshToken }),
       })
-    } catch { /* best-effort */ }
+    } catch {
+      /* best-effort */
+    }
   }
 
   const response = NextResponse.json({ success: true })

@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect } from 'react'
+import { useEffect, useId } from 'react'
 import { X } from 'lucide-react'
 import { cn } from '@/lib/utils'
 
@@ -39,10 +39,24 @@ export interface ModalProps {
 // Reemplaza los ~32 bloques `fixed inset-0 bg-black/40 ...` repetidos a mano por el
 // dashboard (uno distinto por página) — mismo overlay, mismo header con botón de
 // cerrar, mismo comportamiento de teclado (Escape), en un solo lugar.
-export function Modal({ open, onClose, title, maxWidth = 'lg', zIndex = 50, children, footer, className, noPadding = false }: ModalProps) {
+export function Modal({
+  open,
+  onClose,
+  title,
+  maxWidth = 'lg',
+  zIndex = 50,
+  children,
+  footer,
+  className,
+  noPadding = false,
+}: ModalProps) {
+  const titleId = useId()
+
   useEffect(() => {
     if (!open) return
-    const onKeyDown = (e: KeyboardEvent) => { if (e.key === 'Escape') onClose() }
+    const onKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') onClose()
+    }
     document.addEventListener('keydown', onKeyDown)
     return () => document.removeEventListener('keydown', onKeyDown)
   }, [open, onClose])
@@ -51,13 +65,16 @@ export function Modal({ open, onClose, title, maxWidth = 'lg', zIndex = 50, chil
 
   return (
     <div
-      className="fixed inset-0 bg-black/40 flex items-center justify-center p-4"
+      className="fixed inset-0 bg-ink-900/50 flex items-center justify-center p-4"
       style={{ zIndex }}
       onClick={onClose}
     >
       <div
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby={title ? titleId : undefined}
         className={cn(
-          'bg-white rounded-3xl w-full',
+          'bg-white rounded-2xl w-full',
           noPadding ? 'max-h-[90vh] flex flex-col overflow-hidden' : 'max-h-[92vh] overflow-y-auto',
           MAX_WIDTH[maxWidth],
           className
@@ -65,9 +82,15 @@ export function Modal({ open, onClose, title, maxWidth = 'lg', zIndex = 50, chil
         onClick={(e) => e.stopPropagation()}
       >
         {title && (
-          <div className="flex items-center justify-between p-6 border-b border-gray-100 shrink-0">
-            <h2 className="text-lg font-bold text-gray-900">{title}</h2>
-            <button onClick={onClose} className="text-gray-400 hover:text-gray-600" aria-label="Cerrar">
+          <div className="flex items-center justify-between p-6 border-b border-ink-100 shrink-0">
+            <h2 id={titleId} className="font-display text-lg font-bold text-ink-900">
+              {title}
+            </h2>
+            <button
+              onClick={onClose}
+              className="text-ink-400 hover:text-ink-600"
+              aria-label="Cerrar"
+            >
               <X className="w-5 h-5" />
             </button>
           </div>
@@ -75,7 +98,11 @@ export function Modal({ open, onClose, title, maxWidth = 'lg', zIndex = 50, chil
 
         {noPadding ? children : <div className="p-6">{children}</div>}
 
-        {footer && <div className="flex items-center justify-end gap-3 p-6 border-t border-gray-100 shrink-0">{footer}</div>}
+        {footer && (
+          <div className="flex items-center justify-end gap-3 p-6 border-t border-ink-100 shrink-0">
+            {footer}
+          </div>
+        )}
       </div>
     </div>
   )

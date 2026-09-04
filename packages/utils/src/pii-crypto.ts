@@ -18,7 +18,9 @@ function getKey(): Buffer {
   }
   const key = Buffer.from(raw, 'base64')
   if (key.length !== 32) {
-    throw new Error('PII_ENCRYPTION_KEY debe ser 32 bytes en base64 (usar crypto.randomBytes(32).toString("base64"))')
+    throw new Error(
+      'PII_ENCRYPTION_KEY debe ser 32 bytes en base64 (usar crypto.randomBytes(32).toString("base64"))'
+    )
   }
   return key
 }

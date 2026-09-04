@@ -14,7 +14,9 @@ router.get('/:userId/badges', async (req: Request, res: Response, next: NextFunc
       orderBy: { earnedAt: 'desc' },
     })
     return res.json({ success: true, data: badges })
-  } catch (err) { return next(err) }
+  } catch (err) {
+    return next(err)
+  }
 })
 
 // GET /api/gamification/:userId/progress
@@ -29,8 +31,13 @@ router.get('/:userId/progress', async (req: Request, res: Response, next: NextFu
     const level = xpToLevel(profile.xpPoints)
     const levelProgress = xpForNextLevel(profile.xpPoints)
 
-    return res.json({ success: true, data: { xpPoints: profile.xpPoints, level, ...levelProgress } })
-  } catch (err) { return next(err) }
+    return res.json({
+      success: true,
+      data: { xpPoints: profile.xpPoints, level, ...levelProgress },
+    })
+  } catch (err) {
+    return next(err)
+  }
 })
 
 // POST /api/gamification/:userId/award-xp
@@ -51,8 +58,13 @@ router.post('/:userId/award-xp', async (req: Request, res: Response, next: NextF
       })
     }
 
-    return res.json({ success: true, data: { newXp: profile.xpPoints, newLevel, leveledUp, reason } })
-  } catch (err) { return next(err) }
+    return res.json({
+      success: true,
+      data: { newXp: profile.xpPoints, newLevel, leveledUp, reason },
+    })
+  } catch (err) {
+    return next(err)
+  }
 })
 
 // GET /api/gamification/missions
@@ -65,7 +77,9 @@ router.get('/missions', async (_req: Request, res: Response, next: NextFunction)
       orderBy: { xpReward: 'desc' },
     })
     return res.json({ success: true, data: missions })
-  } catch (err) { return next(err) }
+  } catch (err) {
+    return next(err)
+  }
 })
 
 export { router as gamificationRouter }

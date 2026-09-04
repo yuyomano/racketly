@@ -1,7 +1,11 @@
 import { Router, Request, Response, NextFunction } from 'express'
 import { PrismaClient } from '@prisma/client'
 import { AppError } from '../middleware/error.middleware'
-import { createStripePaymentIntent, retrieveStripePaymentIntent, isStripeConfigured } from '../services/payment.service'
+import {
+  createStripePaymentIntent,
+  retrieveStripePaymentIntent,
+  isStripeConfigured,
+} from '../services/payment.service'
 import { recordPayment } from './bookings.routes'
 
 // Rutas públicas (sin autenticación) para que un jugador invitado pague su parte de una
@@ -13,7 +17,9 @@ const prisma = new PrismaClient()
 async function loadLink(token: string) {
   const link = await prisma.guestPaymentLink.findUnique({
     where: { token },
-    include: { booking: { include: { slot: { include: { court: { include: { club: true } } } } } } },
+    include: {
+      booking: { include: { slot: { include: { court: { include: { club: true } } } } } },
+    },
   })
   if (!link) throw new AppError('Link de pago no encontrado', 404)
   return link
@@ -49,7 +55,8 @@ router.get('/:token', async (req: Request, res: Response, next: NextFunction) =>
 router.post('/:token/intent', async (req: Request, res: Response, next: NextFunction) => {
   try {
     const link = await loadLink(req.params.token)
-    if (link.status !== 'pending') throw new AppError('Este link ya fue usado o ya no está vigente', 400)
+    if (link.status !== 'pending')
+      throw new AppError('Este link ya fue usado o ya no está vigente', 400)
     if (link.expiresAt < new Date()) throw new AppError('Este link de pago expiró', 400)
 
     const paymentData = await createStripePaymentIntent({
@@ -67,7 +74,11 @@ router.post('/:token/intent', async (req: Request, res: Response, next: NextFunc
 
     return res.json({
       success: true,
-      data: { clientSecret: paymentData.clientSecret, paymentIntentId: paymentData.paymentIntentId, devMode: !!paymentData.devMode },
+      data: {
+        clientSecret: paymentData.clientSecret,
+        paymentIntentId: paymentData.paymentIntentId,
+        devMode: !!paymentData.devMode,
+      },
     })
   } catch (err) {
     return next(err)
@@ -98,15 +109,27 @@ router.post('/:token/confirm', async (req: Request, res: Response, next: NextFun
     if (idx === -1) throw new AppError('El jugador ya no está en esta reserva', 404)
 
     const paidAt = new Date().toISOString()
-    players[idx] = { ...players[idx], amountPaid: link.amount, paymentStatus: 'paid', paymentMethod: 'card', paidAt }
+    players[idx] = {
+      ...players[idx],
+      amountPaid: link.amount,
+      paymentStatus: 'paid',
+      paymentMethod: 'card',
+      paidAt,
+    }
 
     const newAmountPaid = players.reduce((sum: number, p: any) => sum + (p.amountPaid ?? 0), 0)
-    const allSettled = players.every((p: any) => p.paymentStatus === 'paid' || p.paymentStatus === 'courtesy')
+    const allSettled = players.every(
+      (p: any) => p.paymentStatus === 'paid' || p.paymentStatus === 'courtesy'
+    )
 
     await prisma.$transaction([
       prisma.booking.update({
         where: { id: link.bookingId },
-        data: { players, amountPaid: newAmountPaid, paymentStatus: allSettled ? 'paid' : link.booking.paymentStatus },
+        data: {
+          players,
+          amountPaid: newAmountPaid,
+          paymentStatus: allSettled ? 'paid' : link.booking.paymentStatus,
+        },
       }),
       prisma.guestPaymentLink.update({
         where: { id: link.id },

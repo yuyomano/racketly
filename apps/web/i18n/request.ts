@@ -9,16 +9,33 @@ import { LOCALES, DEFAULT_LOCALE, LOCALE_COOKIE, type Locale } from './config'
 // de uno solo gigante — así distintas páginas se pueden migrar en paralelo sin pisarse
 // el mismo archivo, y cada uno queda del tamaño de la página que traduce.
 const NAMESPACE_FILES = [
-  'common', 'reservas', 'jugadores', 'canchas', 'torneos',
-  'clases', 'membresias', 'caja', 'misclubs', 'estadisticas', 'administradores',
+  'common',
+  'reservas',
+  'jugadores',
+  'canchas',
+  'torneos',
+  'clases',
+  'membresias',
+  'caja',
+  'misclubs',
+  'estadisticas',
+  'administradores',
   // Web de jugadores (app/(app), app/(auth))
-  'appnav', 'booking', 'tournamentsapp', 'academy', 'profile', 'auth', 'community',
+  'appnav',
+  'booking',
+  'tournamentsapp',
+  'academy',
+  'profile',
+  'auth',
+  'community',
 ] as const
 
 export default getRequestConfig(async () => {
   const cookieStore = await cookies()
   const cookieLocale = cookieStore.get(LOCALE_COOKIE)?.value
-  const locale: Locale = LOCALES.includes(cookieLocale as Locale) ? (cookieLocale as Locale) : DEFAULT_LOCALE
+  const locale: Locale = LOCALES.includes(cookieLocale as Locale)
+    ? (cookieLocale as Locale)
+    : DEFAULT_LOCALE
 
   const parts = await Promise.all(
     NAMESPACE_FILES.map((ns) => import(`../messages/${locale}/${ns}.json`).then((m) => m.default))

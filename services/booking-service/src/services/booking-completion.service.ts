@@ -25,5 +25,7 @@ export async function completeExpiredBookings(): Promise<void> {
     data: { status: 'completed' },
   })
 
-  console.info(`[booking-completion-cron] Marcadas ${idsToComplete.length} reservas como completadas`)
+  console.info(
+    `[booking-completion-cron] Marcadas ${idsToComplete.length} reservas como completadas`
+  )
 }

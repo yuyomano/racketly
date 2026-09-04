@@ -96,7 +96,9 @@ export async function getPeakSchedule(clubId: string): Promise<PeakSchedule> {
 
 function isPeakMinute(dayOfWeek: number, minutes: number, schedule: PeakSchedule): boolean {
   const windows = schedule.get(dayOfWeek) ?? []
-  return windows.some((w) => minutes >= parseMinutes(w.startTime) && minutes < parseMinutes(w.endTime))
+  return windows.some(
+    (w) => minutes >= parseMinutes(w.startTime) && minutes < parseMinutes(w.endTime)
+  )
 }
 
 /**
@@ -118,8 +120,14 @@ export async function generateSlotsForCourt(
   peakSchedule: PeakSchedule = buildDefaultPeakSchedule()
 ): Promise<number> {
   const slots: {
-    courtId: string; date: string; startTime: string; endTime: string
-    basePrice: number; peakPrice: number; currency: string; isPeak: boolean
+    courtId: string
+    date: string
+    startTime: string
+    endTime: string
+    basePrice: number
+    peakPrice: number
+    currency: string
+    isPeak: boolean
   }[] = []
   const now = new Date()
 
@@ -130,16 +138,20 @@ export async function generateSlotsForCourt(
     const dow = date.getDay() // 0=Dom, 6=Sáb
     const isWeekend = dow === 0 || dow === 6
 
-    const openMinutes  = parseMinutes(isWeekend ? openTimeWeekend  : openTimeWeekday)
+    const openMinutes = parseMinutes(isWeekend ? openTimeWeekend : openTimeWeekday)
     const closeMinutes = parseMinutes(isWeekend ? closeTimeWeekend : closeTimeWeekday)
 
     for (let m = openMinutes; m + durationMinutes <= closeMinutes; m += durationMinutes) {
       const isPeak = isPeakMinute(dow, m, peakSchedule)
       slots.push({
-        courtId, date: dateStr,
+        courtId,
+        date: dateStr,
         startTime: fmtTime(m),
-        endTime:   fmtTime(m + durationMinutes),
-        basePrice, peakPrice, currency, isPeak,
+        endTime: fmtTime(m + durationMinutes),
+        basePrice,
+        peakPrice,
+        currency,
+        isPeak,
       })
     }
   }
@@ -151,14 +163,17 @@ export async function generateSlotsForCourt(
 /**
  * Genera slots para una cancha usando su propia configuración almacenada en DB
  */
-export async function generateSlotsFromCourtConfig(courtId: string, peakSchedule?: PeakSchedule): Promise<number> {
+export async function generateSlotsFromCourtConfig(
+  courtId: string,
+  peakSchedule?: PeakSchedule
+): Promise<number> {
   const court = await prisma.court.findUnique({
     where: { id: courtId },
     include: { club: { select: { id: true, bookingHorizonDays: true } } },
   })
   if (!court) throw new Error(`Court ${courtId} not found`)
 
-  const schedule = peakSchedule ?? await getPeakSchedule(court.club.id)
+  const schedule = peakSchedule ?? (await getPeakSchedule(court.club.id))
 
   return generateSlotsForCourt(
     courtId,
@@ -171,14 +186,16 @@ export async function generateSlotsFromCourtConfig(courtId: string, peakSchedule
     court.peakPrice,
     court.currency,
     court.club.bookingHorizonDays,
-    schedule,
+    schedule
   )
 }
 
 /**
  * Genera slots para todas las canchas activas de un club
  */
-export async function generateSlotsForClub(clubId: string): Promise<{ slotsCreated: number; courtsProcessed: number }> {
+export async function generateSlotsForClub(
+  clubId: string
+): Promise<{ slotsCreated: number; courtsProcessed: number }> {
   const courts = await prisma.court.findMany({ where: { clubId, isActive: true } })
   const schedule = await getPeakSchedule(clubId)
   let slotsCreated = 0
@@ -192,7 +209,10 @@ export async function generateSlotsForClub(clubId: string): Promise<{ slotsCreat
  * Cron diario: genera slots para todos los clubs y sus canchas activas
  */
 export async function generateSlotsAllClubs(): Promise<void> {
-  const clubs = await prisma.club.findMany({ where: { isActive: true }, select: { id: true, name: true } })
+  const clubs = await prisma.club.findMany({
+    where: { isActive: true },
+    select: { id: true, name: true },
+  })
   let total = 0
   for (const club of clubs) {
     const { slotsCreated } = await generateSlotsForClub(club.id)
@@ -227,7 +247,10 @@ export async function runScheduledSlotGeneration(): Promise<void> {
       console.error(`[slot-cron] Error generando slots para club ${club.name} (${club.id}):`, err)
     }
   }
-  if (total > 0) console.info(`[slot-cron] Generated ${total} slots across ${clubs.length} clubs at hour ${currentHour}`)
+  if (total > 0)
+    console.info(
+      `[slot-cron] Generated ${total} slots across ${clubs.length} clubs at hour ${currentHour}`
+    )
 }
 
 /**
@@ -247,10 +270,12 @@ export async function resyncFutureSlotsForClub(clubId: string): Promise<number> 
   if (slots.length === 0) return 0
 
   const bookedSlotIds = new Set(
-    (await prisma.booking.findMany({
-      where: { slotId: { in: slots.map((s) => s.id) }, status: { in: ['pending', 'confirmed'] } },
-      select: { slotId: true },
-    })).map((b) => b.slotId)
+    (
+      await prisma.booking.findMany({
+        where: { slotId: { in: slots.map((s) => s.id) }, status: { in: ['pending', 'confirmed'] } },
+        select: { slotId: true },
+      })
+    ).map((b) => b.slotId)
   )
 
   const toMarkPeak: string[] = []
@@ -265,11 +290,17 @@ export async function resyncFutureSlotsForClub(clubId: string): Promise<number> 
 
   let updated = 0
   if (toMarkPeak.length > 0) {
-    const r = await prisma.timeSlot.updateMany({ where: { id: { in: toMarkPeak } }, data: { isPeak: true } })
+    const r = await prisma.timeSlot.updateMany({
+      where: { id: { in: toMarkPeak } },
+      data: { isPeak: true },
+    })
     updated += r.count
   }
   if (toMarkOffPeak.length > 0) {
-    const r = await prisma.timeSlot.updateMany({ where: { id: { in: toMarkOffPeak } }, data: { isPeak: false } })
+    const r = await prisma.timeSlot.updateMany({
+      where: { id: { in: toMarkOffPeak } },
+      data: { isPeak: false },
+    })
     updated += r.count
   }
   return updated

@@ -7,9 +7,15 @@ const prisma = new PrismaClient()
 // el momento del cobro — no la fecha de la reserva/clase que cubre — porque es lo que
 // importa para el cuadre de caja diario.
 export async function recordPayment(opts: {
-  clubId: string; bookingId?: string; classBookingId?: string; membershipId?: string
-  playerUserId?: string | null; playerName?: string
-  amount: number; currency: string; method: 'cash' | 'card'
+  clubId: string
+  bookingId?: string
+  classBookingId?: string
+  membershipId?: string
+  playerUserId?: string | null
+  playerName?: string
+  amount: number
+  currency: string
+  method: 'cash' | 'card'
 }) {
   if (opts.amount <= 0) return
   await prisma.payment.create({

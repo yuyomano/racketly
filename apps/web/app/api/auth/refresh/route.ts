@@ -21,7 +21,10 @@ export async function POST() {
     const data = await res.json()
 
     if (!res.ok) {
-      const response = NextResponse.json({ error: data.error || 'Sesión expirada' }, { status: res.status })
+      const response = NextResponse.json(
+        { error: data.error || 'Sesión expirada' },
+        { status: res.status }
+      )
       clearSessionCookies(response)
       return response
     }

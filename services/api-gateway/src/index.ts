@@ -20,11 +20,11 @@ const JWT_SECRET = process.env.JWT_SECRET
 
 // ─── Service URLs ─────────────────────────────────────────────────────────────
 const SERVICES = {
-  auth:         process.env.AUTH_SERVICE_URL         || 'http://localhost:3001',
-  booking:      process.env.BOOKING_SERVICE_URL      || 'http://localhost:3002',
-  tournament:   process.env.TOURNAMENT_SERVICE_URL   || 'http://localhost:3003',
-  community:    process.env.COMMUNITY_SERVICE_URL    || 'http://localhost:3004',
-  academy:      process.env.ACADEMY_SERVICE_URL      || 'http://localhost:3005',
+  auth: process.env.AUTH_SERVICE_URL || 'http://localhost:3001',
+  booking: process.env.BOOKING_SERVICE_URL || 'http://localhost:3002',
+  tournament: process.env.TOURNAMENT_SERVICE_URL || 'http://localhost:3003',
+  community: process.env.COMMUNITY_SERVICE_URL || 'http://localhost:3004',
+  academy: process.env.ACADEMY_SERVICE_URL || 'http://localhost:3005',
   notification: process.env.NOTIFICATION_SERVICE_URL || 'http://localhost:3006',
 }
 
@@ -35,29 +35,31 @@ const ALLOWED_ORIGINS = (process.env.ALLOWED_ORIGINS || '')
   .filter(Boolean)
   .concat([
     'http://localhost:3000',
-    'http://localhost:3010',  // Next.js web (dashboard + jugadores) — Next reenvía el
-                               // header Origin original al hacer proxy vía rewrites,
-                               // así que el gateway lo ve aunque sea same-origin en el navegador
-    'http://localhost:8081',   // Expo Metro
-    'http://localhost:19006',  // Expo web
-    'http://10.0.2.2:8081',   // Android emulator Metro
+    'http://localhost:3010', // Next.js web (dashboard + jugadores) — Next reenvía el
+    // header Origin original al hacer proxy vía rewrites,
+    // así que el gateway lo ve aunque sea same-origin en el navegador
+    'http://localhost:8081', // Expo Metro
+    'http://localhost:19006', // Expo web
+    'http://10.0.2.2:8081', // Android emulator Metro
   ])
 
 // ─── Core Middleware ─────────────────────────────────────────────────────────
 app.use(helmet({ contentSecurityPolicy: false }))
-app.use(cors({
-  origin: (origin, cb) => {
-    // Allow requests with no origin (mobile apps, Postman, curl)
-    if (!origin) return cb(null, true)
-    if (ALLOWED_ORIGINS.includes(origin)) return cb(null, true)
-    // Allow Expo Go origins (exp://)
-    if (origin.startsWith('exp://')) return cb(null, true)
-    cb(new Error('CORS_NOT_ALLOWED'))
-  },
-  credentials: true,
-  methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
-  allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With'],
-}))
+app.use(
+  cors({
+    origin: (origin, cb) => {
+      // Allow requests with no origin (mobile apps, Postman, curl)
+      if (!origin) return cb(null, true)
+      if (ALLOWED_ORIGINS.includes(origin)) return cb(null, true)
+      // Allow Expo Go origins (exp://)
+      if (origin.startsWith('exp://')) return cb(null, true)
+      cb(new Error('CORS_NOT_ALLOWED'))
+    },
+    credentials: true,
+    methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
+    allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With'],
+  })
+)
 // Sin esto, un origen rechazado por CORS cae al manejador de error default de Express,
 // que devuelve una página HTML con el stack trace completo (incluye rutas del filesystem
 // del servidor) — una fuga de información innecesaria para un simple 403.
@@ -68,13 +70,15 @@ app.use((err: Error, _req: Request, res: Response, next: NextFunction) => {
   return next(err)
 })
 app.use(morgan('dev'))
-app.use(rateLimit({
-  windowMs: 15 * 60 * 1000,
-  max: 500, // generous for dev
-  standardHeaders: true,
-  legacyHeaders: false,
-  message: { success: false, error: 'Demasiadas solicitudes. Intenta más tarde.' },
-}))
+app.use(
+  rateLimit({
+    windowMs: 15 * 60 * 1000,
+    max: 500, // generous for dev
+    standardHeaders: true,
+    legacyHeaders: false,
+    message: { success: false, error: 'Demasiadas solicitudes. Intenta más tarde.' },
+  })
+)
 
 // ─── Auth Middleware (optional — enriches request, does NOT block) ────────────
 // Verifies the JWT if present (Bearer header or racketly_token cookie) and
@@ -108,8 +112,8 @@ function attachUser(req: Request, _res: Response, next: NextFunction) {
   if (token) {
     try {
       const payload = jwt.verify(token, JWT_SECRET) as any
-      req.headers['x-user-id']    = payload.userId || payload.id || ''
-      req.headers['x-user-role']  = payload.role || 'player'
+      req.headers['x-user-id'] = payload.userId || payload.id || ''
+      req.headers['x-user-role'] = payload.role || 'player'
       req.headers['x-user-email'] = payload.email || ''
     } catch {
       // token inválido/expirado — los headers ya quedaron limpios arriba
@@ -165,11 +169,13 @@ function makeProxy(target: string, pathFilter: string | string[]): any {
         console.error(`[gateway] proxy error → ${target}: ${err.message}`)
         if (res && typeof res.headersSent !== 'undefined' && !res.headersSent) {
           res.writeHead(502, { 'Content-Type': 'application/json' })
-          res.end(JSON.stringify({
-            success: false,
-            error: 'Servicio temporalmente no disponible. Intenta de nuevo.',
-            service: target,
-          }))
+          res.end(
+            JSON.stringify({
+              success: false,
+              error: 'Servicio temporalmente no disponible. Intenta de nuevo.',
+              service: target,
+            })
+          )
         }
       },
     },
@@ -185,11 +191,33 @@ function makeProxy(target: string, pathFilter: string | string[]): any {
 //  academy-service   :3005  — courses, lessons, instructors
 //  notification-svc  :3006  — notifications (internal, mostly event-driven)
 
-app.use(makeProxy(SERVICES.auth,         ['/api/auth', '/api/users', '/api/profiles', '/api/profile']))
-app.use(makeProxy(SERVICES.booking,      ['/api/clubs', '/api/courts', '/api/slots', '/api/bookings', '/api/memberships', '/api/credits', '/api/exchange-rates', '/api/professors', '/api/classes', '/api/guest-payments', '/api/webhooks']))
-app.use(makeProxy(SERVICES.tournament,   ['/api/tournaments', '/api/tournament-events', '/api/rankings', '/api/matches', '/api/match-requests']))
-app.use(makeProxy(SERVICES.community,    ['/api/posts', '/api/groups']))
-app.use(makeProxy(SERVICES.academy,      ['/api/courses', '/api/instructors', '/api/lessons']))
+app.use(makeProxy(SERVICES.auth, ['/api/auth', '/api/users', '/api/profiles', '/api/profile']))
+app.use(
+  makeProxy(SERVICES.booking, [
+    '/api/clubs',
+    '/api/courts',
+    '/api/slots',
+    '/api/bookings',
+    '/api/memberships',
+    '/api/credits',
+    '/api/exchange-rates',
+    '/api/professors',
+    '/api/classes',
+    '/api/guest-payments',
+    '/api/webhooks',
+  ])
+)
+app.use(
+  makeProxy(SERVICES.tournament, [
+    '/api/tournaments',
+    '/api/tournament-events',
+    '/api/rankings',
+    '/api/matches',
+    '/api/match-requests',
+  ])
+)
+app.use(makeProxy(SERVICES.community, ['/api/posts', '/api/groups']))
+app.use(makeProxy(SERVICES.academy, ['/api/courses', '/api/instructors', '/api/lessons']))
 app.use(makeProxy(SERVICES.notification, ['/api/notifications']))
 
 // ─── 404 fallback ─────────────────────────────────────────────────────────────

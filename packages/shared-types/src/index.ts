@@ -126,9 +126,9 @@ export enum NotificationType {
 }
 
 export enum CancellationPolicy {
-  FLEXIBLE = 'flexible',       // Reembolso hasta 24h antes
-  MODERATE = 'moderate',       // Reembolso hasta 48h antes
-  STRICT = 'strict',           // Sin reembolso
+  FLEXIBLE = 'flexible', // Reembolso hasta 24h antes
+  MODERATE = 'moderate', // Reembolso hasta 48h antes
+  STRICT = 'strict', // Sin reembolso
 }
 
 // ─── Interfaces ──────────────────────────────────────────────────────────────

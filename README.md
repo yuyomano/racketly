@@ -8,18 +8,18 @@ Reservas de canchas · Torneos y Ligas · Find a Partner · Live Scoring · Comu
 
 ## Stack
 
-| Capa | Tecnología |
-|---|---|
-| Mobile | React Native + Expo |
-| Web | Next.js 15 |
-| Backend | Node.js + TypeScript (microservicios) |
-| Base de datos | PostgreSQL 16 + Redis 7 |
-| Tiempo real | Socket.IO (live scoring) |
-| Video | Mux |
-| Pagos | Stripe + MercadoPago |
-| Push/Email | Firebase + SendGrid |
-| Monorepo | Turborepo |
-| Infra | Docker → Kubernetes |
+| Capa          | Tecnología                            |
+| ------------- | ------------------------------------- |
+| Mobile        | React Native + Expo                   |
+| Web           | Next.js 15                            |
+| Backend       | Node.js + TypeScript (microservicios) |
+| Base de datos | PostgreSQL 16 + Redis 7               |
+| Tiempo real   | Socket.IO (live scoring)              |
+| Video         | Mux                                   |
+| Pagos         | Stripe + MercadoPago                  |
+| Push/Email    | Firebase + SendGrid                   |
+| Monorepo      | Turborepo                             |
+| Infra         | Docker → Kubernetes                   |
 
 ## Estructura del proyecto
 
@@ -49,6 +49,7 @@ racketly/
 ## Arrancar en desarrollo
 
 ### Prerrequisitos
+
 - Node.js 20+
 - Docker Desktop
 
@@ -83,17 +84,17 @@ npm run dev
 
 ### Puertos en desarrollo
 
-| Servicio | Puerto |
-|---|---|
-| API Gateway (nginx) | http://localhost:4000 |
-| Auth Service | http://localhost:3001 |
-| Booking Service | http://localhost:3002 |
-| Tournament Service | http://localhost:3003 |
-| Community Service | http://localhost:3004 |
-| Academy Service | http://localhost:3005 |
+| Servicio             | Puerto                |
+| -------------------- | --------------------- |
+| API Gateway (nginx)  | http://localhost:4000 |
+| Auth Service         | http://localhost:3001 |
+| Booking Service      | http://localhost:3002 |
+| Tournament Service   | http://localhost:3003 |
+| Community Service    | http://localhost:3004 |
+| Academy Service      | http://localhost:3005 |
 | Notification Service | http://localhost:3006 |
-| Web (Next.js) | http://localhost:3000 |
-| Prisma Studio | http://localhost:5555 |
+| Web (Next.js)        | http://localhost:3000 |
+| Prisma Studio        | http://localhost:5555 |
 
 ## Roadmap
 

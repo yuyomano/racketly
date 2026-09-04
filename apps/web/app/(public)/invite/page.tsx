@@ -8,11 +8,11 @@ import { Button } from '@/components/ui/Button'
 const GW = '' // relative — middleware inyecta auth, next.config reescribe al gateway
 
 function AcceptInviteContent() {
-  const params   = useSearchParams()
-  const router   = useRouter()
-  const token    = params.get('token') ?? ''
+  const params = useSearchParams()
+  const router = useRouter()
+  const token = params.get('token') ?? ''
 
-  const [status,  setStatus]  = useState<'idle' | 'loading' | 'success' | 'error'>('idle')
+  const [status, setStatus] = useState<'idle' | 'loading' | 'success' | 'error'>('idle')
   const [message, setMessage] = useState('')
   const [clubName, setClubName] = useState('')
 
@@ -20,11 +20,15 @@ function AcceptInviteContent() {
   useEffect(() => {
     if (!token) return
     handleAccept()
-  // eslint-disable-next-line react-hooks/exhaustive-deps
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [token])
 
   async function handleAccept() {
-    if (!token) { setStatus('error'); setMessage('Token de invitación no encontrado'); return }
+    if (!token) {
+      setStatus('error')
+      setMessage('Token de invitación no encontrado')
+      return
+    }
     setStatus('loading')
     try {
       const res = await fetch(`${GW}/api/clubs/invitations/accept`, {
@@ -74,7 +78,9 @@ function AcceptInviteContent() {
         <h2 className="text-xl font-bold text-gray-800">No se pudo aceptar</h2>
         <p className="text-gray-500 text-sm">{message}</p>
         <div className="flex gap-3 justify-center mt-4">
-          <Button onClick={() => router.push('/login')} variant="ghost">Ir al login</Button>
+          <Button onClick={() => router.push('/login')} variant="ghost">
+            Ir al login
+          </Button>
           <Button onClick={() => router.push('/dashboard')}>Dashboard</Button>
         </div>
       </div>
@@ -100,7 +106,9 @@ export default function InvitePage() {
     <main className="min-h-screen bg-gradient-to-br from-emerald-900 via-emerald-800 to-emerald-950 flex items-center justify-center p-4">
       <div className="bg-white rounded-3xl shadow-2xl p-10 w-full max-w-md">
         <div className="flex items-center gap-3 mb-8">
-          <div className="w-10 h-10 rounded-xl bg-emerald-500 flex items-center justify-center text-lg">🎾</div>
+          <div className="w-10 h-10 rounded-xl bg-emerald-500 flex items-center justify-center text-lg">
+            🎾
+          </div>
           <div>
             <p className="font-black text-emerald-900 text-lg leading-none">Racketly</p>
             <p className="text-emerald-600 text-xs">Invitación de administrador</p>

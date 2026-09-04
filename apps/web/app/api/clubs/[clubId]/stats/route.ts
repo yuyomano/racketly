@@ -1,10 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { gatewayFetch } from '@/lib/auth-web'
 
-export async function GET(
-  req: NextRequest,
-  { params }: { params: Promise<{ clubId: string }> }
-) {
+export async function GET(req: NextRequest, { params }: { params: Promise<{ clubId: string }> }) {
   try {
     const { clubId } = await params
     const period = req.nextUrl.searchParams.get('period') ?? '7'

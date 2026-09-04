@@ -3,7 +3,7 @@
  * Llama directamente a los servicios (desde el servidor Next.js)
  */
 
-const BOOKING_URL  = process.env.BOOKING_SERVICE_URL  || 'http://localhost:3002'
+const BOOKING_URL = process.env.BOOKING_SERVICE_URL || 'http://localhost:3002'
 const TOURNAMENT_URL = process.env.TOURNAMENT_SERVICE_URL || 'http://localhost:3003'
 
 async function get<T>(url: string): Promise<T> {
@@ -39,7 +39,14 @@ export interface ClubStats {
   pendingBookings: number
   totalRevenue: number
   byDay: { date: string; bookings: number; revenue: number }[]
-  courtOccupancy: { id: string; name: string; sport: string; slotsToday: number; bookedToday: number; pct: number }[]
+  courtOccupancy: {
+    id: string
+    name: string
+    sport: string
+    slotsToday: number
+    bookedToday: number
+    pct: number
+  }[]
   todayBookings: any[]
 }
 

@@ -18,7 +18,10 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ tok
     const data = await res.json()
 
     if (!res.ok) {
-      return NextResponse.json({ error: data.error || 'No se pudo aceptar la invitación' }, { status: res.status })
+      return NextResponse.json(
+        { error: data.error || 'No se pudo aceptar la invitación' },
+        { status: res.status }
+      )
     }
 
     const response = NextResponse.json({ success: true, user: data.data?.user })

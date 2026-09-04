@@ -37,7 +37,9 @@ export function ClubTournamentsClient({ clubId }: { clubId: string }) {
   const { data: tournaments, isLoading } = useQuery({
     queryKey: ['public-club-tournaments', clubId, status],
     queryFn: async () => {
-      const res = await fetch(`/api/tournaments?clubId=${clubId}&status=${status}&limit=50`, { cache: 'no-store' })
+      const res = await fetch(`/api/tournaments?clubId=${clubId}&status=${status}&limit=50`, {
+        cache: 'no-store',
+      })
       const json = await res.json()
       return (json.data ?? []) as TournamentWithClub[]
     },
@@ -47,7 +49,9 @@ export function ClubTournamentsClient({ clubId }: { clubId: string }) {
   return (
     <div className="min-h-screen bg-gray-50">
       <div className="bg-emerald-800 text-white px-5 pt-10 pb-6">
-        <p className="text-emerald-300 text-xs font-semibold uppercase tracking-wide mb-1">Torneos del club</p>
+        <p className="text-emerald-300 text-xs font-semibold uppercase tracking-wide mb-1">
+          Torneos del club
+        </p>
         <h1 className="text-2xl font-black tracking-tight">{club?.name ?? ' '}</h1>
         {club && (
           <p className="text-emerald-200 text-sm mt-1 flex items-center gap-1.5">
@@ -99,7 +103,8 @@ export function ClubTournamentsClient({ clubId }: { clubId: string }) {
                     <p className="font-bold text-gray-900">{t.name}</p>
                     <div className="flex items-center justify-between text-xs text-gray-500">
                       <span className="flex items-center gap-1.5">
-                        <Calendar className="w-3.5 h-3.5" /> {new Date(t.startDate).toLocaleDateString('es-CO')}
+                        <Calendar className="w-3.5 h-3.5" />{' '}
+                        {new Date(t.startDate).toLocaleDateString('es-CO')}
                       </span>
                       <span>{t._count?.participants ?? 0} inscritos</span>
                     </div>

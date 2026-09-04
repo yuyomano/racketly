@@ -11,10 +11,23 @@ import { Button } from '@/components/ui/Button'
 import { useToast } from '@/components/ui/Toast'
 import { cn } from '@/lib/utils'
 
-type Lesson = { id: string; title: string; orderIndex: number; videoDurationSeconds: number; isFreePreview: boolean }
+type Lesson = {
+  id: string
+  title: string
+  orderIndex: number
+  videoDurationSeconds: number
+  isFreePreview: boolean
+}
 type Course = {
-  id: string; title: string; description: string; sport: string; level: string
-  price: number; currency: string; isPremium: boolean; durationHours: number
+  id: string
+  title: string
+  description: string
+  sport: string
+  level: string
+  price: number
+  currency: string
+  isPremium: boolean
+  durationHours: number
   instructor: { displayName: string; bio: string | null; ratingAvg: number; totalReviews: number }
   lessons: Lesson[]
   _count: { enrollments: number }
@@ -25,7 +38,11 @@ async function fetchMyEnrollments(userId: string): Promise<Enrollment[]> {
   const res = await fetch(`/api/courses/enrollments/user/${userId}`)
   const data = await res.json()
   if (!res.ok) return []
-  return (data.data ?? []).map((e: any) => ({ id: e.id, courseId: e.course?.id ?? e.courseId, progressPercent: e.progressPercent }))
+  return (data.data ?? []).map((e: any) => ({
+    id: e.id,
+    courseId: e.course?.id ?? e.courseId,
+    progressPercent: e.progressPercent,
+  }))
 }
 
 export function CourseDetailClient({ course, userId }: { course: Course; userId: string }) {
@@ -35,10 +52,16 @@ export function CourseDetailClient({ course, userId }: { course: Course; userId:
   const [error, setError] = useState('')
 
   const LEVEL_LABEL: Record<string, string> = {
-    beginner: t('levelBeginner'), intermediate: t('levelIntermediate'), advanced: t('levelAdvanced'), pro: t('levelPro'),
+    beginner: t('levelBeginner'),
+    intermediate: t('levelIntermediate'),
+    advanced: t('levelAdvanced'),
+    pro: t('levelPro'),
   }
 
-  const { data: enrollments } = useQuery({ queryKey: ['courses', 'mine', userId], queryFn: () => fetchMyEnrollments(userId) })
+  const { data: enrollments } = useQuery({
+    queryKey: ['courses', 'mine', userId],
+    queryFn: () => fetchMyEnrollments(userId),
+  })
   const myEnrollment = enrollments?.find((e) => e.courseId === course.id)
 
   const enrollMutation = useMutation({
@@ -64,14 +87,19 @@ export function CourseDetailClient({ course, userId }: { course: Course; userId:
 
   return (
     <div className="space-y-6 max-w-3xl mx-auto">
-      <Link href="/academy" className="flex items-center gap-1.5 text-sm text-gray-400 hover:text-gray-600 transition-colors">
+      <Link
+        href="/academy"
+        className="flex items-center gap-1.5 text-sm text-gray-400 hover:text-gray-600 transition-colors"
+      >
         <ArrowLeft className="w-4 h-4" /> {t('backLink')}
       </Link>
 
       <Card className="p-6">
         <h1 className="text-xl font-black text-gray-900 tracking-tight">{course.title}</h1>
         <p className="text-sm text-gray-400 mt-1">
-          {course.instructor.displayName} · <Star className="w-3.5 h-3.5 inline text-amber-400 fill-amber-400 -mt-0.5" /> {course.instructor.ratingAvg.toFixed(1)} ({course.instructor.totalReviews})
+          {course.instructor.displayName} ·{' '}
+          <Star className="w-3.5 h-3.5 inline text-amber-400 fill-amber-400 -mt-0.5" />{' '}
+          {course.instructor.ratingAvg.toFixed(1)} ({course.instructor.totalReviews})
         </p>
 
         <div className="flex items-center gap-1.5 flex-wrap mt-4">
@@ -93,15 +121,29 @@ export function CourseDetailClient({ course, userId }: { course: Course; userId:
           {myEnrollment ? (
             <div className="bg-emerald-50 rounded-xl px-4 py-3">
               <p className="flex items-center gap-2 text-sm font-semibold text-emerald-700">
-                <CheckCircle2 className="w-4 h-4" /> {t('enrolledLabel', { percent: myEnrollment.progressPercent })}
+                <CheckCircle2 className="w-4 h-4" />{' '}
+                {t('enrolledLabel', { percent: myEnrollment.progressPercent })}
               </p>
               <div className="h-1.5 bg-emerald-100 rounded-full mt-2 overflow-hidden">
-                <div className="h-full bg-emerald-500" style={{ width: `${myEnrollment.progressPercent}%` }} />
+                <div
+                  className="h-full bg-emerald-500"
+                  style={{ width: `${myEnrollment.progressPercent}%` }}
+                />
               </div>
             </div>
           ) : (
-            <Button onClick={() => enrollMutation.mutate()} disabled={enrollMutation.isPending} className="w-full">
-              {enrollMutation.isPending ? <Loader2 className="w-4 h-4 animate-spin" /> : course.price > 0 ? t('enrollPaid', { currency: course.currency, price: course.price.toFixed(0) }) : t('enrollFree')}
+            <Button
+              onClick={() => enrollMutation.mutate()}
+              disabled={enrollMutation.isPending}
+              className="w-full"
+            >
+              {enrollMutation.isPending ? (
+                <Loader2 className="w-4 h-4 animate-spin" />
+              ) : course.price > 0 ? (
+                t('enrollPaid', { currency: course.currency, price: course.price.toFixed(0) })
+              ) : (
+                t('enrollFree')
+              )}
             </Button>
           )}
         </div>
@@ -117,12 +159,28 @@ export function CourseDetailClient({ course, userId }: { course: Course; userId:
               const unlocked = !!myEnrollment || l.isFreePreview
               const minutes = Math.round(l.videoDurationSeconds / 60)
               return (
-                <div key={l.id} className={cn('flex items-center gap-3 px-3 py-2.5 rounded-xl', unlocked ? 'hover:bg-gray-50' : 'opacity-60')}>
-                  {unlocked ? <PlayCircle className="w-4 h-4 text-emerald-500 shrink-0" /> : <Lock className="w-4 h-4 text-gray-300 shrink-0" />}
+                <div
+                  key={l.id}
+                  className={cn(
+                    'flex items-center gap-3 px-3 py-2.5 rounded-xl',
+                    unlocked ? 'hover:bg-gray-50' : 'opacity-60'
+                  )}
+                >
+                  {unlocked ? (
+                    <PlayCircle className="w-4 h-4 text-emerald-500 shrink-0" />
+                  ) : (
+                    <Lock className="w-4 h-4 text-gray-300 shrink-0" />
+                  )}
                   <span className="text-xs text-gray-400 w-5 shrink-0">{idx + 1}.</span>
                   <span className="text-sm text-gray-700 flex-1 truncate">{l.title}</span>
-                  {l.isFreePreview && !myEnrollment && <Badge tone="blue">{t('freePreviewBadge')}</Badge>}
-                  {minutes > 0 && <span className="text-xs text-gray-400 shrink-0">{t('minutesLabel', { minutes })}</span>}
+                  {l.isFreePreview && !myEnrollment && (
+                    <Badge tone="blue">{t('freePreviewBadge')}</Badge>
+                  )}
+                  {minutes > 0 && (
+                    <span className="text-xs text-gray-400 shrink-0">
+                      {t('minutesLabel', { minutes })}
+                    </span>
+                  )}
                 </div>
               )
             })}

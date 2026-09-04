@@ -12,7 +12,8 @@ const prisma = new PrismaClient()
 let _stripe: Stripe | null = null
 function getStripe(): Stripe {
   if (DEV_MODE) throw new Error('STRIPE_NOT_CONFIGURED')
-  if (!_stripe) _stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, { apiVersion: '2025-02-24.acacia' })
+  if (!_stripe)
+    _stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, { apiVersion: '2025-02-24.acacia' })
   return _stripe
 }
 
@@ -28,7 +29,9 @@ export interface CreatePaymentIntentParams {
 
 export async function createStripePaymentIntent(params: CreatePaymentIntentParams) {
   if (DEV_MODE) {
-    console.log(`[payment] ⚠️  DEV MODE — simulando PaymentIntent para inscripción ${params.participantId}`)
+    console.log(
+      `[payment] ⚠️  DEV MODE — simulando PaymentIntent para inscripción ${params.participantId}`
+    )
     return {
       clientSecret: `dev_secret_${params.participantId}_${Date.now()}`,
       paymentIntentId: `dev_pi_${params.participantId}`,
@@ -57,8 +60,13 @@ export async function retrieveStripePaymentIntent(paymentIntentId: string) {
 // Registra un cobro real en el libro de caja (Payment), igual que booking-service —
 // necesario para que la inscripción a torneo pagada aparezca en Caja del dashboard.
 export async function recordPayment(opts: {
-  clubId: string; tournamentParticipantId?: string; playerUserId?: string | null; playerName?: string
-  amount: number; currency: string; method: 'cash' | 'card'
+  clubId: string
+  tournamentParticipantId?: string
+  playerUserId?: string | null
+  playerName?: string
+  amount: number
+  currency: string
+  method: 'cash' | 'card'
 }) {
   if (opts.amount <= 0) return
   await prisma.payment.create({

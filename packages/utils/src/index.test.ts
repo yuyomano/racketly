@@ -136,7 +136,9 @@ describe('findWorkloadEligibleStart', () => {
         sets: 1,
         pairKeys: ['pair-a'],
         tracker,
-        earliestCourtAtOrAfter: () => { throw new Error('no debería pedir pista si ya está bloqueado') },
+        earliestCourtAtOrAfter: () => {
+          throw new Error('no debería pedir pista si ya está bloqueado')
+        },
         maxIterations: 0,
       })
     ).toThrow()

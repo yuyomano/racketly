@@ -1,8 +1,16 @@
 import { Router, Request, Response, NextFunction } from 'express'
 import { PrismaClient } from '@prisma/client'
 import { AppError } from '../middleware/error.middleware'
-import { recordPayment, resolvePaymentMethod, resolvePaymentMethodDefaultCash } from '../services/payment-ledger.service'
-import { toMinutes, hasConflictingClass, hasConflictingBooking } from '../services/schedule-conflict.service'
+import {
+  recordPayment,
+  resolvePaymentMethod,
+  resolvePaymentMethodDefaultCash,
+} from '../services/payment-ledger.service'
+import {
+  toMinutes,
+  hasConflictingClass,
+  hasConflictingBooking,
+} from '../services/schedule-conflict.service'
 
 const router = Router()
 const prisma = new PrismaClient()
@@ -12,7 +20,9 @@ const slotInclude = {
   court: { select: { id: true, name: true } },
   bookings: {
     where: { status: 'active' },
-    include: { student: { select: { id: true, firstName: true, lastName: true, avatarUrl: true } } },
+    include: {
+      student: { select: { id: true, firstName: true, lastName: true, avatarUrl: true } },
+    },
   },
 } as const
 
@@ -36,13 +46,26 @@ router.get('/:clubId', async (req: Request, res: Response, next: NextFunction) =
       orderBy: [{ date: 'asc' }, { startTime: 'asc' }],
     })
     return res.json({ success: true, data: slots })
-  } catch (err) { return next(err) }
+  } catch (err) {
+    return next(err)
+  }
 })
 
 // ─── POST /api/classes — crear un slot de clase (admin) ──────────────────────
 router.post('/', async (req: Request, res: Response, next: NextFunction) => {
   try {
-    const { clubId, professorId, courtId, date, startTime, durationMinutes, maxStudents, price, currency, notes } = req.body
+    const {
+      clubId,
+      professorId,
+      courtId,
+      date,
+      startTime,
+      durationMinutes,
+      maxStudents,
+      price,
+      currency,
+      notes,
+    } = req.body
     if (!clubId) throw new AppError('clubId es requerido', 400)
     if (!professorId) throw new AppError('professorId es requerido', 400)
     if (!date || !startTime) throw new AppError('Fecha y hora son requeridas', 400)
@@ -61,21 +84,39 @@ router.post('/', async (req: Request, res: Response, next: NextFunction) => {
 
     const slot = await prisma.classSlot.create({
       data: {
-        clubId, professorId, courtId: courtId || null, date, startTime,
+        clubId,
+        professorId,
+        courtId: courtId || null,
+        date,
+        startTime,
         durationMinutes: durationMinutes || 60,
         maxStudents: maxStudents || 1,
-        price, currency: currency || 'USD', notes,
+        price,
+        currency: currency || 'USD',
+        notes,
       },
       include: slotInclude,
     })
     return res.status(201).json({ success: true, data: slot })
-  } catch (err) { return next(err) }
+  } catch (err) {
+    return next(err)
+  }
 })
 
 // ─── PATCH /api/classes/:id — editar o cancelar un slot (admin) ──────────────
 router.patch('/:id', async (req: Request, res: Response, next: NextFunction) => {
   try {
-    const { courtId, date, startTime, durationMinutes, maxStudents, price, currency, notes, status } = req.body
+    const {
+      courtId,
+      date,
+      startTime,
+      durationMinutes,
+      maxStudents,
+      price,
+      currency,
+      notes,
+      status,
+    } = req.body
 
     const existing = await prisma.classSlot.findUnique({ where: { id: req.params.id } })
     if (!existing) throw new AppError('Clase no encontrada', 404)
@@ -93,8 +134,12 @@ router.patch('/:id', async (req: Request, res: Response, next: NextFunction) => 
 
     // Solo revalidar el horario si de verdad cambió algo que afecte cuándo/dónde ocurre la
     // clase, y solo si sigue teniendo pista asignada (sin pista no hay con qué chocar).
-    const finalCourtId = courtId !== undefined ? (courtId || null) : existing.courtId
-    const scheduleChanged = courtId !== undefined || date !== undefined || startTime !== undefined || durationMinutes !== undefined
+    const finalCourtId = courtId !== undefined ? courtId || null : existing.courtId
+    const scheduleChanged =
+      courtId !== undefined ||
+      date !== undefined ||
+      startTime !== undefined ||
+      durationMinutes !== undefined
     if (finalCourtId && scheduleChanged && status !== 'cancelled') {
       const finalDate = date ?? existing.date
       const finalStartTime = startTime ?? existing.startTime
@@ -109,9 +154,15 @@ router.patch('/:id', async (req: Request, res: Response, next: NextFunction) => 
       }
     }
 
-    const slot = await prisma.classSlot.update({ where: { id: req.params.id }, data, include: slotInclude })
+    const slot = await prisma.classSlot.update({
+      where: { id: req.params.id },
+      data,
+      include: slotInclude,
+    })
     return res.json({ success: true, data: slot })
-  } catch (err) { return next(err) }
+  } catch (err) {
+    return next(err)
+  }
 })
 
 // ─── POST /api/classes/:id/book — un alumno (jugador registrado) reserva cupo ─
@@ -133,7 +184,8 @@ router.post('/:id/book', async (req: Request, res: Response, next: NextFunction)
     })
     if (!slot) throw new AppError('Clase no encontrada', 404)
     if (slot.status !== 'open') throw new AppError('Esta clase ya no está disponible', 400)
-    if (slot.bookings.length >= slot.maxStudents) throw new AppError('Esta clase ya no tiene cupos', 400)
+    if (slot.bookings.length >= slot.maxStudents)
+      throw new AppError('Esta clase ya no tiene cupos', 400)
     if (slot.bookings.some((b) => b.studentUserId === studentUserId)) {
       throw new AppError('Ya reservaste un cupo en esta clase', 409)
     }
@@ -158,9 +210,13 @@ router.post('/:id/book', async (req: Request, res: Response, next: NextFunction)
 
     if (wantsToPayNow && slot.price > 0) {
       await recordPayment({
-        clubId: clubId ?? slot.clubId, classBookingId: booking.id,
-        playerUserId: studentUserId, playerName: booking.studentName,
-        amount: slot.price, currency: slot.currency, method: method!,
+        clubId: clubId ?? slot.clubId,
+        classBookingId: booking.id,
+        playerUserId: studentUserId,
+        playerName: booking.studentName,
+        amount: slot.price,
+        currency: slot.currency,
+        method: method!,
       })
     }
 
@@ -169,7 +225,9 @@ router.post('/:id/book', async (req: Request, res: Response, next: NextFunction)
     }
 
     return res.status(201).json({ success: true, data: booking })
-  } catch (err) { return next(err) }
+  } catch (err) {
+    return next(err)
+  }
 })
 
 const CLASS_CANCEL_DEADLINE_HOURS = 24
@@ -217,7 +275,9 @@ router.delete('/bookings/:id', async (req: Request, res: Response, next: NextFun
     }
 
     return res.json({ success: true, data: booking, refunded: refunds, credit })
-  } catch (err) { return next(err) }
+  } catch (err) {
+    return next(err)
+  }
 })
 
 // ─── PATCH /api/classes/bookings/:id/pay — marcar pagado (efectivo/tarjeta) ──
@@ -253,7 +313,9 @@ router.patch('/bookings/:id/pay', async (req: Request, res: Response, next: Next
     })
 
     return res.json({ success: true, data: updated })
-  } catch (err) { return next(err) }
+  } catch (err) {
+    return next(err)
+  }
 })
 
 export { router as classesRouter }

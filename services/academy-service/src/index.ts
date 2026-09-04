@@ -9,9 +9,10 @@ import { coursesRouter } from './routes/courses.routes'
 import { instructorsRouter } from './routes/instructors.routes'
 
 // Mux es opcional en dev — se necesita solo para upload de videos
-export const mux = (process.env.MUX_TOKEN_ID && process.env.MUX_TOKEN_SECRET)
-  ? new Mux({ tokenId: process.env.MUX_TOKEN_ID, tokenSecret: process.env.MUX_TOKEN_SECRET })
-  : null
+export const mux =
+  process.env.MUX_TOKEN_ID && process.env.MUX_TOKEN_SECRET
+    ? new Mux({ tokenId: process.env.MUX_TOKEN_ID, tokenSecret: process.env.MUX_TOKEN_SECRET })
+    : null
 
 if (!mux) console.warn('⚠️  MUX_TOKEN_ID no configurado — upload de videos deshabilitado')
 
@@ -23,7 +24,9 @@ app.use(cors({ origin: process.env.ALLOWED_ORIGINS?.split(','), credentials: tru
 app.use(express.json({ limit: '10kb' }))
 app.use(morgan(process.env.NODE_ENV === 'production' ? 'combined' : 'dev'))
 
-app.get('/health', (_req, res) => res.json({ success: true, service: 'academy-service', status: 'ok' }))
+app.get('/health', (_req, res) =>
+  res.json({ success: true, service: 'academy-service', status: 'ok' })
+)
 
 app.use('/api/courses', coursesRouter)
 app.use('/api/instructors', instructorsRouter)

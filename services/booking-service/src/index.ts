@@ -22,7 +22,10 @@ import { completeExpiredBookings } from './services/booking-completion.service'
 import { autoConfirmPendingMatches } from './services/match-elo.service'
 import { cancelIncompleteRosterBookings } from './services/roster-completion.service'
 import { expireCancelledMemberships } from './services/membership-lifecycle.service'
-import { warnPendingPaymentBookings, warnIncompleteRosterBookings } from './services/pre-cancellation-warning.service'
+import {
+  warnPendingPaymentBookings,
+  warnIncompleteRosterBookings,
+} from './services/pre-cancellation-warning.service'
 
 const app = express()
 const PORT = process.env.PORT || 3002

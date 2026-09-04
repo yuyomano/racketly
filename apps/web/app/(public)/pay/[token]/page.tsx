@@ -39,11 +39,15 @@ export default function GuestPaymentPage() {
   const [paid, setPaid] = useState(false)
 
   const load = useCallback(async () => {
-    setLoading(true); setError('')
+    setLoading(true)
+    setError('')
     try {
       const res = await fetch(`${GW}/api/guest-payments/${token}`)
       const json = await res.json()
-      if (!res.ok) { setError(json.error || 'No se pudo cargar el link de pago'); return }
+      if (!res.ok) {
+        setError(json.error || 'No se pudo cargar el link de pago')
+        return
+      }
       setDetail(json.data)
       if (json.data.status === 'paid') setPaid(true)
     } catch {
@@ -53,11 +57,14 @@ export default function GuestPaymentPage() {
     }
   }, [token])
 
-  useEffect(() => { if (token) load() }, [token, load])
+  useEffect(() => {
+    if (token) load()
+  }, [token, load])
 
   // Modo prueba (sin Stripe real configurado): crea el intent y lo confirma de inmediato.
   async function payDevMode() {
-    setPaying(true); setError('')
+    setPaying(true)
+    setError('')
     try {
       const intentRes = await fetch(`${GW}/api/guest-payments/${token}/intent`, { method: 'POST' })
       const intentJson = await intentRes.json()
@@ -110,7 +117,8 @@ export default function GuestPaymentPage() {
           <CheckCircle className="w-14 h-14 text-emerald-500 mx-auto" />
           <h2 className="text-xl font-bold text-gray-800">¡Pago recibido!</h2>
           <p className="text-gray-500 text-sm">
-            Gracias, {detail.playerName}. Tu parte de {formatCurrency(detail.amount, detail.currency)} quedó registrada.
+            Gracias, {detail.playerName}. Tu parte de{' '}
+            {formatCurrency(detail.amount, detail.currency)} quedó registrada.
           </p>
         </div>
       </Shell>
@@ -150,12 +158,17 @@ export default function GuestPaymentPage() {
 
         <div className="bg-sky-50 border border-sky-200 rounded-2xl p-4 text-sm">
           <p className="font-semibold text-sky-900">{detail.club}</p>
-          <p className="text-sky-700">{detail.court} · {formatDate(detail.date)} · {detail.startTime.slice(0, 5)}–{detail.endTime.slice(0, 5)}</p>
+          <p className="text-sky-700">
+            {detail.court} · {formatDate(detail.date)} · {detail.startTime.slice(0, 5)}–
+            {detail.endTime.slice(0, 5)}
+          </p>
         </div>
 
         <div className="text-center">
           <p className="text-xs text-gray-400 uppercase tracking-wide">Total a pagar</p>
-          <p className="text-3xl font-black text-gray-900">{formatCurrency(detail.amount, detail.currency)}</p>
+          <p className="text-3xl font-black text-gray-900">
+            {formatCurrency(detail.amount, detail.currency)}
+          </p>
         </div>
 
         {error && <p className="text-red-600 text-sm bg-red-50 rounded-xl px-4 py-2">{error}</p>}
@@ -165,10 +178,18 @@ export default function GuestPaymentPage() {
         ) : (
           <div className="space-y-2">
             <p className="text-xs text-amber-600 bg-amber-50 border border-amber-200 rounded-xl px-3 py-2 text-center">
-              Modo de prueba — el club aún no configuró un método de cobro real. Este botón simula el pago.
+              Modo de prueba — el club aún no configuró un método de cobro real. Este botón simula
+              el pago.
             </p>
             <Button onClick={payDevMode} disabled={paying} className="w-full">
-              {paying ? <Loader2 className="w-4 h-4 animate-spin" /> : <><CreditCard className="w-4 h-4" /> Pagar {formatCurrency(detail.amount, detail.currency)}</>}
+              {paying ? (
+                <Loader2 className="w-4 h-4 animate-spin" />
+              ) : (
+                <>
+                  <CreditCard className="w-4 h-4" /> Pagar{' '}
+                  {formatCurrency(detail.amount, detail.currency)}
+                </>
+              )}
             </Button>
           </div>
         )}
@@ -185,7 +206,15 @@ function getStripePromise() {
 
 // Formulario real con Stripe Elements — solo se monta cuando hay publishable key y el backend
 // confirma que Stripe está configurado.
-function StripeCardForm({ token, onSuccess, onError }: { token: string; onSuccess: () => void; onError: (msg: string) => void }) {
+function StripeCardForm({
+  token,
+  onSuccess,
+  onError,
+}: {
+  token: string
+  onSuccess: () => void
+  onError: (msg: string) => void
+}) {
   const [clientSecret, setClientSecret] = useState<string | null>(null)
   const [paymentIntentId, setPaymentIntentId] = useState<string | null>(null)
 
@@ -195,28 +224,52 @@ function StripeCardForm({ token, onSuccess, onError }: { token: string; onSucces
       .then((r) => r.json())
       .then((json) => {
         if (cancelled) return
-        if (!json.success) { onError(json.error || 'No se pudo iniciar el pago'); return }
+        if (!json.success) {
+          onError(json.error || 'No se pudo iniciar el pago')
+          return
+        }
         setClientSecret(json.data.clientSecret)
         setPaymentIntentId(json.data.paymentIntentId)
       })
-      .catch(() => { if (!cancelled) onError('No se pudo iniciar el pago') })
-    return () => { cancelled = true }
+      .catch(() => {
+        if (!cancelled) onError('No se pudo iniciar el pago')
+      })
+    return () => {
+      cancelled = true
+    }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [token])
 
   if (!clientSecret) {
-    return <div className="text-center py-6"><Loader2 className="w-6 h-6 text-sky-500 mx-auto animate-spin" /></div>
+    return (
+      <div className="text-center py-6">
+        <Loader2 className="w-6 h-6 text-sky-500 mx-auto animate-spin" />
+      </div>
+    )
   }
 
   return (
     <Elements stripe={getStripePromise()} options={{ clientSecret }}>
-      <PaymentElementForm token={token} fallbackPaymentIntentId={paymentIntentId!} onSuccess={onSuccess} onError={onError} />
+      <PaymentElementForm
+        token={token}
+        fallbackPaymentIntentId={paymentIntentId!}
+        onSuccess={onSuccess}
+        onError={onError}
+      />
     </Elements>
   )
 }
 
-function PaymentElementForm({ token, fallbackPaymentIntentId, onSuccess, onError }: {
-  token: string; fallbackPaymentIntentId: string; onSuccess: () => void; onError: (msg: string) => void
+function PaymentElementForm({
+  token,
+  fallbackPaymentIntentId,
+  onSuccess,
+  onError,
+}: {
+  token: string
+  fallbackPaymentIntentId: string
+  onSuccess: () => void
+  onError: (msg: string) => void
 }) {
   const stripe = useStripe()
   const elements = useElements()
@@ -226,15 +279,24 @@ function PaymentElementForm({ token, fallbackPaymentIntentId, onSuccess, onError
     if (!stripe || !elements) return
     setSubmitting(true)
     try {
-      const { error: stripeError, paymentIntent } = await stripe.confirmPayment({ elements, redirect: 'if_required' })
-      if (stripeError) { onError(stripeError.message || 'El pago no pudo procesarse'); return }
+      const { error: stripeError, paymentIntent } = await stripe.confirmPayment({
+        elements,
+        redirect: 'if_required',
+      })
+      if (stripeError) {
+        onError(stripeError.message || 'El pago no pudo procesarse')
+        return
+      }
       const confirmRes = await fetch(`${GW}/api/guest-payments/${token}/confirm`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ paymentIntentId: paymentIntent?.id ?? fallbackPaymentIntentId }),
       })
       const confirmJson = await confirmRes.json()
-      if (!confirmJson.success) { onError(confirmJson.error || 'No se pudo confirmar el pago'); return }
+      if (!confirmJson.success) {
+        onError(confirmJson.error || 'No se pudo confirmar el pago')
+        return
+      }
       onSuccess()
     } catch (e: any) {
       onError(e.message || 'No se pudo completar el pago')
@@ -258,7 +320,9 @@ function Shell({ children }: { children: React.ReactNode }) {
     <main className="min-h-screen bg-gradient-to-br from-sky-900 via-sky-800 to-sky-950 flex items-center justify-center p-4">
       <div className="bg-white rounded-3xl shadow-2xl p-10 w-full max-w-md">
         <div className="flex items-center gap-3 mb-8">
-          <div className="w-10 h-10 rounded-xl bg-sky-500 flex items-center justify-center text-lg">🎾</div>
+          <div className="w-10 h-10 rounded-xl bg-sky-500 flex items-center justify-center text-lg">
+            🎾
+          </div>
           <div>
             <p className="font-black text-sky-900 text-lg leading-none">Racketly</p>
             <p className="text-sky-600 text-xs">Pago de invitado</p>

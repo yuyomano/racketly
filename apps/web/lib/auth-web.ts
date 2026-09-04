@@ -1,8 +1,8 @@
 import { cookies } from 'next/headers'
 import { NextResponse } from 'next/server'
 
-const GW      = process.env.API_GATEWAY_URL      || 'http://localhost:3000'
-const BOOKING = process.env.BOOKING_SERVICE_URL  || 'http://localhost:3002'
+const GW = process.env.API_GATEWAY_URL || 'http://localhost:3000'
+const BOOKING = process.env.BOOKING_SERVICE_URL || 'http://localhost:3002'
 
 // Solo Secure en producción — en dev local (http://localhost) una cookie Secure no se
 // guardaría en la mayoría de navegadores, rompiendo el login.
@@ -34,16 +34,20 @@ export function setSessionCookies(
       path: '/',
     })
   }
-  response.cookies.set('racketly_user', JSON.stringify({
-    id: data.user?.id,
-    email: data.user?.email,
-  }), {
-    httpOnly: false,
-    sameSite: 'lax',
-    secure: SECURE_COOKIE,
-    maxAge: 60 * 60 * 24 * 30,
-    path: '/',
-  })
+  response.cookies.set(
+    'racketly_user',
+    JSON.stringify({
+      id: data.user?.id,
+      email: data.user?.email,
+    }),
+    {
+      httpOnly: false,
+      sameSite: 'lax',
+      secure: SECURE_COOKIE,
+      maxAge: 60 * 60 * 24 * 30,
+      path: '/',
+    }
+  )
 }
 
 export function clearSessionCookies(response: NextResponse) {

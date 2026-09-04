@@ -1,4 +1,5 @@
 # RACKETLY — Documento de Arquitectura Técnica
+
 **Versión:** 1.0 | **Fecha:** Mayo 2026 | **Estado:** Diseño
 
 ---
@@ -14,6 +15,7 @@
 ## 2. MÓDULOS FUNCIONALES
 
 ### 2.1 Reservas (Booking)
+
 - Búsqueda por ciudad/país/club con mapa interactivo
 - Disponibilidad en tiempo real con bloqueo optimista
 - Reserva individual o en grupo (invitar jugadores)
@@ -24,6 +26,7 @@
 - Cancha patrocinada (branding de marca en reserva)
 
 ### 2.2 Ligas y Torneos
+
 - Tipos: Dobles, Individual, Mixto, Por Club, Interclub
 - Deportes: Pádel, Pickleball (separados)
 - Formatos: Round Robin, Eliminación directa, Grupos + Cuadro, Suizo
@@ -34,6 +37,7 @@
 - Patrocinios: logo de marca en torneo, estadísticas brandadas
 
 ### 2.3 Ranking y Estadísticas
+
 - Sistema ELO adaptado (similar WPT/APT)
 - Categorías: C4 → C2 → C1 → B3 → B2 → B1 → A → Open
 - Ascenso/descenso automático por puntos acumulados
@@ -43,6 +47,7 @@
 - Leaderboard gamificado
 
 ### 2.4 Find a Partner
+
 - Matchmaking por: nivel, zona geográfica, disponibilidad, deporte
 - Solicitud de partida abierta o privada
 - Chat directo post-match para confirmar
@@ -50,6 +55,7 @@
 - "Partida express": cancha + pareja en un solo flujo
 
 ### 2.5 Comunidad
+
 - Feed social (posts, fotos, videos cortos tipo Reels)
 - Grupos: Técnica, Táctica, Reseñas de palas/paletas, Clubs, Competición
 - Perfiles verificados: Jugadores, Entrenadores, Árbitros, Clubes
@@ -59,6 +65,7 @@
 - Retos virales (ej. "mejor smash de la semana")
 
 ### 2.6 Formación / Academia
+
 - Biblioteca de videos: gratuitos y premium
 - Cursos estructurados por nivel y deporte
 - Marketplace de clases presenciales con entrenadores
@@ -68,6 +75,7 @@
 - Streaming en vivo de clases (futuro v2)
 
 ### 2.7 Club Dashboard (B2B SaaS)
+
 - Gestión de canchas: número, tipo, tarifas, mantenimiento
 - Calendario de reservas visual
 - Torneos y ligas propios del club
@@ -78,6 +86,7 @@
 - API para integración con sistemas existentes del club
 
 ### 2.8 Notificaciones Inteligentes
+
 - "Cancha libre a 500m en 2h, precio especial"
 - Recordatorio 1h antes de reserva con QR
 - "Tu rival acaba de reservar para mañana ¿juegas?"
@@ -86,6 +95,7 @@
 - Push, email y SMS (configurables por usuario)
 
 ### 2.9 Gamificación
+
 - Insignias: Racha de 5 victorias, Primer torneo, 100 partidos, etc.
 - XP y niveles de usuario en la app
 - Leaderboard semanal de actividad en comunidad
@@ -94,6 +104,7 @@
 - "Jugador de la semana" en cada club
 
 ### 2.10 Publicidad y Patrocinios
+
 - Banners nativos (no intrusivos) en feed y búsqueda
 - Canchas patrocinadas por marca
 - Torneos/ligas co-branded con patrocinador
@@ -105,14 +116,14 @@
 
 ## 3. MODELO FREEMIUM
 
-| Tier | Precio/mes | Perfil | Beneficios |
-|---|---|---|---|
-| **Free** | $0 | Todos | Reservas básicas, comunidad, 5 videos/mes, ranking público |
-| **Amateur+** | $9 | Jugador aficionado | Reservas prioritarias, videos ilimitados, stats avanzadas, Find a Partner sin límite |
-| **Pro** | $22 | Jugador competitivo | Todo Amateur+ + análisis ELO avanzado, acceso torneos Pro, insignias exclusivas |
-| **Instructor** | $35 | Entrenadores | Perfil verificado, marketplace clases, gestión alumnos, cursos propios |
-| **Club Starter** | $99/mes | Club pequeño | Panel gestión, hasta 4 canchas, torneos propios, branding básico |
-| **Club Pro** | $249/mes | Club mediano/grande | Canchas ilimitadas, API, white-label parcial, patrocinios, soporte dedicado |
+| Tier             | Precio/mes | Perfil              | Beneficios                                                                           |
+| ---------------- | ---------- | ------------------- | ------------------------------------------------------------------------------------ |
+| **Free**         | $0         | Todos               | Reservas básicas, comunidad, 5 videos/mes, ranking público                           |
+| **Amateur+**     | $9         | Jugador aficionado  | Reservas prioritarias, videos ilimitados, stats avanzadas, Find a Partner sin límite |
+| **Pro**          | $22        | Jugador competitivo | Todo Amateur+ + análisis ELO avanzado, acceso torneos Pro, insignias exclusivas      |
+| **Instructor**   | $35        | Entrenadores        | Perfil verificado, marketplace clases, gestión alumnos, cursos propios               |
+| **Club Starter** | $99/mes    | Club pequeño        | Panel gestión, hasta 4 canchas, torneos propios, branding básico                     |
+| **Club Pro**     | $249/mes   | Club mediano/grande | Canchas ilimitadas, API, white-label parcial, patrocinios, soporte dedicado          |
 
 ---
 
@@ -153,6 +164,7 @@
 ### 4.2 Stack por Capa
 
 #### Frontend Mobile
+
 - **React Native** + Expo (iOS + Android desde un solo codebase)
 - **React Navigation** v6 (navegación)
 - **Zustand** (estado global)
@@ -162,6 +174,7 @@
 - **react-native-maps** (mapa de clubes)
 
 #### Frontend Web
+
 - **Next.js 15** (App Router, SSR/SSG para SEO)
 - **Tailwind CSS**
 - **ShadCN/UI** (componentes)
@@ -169,6 +182,7 @@
 - Comparte lógica de negocio con mobile vía **shared packages (monorepo)**
 
 #### Backend (Microservicios)
+
 - **Node.js + Express** (cada servicio)
 - **TypeScript** en todo el backend
 - **Prisma ORM** (PostgreSQL)
@@ -178,11 +192,13 @@
 - **Zod** (validación de schemas)
 
 #### Base de Datos
+
 - **PostgreSQL 16** (datos principales)
 - **Redis 7** (caché de disponibilidad de canchas, sesiones, rate limiting)
 - **Elasticsearch 8** (búsqueda de clubes, jugadores, contenido, palas)
 
 #### Infraestructura
+
 - **Monorepo:** Turborepo
 - **Contenedores:** Docker + Docker Compose (desarrollo), Kubernetes (producción)
 - **Cloud:** AWS (ECS Fargate) o Railway/Render (inicio más ágil)
@@ -196,11 +212,12 @@
 ## 5. ESQUEMA DE BASE DE DATOS (Entidades Principales)
 
 ### Users & Profiles
+
 ```sql
 users
   id, email, phone, password_hash, created_at
   subscription_tier (free|amateur|pro|instructor|club_starter|club_pro)
-  
+
 player_profiles
   user_id, display_name, avatar_url, bio
   sport (padel|pickleball|both)
@@ -208,7 +225,7 @@ player_profiles
   elo_padel, elo_pickleball
   category (C4..Open)
   xp_points, level, badges[]
-  
+
 instructor_profiles
   user_id, verified, certifications[], specialty
   hourly_rate, availability_schedule
@@ -224,18 +241,19 @@ club_profiles
 ```
 
 ### Courts & Bookings
+
 ```sql
 courts
   id, club_id, name, sport (padel|pickleball)
   surface (cristal|hormigon|hierba_artificial|cemento)
   indoor/outdoor, capacity (2|4)
   is_active, photos[]
-  
+
 time_slots
   id, court_id, date, start_time, end_time
   base_price, peak_price, currency
   sponsor_id (nullable)
-  
+
 bookings
   id, slot_id, user_id, status (pending|confirmed|cancelled|completed)
   players[] (user_ids + guest_names)
@@ -245,6 +263,7 @@ bookings
 ```
 
 ### Tournaments & Leagues
+
 ```sql
 tournaments
   id, club_id (nullable para interclub), organizer_id
@@ -275,6 +294,7 @@ elo_history
 ```
 
 ### Community
+
 ```sql
 posts
   id, author_id, type (text|photo|video|reel|poll)
@@ -300,6 +320,7 @@ gear_reviews
 ```
 
 ### Academy
+
 ```sql
 courses
   id, instructor_id, title, description, sport
@@ -326,6 +347,7 @@ instructor_sessions (clases presenciales)
 ```
 
 ### Find a Partner
+
 ```sql
 match_requests
   id, requester_id, sport, level_min, level_max
@@ -345,6 +367,7 @@ player_reputation
 ```
 
 ### Gamification
+
 ```sql
 badges
   id, code, name, description, icon_url
@@ -363,6 +386,7 @@ user_missions
 ```
 
 ### Ads & Sponsorships
+
 ```sql
 sponsors
   id, brand_name, logo_url, contact_email
@@ -529,6 +553,7 @@ racketly/
 ## 8. FLUJOS CLAVE
 
 ### Flujo de Reserva
+
 ```
 Usuario abre app
   → Mapa/lista de clubs cercanos (geolocalización)
@@ -544,6 +569,7 @@ Usuario abre app
 ```
 
 ### Flujo de Torneo
+
 ```
 Organizador crea torneo (nombre, sport, formato, fechas, cuota)
   → Publicado en feed + notificaciones a jugadores de la categoría y ciudad
@@ -558,6 +584,7 @@ Organizador crea torneo (nombre, sport, formato, fechas, cuota)
 ```
 
 ### Flujo Find a Partner
+
 ```
 Usuario crea solicitud: deporte, nivel, fecha, zona
   → Visible en mapa y lista para jugadores compatibles
@@ -572,6 +599,7 @@ Usuario crea solicitud: deporte, nivel, fecha, zona
 ## 9. PLAN DE DESARROLLO POR FASES
 
 ### FASE 1 — MVP (Meses 1-4)
+
 **Objetivo:** Validar con 2-3 clubes piloto y 200 usuarios
 
 - [ ] Auth (registro, login, perfil básico)
@@ -584,6 +612,7 @@ Usuario crea solicitud: deporte, nivel, fecha, zona
 - [ ] Web básica (landing + reservas)
 
 ### FASE 2 — Crecimiento (Meses 5-8)
+
 **Objetivo:** 10 clubs, 1000 usuarios, primera liga
 
 - [ ] Torneos y ligas (round robin + eliminación)
@@ -596,6 +625,7 @@ Usuario crea solicitud: deporte, nivel, fecha, zona
 - [ ] Gamificación (badges + XP)
 
 ### FASE 3 — Monetización (Meses 9-12)
+
 **Objetivo:** Revenue positivo, 50 clubs, 5000 usuarios
 
 - [ ] Subscripciones premium (Stripe Billing)
@@ -607,6 +637,7 @@ Usuario crea solicitud: deporte, nivel, fecha, zona
 - [ ] Analytics para clubs (dashboard avanzado)
 
 ### FASE 4 — Escala (Mes 13+)
+
 - [ ] Multi-idioma (ES, EN, PT)
 - [ ] Expansión a nuevos países
 - [ ] API pública para integraciones de clubs
@@ -618,14 +649,14 @@ Usuario crea solicitud: deporte, nivel, fecha, zona
 
 ## 10. MÉTRICAS DE ÉXITO
 
-| Métrica | M3 | M6 | M12 |
-|---|---|---|---|
-| Clubes activos | 3 | 15 | 60 |
-| Usuarios registrados | 300 | 2,000 | 10,000 |
-| Reservas/mes | 500 | 5,000 | 30,000 |
-| Usuarios premium | 20 | 200 | 1,200 |
-| MRR (USD) | $200 | $3,000 | $20,000 |
-| Torneos/mes | 0 | 5 | 30 |
+| Métrica              | M3   | M6     | M12     |
+| -------------------- | ---- | ------ | ------- |
+| Clubes activos       | 3    | 15     | 60      |
+| Usuarios registrados | 300  | 2,000  | 10,000  |
+| Reservas/mes         | 500  | 5,000  | 30,000  |
+| Usuarios premium     | 20   | 200    | 1,200   |
+| MRR (USD)            | $200 | $3,000 | $20,000 |
+| Torneos/mes          | 0    | 5      | 30      |
 
 ---
 
@@ -643,4 +674,4 @@ Usuario crea solicitud: deporte, nivel, fecha, zona
 
 ---
 
-*Documento generado por Racketly Design Team — Mayo 2026*
+_Documento generado por Racketly Design Team — Mayo 2026_

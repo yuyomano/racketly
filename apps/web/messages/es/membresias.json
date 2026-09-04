@@ -64,10 +64,19 @@
     },
     "ratioVerdict": {
       "noData": { "label": "Sin datos", "hint": "Plan gratuito o sin precio — no aplica." },
-      "veryBelow": { "label": "🔴 Muy por debajo del valor", "hint": "Está usando mucho más valor en pistas del que paga. Considera subir el precio o bajar las sesiones/día incluidas." },
-      "atLimit": { "label": "🟡 En el límite", "hint": "Extrae ligeramente más valor del que paga." },
+      "veryBelow": {
+        "label": "🔴 Muy por debajo del valor",
+        "hint": "Está usando mucho más valor en pistas del que paga. Considera subir el precio o bajar las sesiones/día incluidas."
+      },
+      "atLimit": {
+        "label": "🟡 En el límite",
+        "hint": "Extrae ligeramente más valor del que paga."
+      },
       "balanced": { "label": "🟢 Balanceado", "hint": "Uso saludable frente al precio del plan." },
-      "underused": { "label": "🔵 Poco usado", "hint": "Paga más de lo que juega — riesgo de que cancele si no le encuentra valor." }
+      "underused": {
+        "label": "🔵 Poco usado",
+        "hint": "Paga más de lo que juega — riesgo de que cancele si no le encuentra valor."
+      }
     },
     "subscribers": {
       "heading": "Suscriptores",

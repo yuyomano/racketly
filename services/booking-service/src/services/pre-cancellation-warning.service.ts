@@ -30,7 +30,9 @@ export async function warnPendingPaymentBookings(): Promise<void> {
     const warnAt = new Date(cutoff.getTime() - club.paymentWarningMinutesBefore * 60 * 1000)
     if (now < warnAt || now >= cutoff) continue // aún no entra en la ventana de aviso, o ya venció
 
-    const players = ((b.players as any[]) || []).filter((p) => p.userId && p.paymentStatus === 'pending')
+    const players = ((b.players as any[]) || []).filter(
+      (p) => p.userId && p.paymentStatus === 'pending'
+    )
     const minutesLeft = Math.max(1, Math.round((cutoff.getTime() - now.getTime()) / 60000))
 
     try {
@@ -39,13 +41,16 @@ export async function warnPendingPaymentBookings(): Promise<void> {
           p.userId,
           'Tu reserva está por vencer',
           `Te quedan ${minutesLeft} minuto(s) para completar el pago de tu reserva en ${club.name} o se cancelará automáticamente.`,
-          { bookingId: b.id, type: 'payment_warning' },
+          { bookingId: b.id, type: 'payment_warning' }
         )
       }
       await prisma.booking.update({ where: { id: b.id }, data: { paymentWarningNotifiedAt: now } })
       notifiedCount++
     } catch (err) {
-      console.error(`[pre-cancellation-warning] Error avisando pago pendiente de reserva ${b.id}:`, err)
+      console.error(
+        `[pre-cancellation-warning] Error avisando pago pendiente de reserva ${b.id}:`,
+        err
+      )
     }
   }
 
@@ -84,7 +89,11 @@ export async function warnIncompleteRosterBookings(): Promise<void> {
     // Ventana de aviso: entre el deadline real (24h, ya cancelable, no avisar más) y
     // `rosterWarningHoursBefore` horas antes de ese deadline (ej. default 6h → avisa
     // entre las 24h y las 30h previas al partido).
-    if (hoursUntilMatch <= ROSTER_DEADLINE_HOURS || hoursUntilMatch > ROSTER_DEADLINE_HOURS + club.rosterWarningHoursBefore) continue
+    if (
+      hoursUntilMatch <= ROSTER_DEADLINE_HOURS ||
+      hoursUntilMatch > ROSTER_DEADLINE_HOURS + club.rosterWarningHoursBefore
+    )
+      continue
 
     const hoursLeadTime = (slotStart.getTime() - b.createdAt.getTime()) / (1000 * 60 * 60)
     if (hoursLeadTime < ROSTER_DEADLINE_HOURS) continue // misma excepción que la cancelación real
@@ -95,17 +104,22 @@ export async function warnIncompleteRosterBookings(): Promise<void> {
           p.userId,
           'A tu reserva le falta gente',
           `Tu reserva en ${club.name} tiene ${rosterCount}/${capacity} jugadores. Complétala antes de las 24h previas al partido o se cancelará automáticamente.`,
-          { bookingId: b.id, type: 'roster_warning' },
+          { bookingId: b.id, type: 'roster_warning' }
         )
       }
       await prisma.booking.update({ where: { id: b.id }, data: { rosterWarningNotifiedAt: now } })
       notifiedCount++
     } catch (err) {
-      console.error(`[pre-cancellation-warning] Error avisando roster incompleto de reserva ${b.id}:`, err)
+      console.error(
+        `[pre-cancellation-warning] Error avisando roster incompleto de reserva ${b.id}:`,
+        err
+      )
     }
   }
 
   if (notifiedCount > 0) {
-    console.info(`[pre-cancellation-warning] Avisadas ${notifiedCount} reservas con roster incompleto`)
+    console.info(
+      `[pre-cancellation-warning] Avisadas ${notifiedCount} reservas con roster incompleto`
+    )
   }
 }

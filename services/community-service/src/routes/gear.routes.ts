@@ -14,20 +14,31 @@ router.get('/', async (req: Request, res: Response, next: NextFunction) => {
 
     const reviews = await prisma.gearReview.findMany({
       where,
-      include: { reviewer: { select: { id: true, playerProfile: { select: { displayName: true, avatarUrl: true, category: true } } } } },
+      include: {
+        reviewer: {
+          select: {
+            id: true,
+            playerProfile: { select: { displayName: true, avatarUrl: true, category: true } },
+          },
+        },
+      },
       orderBy: { createdAt: 'desc' },
       take: Number(limit),
       skip: (Number(page) - 1) * Number(limit),
     })
     return res.json({ success: true, data: reviews })
-  } catch (err) { return next(err) }
+  } catch (err) {
+    return next(err)
+  }
 })
 
 router.post('/', async (req: Request, res: Response, next: NextFunction) => {
   try {
     const review = await prisma.gearReview.create({ data: req.body })
     return res.status(201).json({ success: true, data: review })
-  } catch (err) { return next(err) }
+  } catch (err) {
+    return next(err)
+  }
 })
 
 export { router as gearRouter }

@@ -18,7 +18,9 @@
   },
   "typesVersions": {
     "*": {
-      "pii-crypto": ["./dist/pii-crypto.d.ts"]
+      "pii-crypto": [
+        "./dist/pii-crypto.d.ts"
+      ]
     }
   },
   "scripts": {

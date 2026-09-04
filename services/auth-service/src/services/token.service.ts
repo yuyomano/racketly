@@ -3,7 +3,9 @@ import { createHash, randomUUID } from 'crypto'
 import { PrismaClient } from '@prisma/client'
 
 if (!process.env.JWT_SECRET || !process.env.JWT_REFRESH_SECRET) {
-  throw new Error('JWT_SECRET / JWT_REFRESH_SECRET no configurados — auth-service no puede arrancar sin secretos reales.')
+  throw new Error(
+    'JWT_SECRET / JWT_REFRESH_SECRET no configurados — auth-service no puede arrancar sin secretos reales.'
+  )
 }
 
 const JWT_SECRET = process.env.JWT_SECRET
@@ -64,7 +66,12 @@ export async function verifyAndRotateRefreshToken(token: string, payloadForAcces
   const tokenHash = hashToken(token)
 
   const stored = await prisma.refreshToken.findUnique({ where: { tokenHash } })
-  if (!stored || stored.revokedAt || stored.expiresAt < new Date() || stored.userId !== decoded.userId) {
+  if (
+    !stored ||
+    stored.revokedAt ||
+    stored.expiresAt < new Date() ||
+    stored.userId !== decoded.userId
+  ) {
     throw new Error('Refresh token inválido o revocado')
   }
 

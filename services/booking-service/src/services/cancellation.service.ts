@@ -9,7 +9,9 @@ const prisma = new PrismaClient()
 // restauración aparte, ya que se cuentan dinámicamente sobre reservas activas (confirmed/pending).
 export async function restoreCoveredCredits(players: unknown) {
   const list = (players as any[]) || []
-  const creditIds = list.flatMap((p) => (p.coveredBy === 'credit' && Array.isArray(p.creditIdsUsed)) ? p.creditIdsUsed : [])
+  const creditIds = list.flatMap((p) =>
+    p.coveredBy === 'credit' && Array.isArray(p.creditIdsUsed) ? p.creditIdsUsed : []
+  )
   if (creditIds.length === 0) return
   await prisma.userCredit.updateMany({
     where: { id: { in: creditIds }, status: 'used' },
@@ -30,7 +32,8 @@ export async function cancelBookingAndIssueCredit(
   })
   if (!booking) throw new AppError('Reserva no encontrada', 404)
   if (booking.status === 'cancelled') throw new AppError('Ya está cancelada', 400)
-  if (booking.status === 'completed') throw new AppError('No se puede cancelar una reserva completada', 400)
+  if (booking.status === 'completed')
+    throw new AppError('No se puede cancelar una reserva completada', 400)
 
   const cancelled = await prisma.booking.update({
     where: { id: bookingId },
@@ -42,7 +45,9 @@ export async function cancelBookingAndIssueCredit(
   const credits: any[] = []
   if (opts.issueCredit) {
     const players = (booking.players as any[]) || []
-    const payersToCredit = players.filter((p) => p.userId && (p.amountPaid ?? 0) > 0 && !p.coveredBy)
+    const payersToCredit = players.filter(
+      (p) => p.userId && (p.amountPaid ?? 0) > 0 && !p.coveredBy
+    )
     for (const p of payersToCredit) {
       const credit = await prisma.userCredit.create({
         data: {
@@ -66,7 +71,7 @@ export async function cancelBookingAndIssueCredit(
       p.userId,
       'Tu reserva fue cancelada',
       opts.creditReason?.trim() || 'Tu reserva fue cancelada.',
-      { bookingId: booking.id, type: 'booking_cancelled' },
+      { bookingId: booking.id, type: 'booking_cancelled' }
     ).catch(() => {})
   }
 

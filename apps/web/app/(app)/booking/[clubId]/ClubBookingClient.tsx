@@ -12,10 +12,24 @@ import { useToast } from '@/components/ui/Toast'
 import { cn } from '@/lib/utils'
 
 type Court = { id: string; name: string; sport: string; capacity: number }
-type Club = { id: string; name: string; city: string; country: string; currency: string; courts: Court[] }
+type Club = {
+  id: string
+  name: string
+  city: string
+  country: string
+  currency: string
+  courts: Court[]
+}
 type Slot = {
-  id: string; courtId: string; date: string; startTime: string; endTime: string
-  basePrice: number; peakPrice: number; isPeak: boolean; isAvailable: boolean
+  id: string
+  courtId: string
+  date: string
+  startTime: string
+  endTime: string
+  basePrice: number
+  peakPrice: number
+  isPeak: boolean
+  isAvailable: boolean
 }
 
 function nextDays(n: number, locale: string): { date: string; label: string; dayNum: string }[] {
@@ -32,14 +46,26 @@ function nextDays(n: number, locale: string): { date: string; label: string; day
   return out
 }
 
-async function fetchAvailability(clubId: string, date: string, fetchErrorMessage: string): Promise<Slot[]> {
+async function fetchAvailability(
+  clubId: string,
+  date: string,
+  fetchErrorMessage: string
+): Promise<Slot[]> {
   const res = await fetch(`/api/clubs/${clubId}/availability?date=${date}`)
   const data = await res.json()
   if (!res.ok) throw new Error(data.error ?? fetchErrorMessage)
   return data.data ?? []
 }
 
-export function ClubBookingClient({ club, userId, displayName }: { club: Club; userId: string; displayName: string }) {
+export function ClubBookingClient({
+  club,
+  userId,
+  displayName,
+}: {
+  club: Club
+  userId: string
+  displayName: string
+}) {
   const t = useTranslations('Booking.clubDetail')
   const locale = useLocale()
   const queryClient = useQueryClient()
@@ -98,10 +124,16 @@ export function ClubBookingClient({ club, userId, displayName }: { club: Club; u
           {club.name} · {selectedSlot?.date} · {selectedSlot?.startTime.slice(0, 5)}
         </p>
         <div className="flex gap-3 mt-6 justify-center">
-          <Link href="/booking/mine" className="text-sm font-semibold text-white bg-emerald-600 hover:bg-emerald-700 rounded-xl px-5 py-2.5 transition-colors">
+          <Link
+            href="/booking/mine"
+            className="text-sm font-semibold text-white bg-emerald-600 hover:bg-emerald-700 rounded-xl px-5 py-2.5 transition-colors"
+          >
             {t('viewMyBookings')}
           </Link>
-          <Link href="/booking" className="text-sm font-semibold text-gray-600 bg-gray-100 hover:bg-gray-200 rounded-xl px-5 py-2.5 transition-colors">
+          <Link
+            href="/booking"
+            className="text-sm font-semibold text-gray-600 bg-gray-100 hover:bg-gray-200 rounded-xl px-5 py-2.5 transition-colors"
+          >
             {t('bookAnother')}
           </Link>
         </div>
@@ -111,7 +143,10 @@ export function ClubBookingClient({ club, userId, displayName }: { club: Club; u
 
   return (
     <div className="space-y-6 pb-24">
-      <Link href="/booking" className="flex items-center gap-1.5 text-sm text-gray-400 hover:text-gray-600 transition-colors">
+      <Link
+        href="/booking"
+        className="flex items-center gap-1.5 text-sm text-gray-400 hover:text-gray-600 transition-colors"
+      >
         <ArrowLeft className="w-4 h-4" /> {t('backToClubs')}
       </Link>
 
@@ -126,10 +161,15 @@ export function ClubBookingClient({ club, userId, displayName }: { club: Club; u
         {days.map((d) => (
           <button
             key={d.date}
-            onClick={() => { setSelectedDate(d.date); setSelectedSlot(null) }}
+            onClick={() => {
+              setSelectedDate(d.date)
+              setSelectedSlot(null)
+            }}
             className={cn(
               'flex flex-col items-center shrink-0 w-16 py-2.5 rounded-xl border text-sm font-semibold transition-colors',
-              selectedDate === d.date ? 'bg-emerald-600 border-emerald-600 text-white' : 'bg-white border-gray-200 text-gray-500 hover:border-gray-300'
+              selectedDate === d.date
+                ? 'bg-emerald-600 border-emerald-600 text-white'
+                : 'bg-white border-gray-200 text-gray-500 hover:border-gray-300'
             )}
           >
             <span className="text-[11px] font-medium capitalize opacity-80">{d.label}</span>
@@ -139,17 +179,25 @@ export function ClubBookingClient({ club, userId, displayName }: { club: Club; u
       </div>
 
       {isLoading ? (
-        <div className="flex items-center justify-center py-16 text-gray-400"><Loader2 className="w-5 h-5 animate-spin" /></div>
+        <div className="flex items-center justify-center py-16 text-gray-400">
+          <Loader2 className="w-5 h-5 animate-spin" />
+        </div>
       ) : courts.length === 0 ? (
         <EmptyState icon={MapPin} title={t('noActiveCourts')} />
       ) : (
         <div className="space-y-5">
           {courts.map((court) => {
-            const courtSlots = (slotsByCourtId.get(court.id) ?? []).sort((a, b) => a.startTime.localeCompare(b.startTime))
+            const courtSlots = (slotsByCourtId.get(court.id) ?? []).sort((a, b) =>
+              a.startTime.localeCompare(b.startTime)
+            )
             return (
               <Card key={court.id} className="p-5">
                 <div className="flex items-center gap-2 mb-3">
-                  {court.sport === 'padel' ? <PadelIcon size={16} className="text-gray-400" /> : <PickleballIcon size={16} className="text-gray-400" />}
+                  {court.sport === 'padel' ? (
+                    <PadelIcon size={16} className="text-gray-400" />
+                  ) : (
+                    <PickleballIcon size={16} className="text-gray-400" />
+                  )}
                   <h3 className="font-bold text-gray-800 text-sm">{court.name}</h3>
                 </div>
                 {courtSlots.length === 0 ? (
@@ -174,7 +222,12 @@ export function ClubBookingClient({ club, userId, displayName }: { club: Club; u
                           )}
                         >
                           <span>{slot.startTime.slice(0, 5)}</span>
-                          <span className={cn('text-[10px] font-normal mt-0.5', isSelected ? 'text-emerald-50' : 'text-gray-400')}>
+                          <span
+                            className={cn(
+                              'text-[10px] font-normal mt-0.5',
+                              isSelected ? 'text-emerald-50' : 'text-gray-400'
+                            )}
+                          >
                             {club.currency} {price.toFixed(0)}
                           </span>
                         </button>
@@ -193,13 +246,17 @@ export function ClubBookingClient({ club, userId, displayName }: { club: Club; u
           <div className="max-w-5xl mx-auto flex items-center justify-between gap-4">
             <div>
               <p className="text-sm font-bold text-gray-900">
-                {courts.find((c) => c.id === selectedSlot.courtId)?.name} · {selectedSlot.startTime.slice(0, 5)}
+                {courts.find((c) => c.id === selectedSlot.courtId)?.name} ·{' '}
+                {selectedSlot.startTime.slice(0, 5)}
               </p>
               <p className="text-xs text-gray-400">
-                {selectedDate} · {club.currency} {(selectedSlot.isPeak ? selectedSlot.peakPrice : selectedSlot.basePrice).toFixed(0)}
+                {selectedDate} · {club.currency}{' '}
+                {(selectedSlot.isPeak ? selectedSlot.peakPrice : selectedSlot.basePrice).toFixed(0)}
               </p>
               {bookMutation.isError && (
-                <p className="flex items-center gap-1 text-xs text-red-600 mt-1"><AlertCircle className="w-3.5 h-3.5" /> {(bookMutation.error as Error).message}</p>
+                <p className="flex items-center gap-1 text-xs text-red-600 mt-1">
+                  <AlertCircle className="w-3.5 h-3.5" /> {(bookMutation.error as Error).message}
+                </p>
               )}
             </div>
             <button
@@ -207,7 +264,11 @@ export function ClubBookingClient({ club, userId, displayName }: { club: Club; u
               disabled={bookMutation.isPending}
               className="shrink-0 bg-emerald-600 hover:bg-emerald-700 disabled:opacity-60 text-white font-bold px-6 py-3 rounded-xl transition-all flex items-center gap-2"
             >
-              {bookMutation.isPending ? <Loader2 className="w-4 h-4 animate-spin" /> : t('confirmBooking')}
+              {bookMutation.isPending ? (
+                <Loader2 className="w-4 h-4 animate-spin" />
+              ) : (
+                t('confirmBooking')
+              )}
             </button>
           </div>
         </div>

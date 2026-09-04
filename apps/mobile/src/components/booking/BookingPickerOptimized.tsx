@@ -1,5 +1,6 @@
 import React, { useMemo, useState } from 'react'
-import { View, Text, ScrollView, TouchableOpacity, StyleSheet } from 'react-native'
+import { View, ScrollView, TouchableOpacity, StyleSheet } from 'react-native'
+import { Text } from '../ui/Text'
 import * as Haptics from 'expo-haptics'
 import { useQuery } from '@tanstack/react-query'
 import { clubsApi } from '../../services/api'
@@ -76,12 +77,16 @@ export function BookingPickerOptimized({
   })
 
   const sports = useMemo(() => [...new Set((slots ?? []).map((s) => s.court.sport))], [slots])
-  const surfaces = useMemo(() => [...new Set((slots ?? []).map((s) => s.court.surface).filter(Boolean))], [slots])
+  const surfaces = useMemo(
+    () => [...new Set((slots ?? []).map((s) => s.court.surface).filter(Boolean))],
+    [slots]
+  )
 
-  const filteredSlots = (slots ?? []).filter((s) =>
-    s.isAvailable
-    && (selectedSport === null || s.court.sport === selectedSport)
-    && (selectedSurface === null || s.court.surface === selectedSurface)
+  const filteredSlots = (slots ?? []).filter(
+    (s) =>
+      s.isAvailable &&
+      (selectedSport === null || s.court.sport === selectedSport) &&
+      (selectedSurface === null || s.court.surface === selectedSurface)
   )
 
   const courts = useMemo(() => {
@@ -119,7 +124,11 @@ export function BookingPickerOptimized({
   return (
     <View>
       {/* Selector horizontal de fecha */}
-      <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.dateRow}>
+      <ScrollView
+        horizontal
+        showsHorizontalScrollIndicator={false}
+        contentContainerStyle={styles.dateRow}
+      >
         {DAYS.map((day) => {
           const isSelected = formatDateKey(day) === formatDateKey(selectedDate)
           return (
@@ -128,8 +137,12 @@ export function BookingPickerOptimized({
               style={[styles.dayBtn, isSelected && styles.dayBtnActive]}
               onPress={() => changeDate(day)}
             >
-              <Text style={[styles.dayName, isSelected && styles.dayNameActive]}>{DAY_NAMES[day.getDay()]}</Text>
-              <Text style={[styles.dayNum, isSelected && styles.dayNumActive]}>{day.getDate()}</Text>
+              <Text style={[styles.dayName, isSelected && styles.dayNameActive]}>
+                {DAY_NAMES[day.getDay()]}
+              </Text>
+              <Text style={[styles.dayNum, isSelected && styles.dayNumActive]}>
+                {day.getDate()}
+              </Text>
             </TouchableOpacity>
           )
         })}
@@ -139,26 +152,68 @@ export function BookingPickerOptimized({
       {(sports.length > 1 || surfaces.length > 1) && (
         <View style={styles.filtersWrap}>
           {sports.length > 1 && (
-            <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.filterRow}>
-              <TouchableOpacity style={[styles.chip, selectedSport === null && styles.chipActive]} onPress={() => changeSport(null)}>
-                <Text style={[styles.chipText, selectedSport === null && styles.chipTextActive]}>Todos</Text>
+            <ScrollView
+              horizontal
+              showsHorizontalScrollIndicator={false}
+              contentContainerStyle={styles.filterRow}
+            >
+              <TouchableOpacity
+                style={[styles.chip, selectedSport === null && styles.chipActive]}
+                onPress={() => changeSport(null)}
+              >
+                <Text style={[styles.chipText, selectedSport === null && styles.chipTextActive]}>
+                  Todos
+                </Text>
               </TouchableOpacity>
               {sports.map((s) => (
-                <TouchableOpacity key={s} style={[styles.chip, styles.chipRow, selectedSport === s && styles.chipActive]} onPress={() => changeSport(s)}>
-                  <SportIcon sport={s} size={12} color={selectedSport === s ? colors.white : colors.gray500} />
-                  <Text style={[styles.chipText, selectedSport === s && styles.chipTextActive]}>{sportLabel(s)}</Text>
+                <TouchableOpacity
+                  key={s}
+                  style={[styles.chip, styles.chipRow, selectedSport === s && styles.chipActive]}
+                  onPress={() => changeSport(s)}
+                >
+                  <SportIcon
+                    sport={s}
+                    size={12}
+                    color={selectedSport === s ? colors.white : colors.ink500}
+                  />
+                  <Text style={[styles.chipText, selectedSport === s && styles.chipTextActive]}>
+                    {sportLabel(s)}
+                  </Text>
                 </TouchableOpacity>
               ))}
             </ScrollView>
           )}
           {surfaces.length > 1 && (
-            <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.filterRow}>
-              <TouchableOpacity style={[styles.chip, styles.chipSurface, selectedSurface === null && styles.chipActive]} onPress={() => changeSurface(null)}>
-                <Text style={[styles.chipText, selectedSurface === null && styles.chipTextActive]}>Toda superficie</Text>
+            <ScrollView
+              horizontal
+              showsHorizontalScrollIndicator={false}
+              contentContainerStyle={styles.filterRow}
+            >
+              <TouchableOpacity
+                style={[
+                  styles.chip,
+                  styles.chipSurface,
+                  selectedSurface === null && styles.chipActive,
+                ]}
+                onPress={() => changeSurface(null)}
+              >
+                <Text style={[styles.chipText, selectedSurface === null && styles.chipTextActive]}>
+                  Toda superficie
+                </Text>
               </TouchableOpacity>
               {surfaces.map((s) => (
-                <TouchableOpacity key={s} style={[styles.chip, styles.chipSurface, selectedSurface === s && styles.chipActive]} onPress={() => changeSurface(s)}>
-                  <Text style={[styles.chipText, selectedSurface === s && styles.chipTextActive]}>{s}</Text>
+                <TouchableOpacity
+                  key={s}
+                  style={[
+                    styles.chip,
+                    styles.chipSurface,
+                    selectedSurface === s && styles.chipActive,
+                  ]}
+                  onPress={() => changeSurface(s)}
+                >
+                  <Text style={[styles.chipText, selectedSurface === s && styles.chipTextActive]}>
+                    {s}
+                  </Text>
                 </TouchableOpacity>
               ))}
             </ScrollView>
@@ -170,7 +225,11 @@ export function BookingPickerOptimized({
       {isLoading ? (
         <ScheduleGridSkeleton rows={5} cols={Math.max(courts.length, 3)} />
       ) : times.length === 0 || courts.length === 0 ? (
-        <EmptyState icon="calendar-outline" title="Sin horarios disponibles" description="Prueba con otra fecha, deporte o superficie" />
+        <EmptyState
+          icon="calendar-outline"
+          title="Sin horarios disponibles"
+          description="Prueba con otra fecha, deporte o superficie"
+        />
       ) : (
         <ScrollView horizontal showsHorizontalScrollIndicator={false}>
           <View>
@@ -179,8 +238,10 @@ export function BookingPickerOptimized({
               <View style={styles.timeHeaderCell} />
               {courts.map((c) => (
                 <View key={c.id} style={styles.courtHeaderCell}>
-                  <SportIcon sport={c.sport} size={12} color={colors.primary700} />
-                  <Text style={styles.courtHeaderText} numberOfLines={1}>{c.name}</Text>
+                  <SportIcon sport={c.sport} size={12} color={colors.court700} />
+                  <Text style={styles.courtHeaderText} numberOfLines={1}>
+                    {c.name}
+                  </Text>
                 </View>
               ))}
             </View>
@@ -194,16 +255,26 @@ export function BookingPickerOptimized({
                   const slot = cellFor(c.id, time)
                   const isSelected = !!slot && slot.id === selectedSlotId
                   if (!slot) {
-                    return <View key={c.id} style={[styles.cell, styles.cellOccupied]}><Text style={styles.cellOccupiedText}>—</Text></View>
+                    return (
+                      <View key={c.id} style={[styles.cell, styles.cellOccupied]}>
+                        <Text style={styles.cellOccupiedText}>—</Text>
+                      </View>
+                    )
                   }
                   return (
                     <TouchableOpacity
                       key={c.id}
-                      style={[styles.cell, styles.cellAvailable, slot.isPeak && styles.cellPeak, isSelected && styles.cellSelected]}
+                      style={[
+                        styles.cell,
+                        styles.cellAvailable,
+                        slot.isPeak && styles.cellPeak,
+                        isSelected && styles.cellSelected,
+                      ]}
                       onPress={() => selectCell(slot)}
                     >
                       <Text style={[styles.cellText, isSelected && styles.cellTextSelected]}>
-                        {slot.currency} {(slot.isPeak ? slot.peakPrice : slot.basePrice).toLocaleString()}
+                        {slot.currency}{' '}
+                        {(slot.isPeak ? slot.peakPrice : slot.basePrice).toLocaleString()}
                       </Text>
                       {slot.isPeak && !isSelected && <Text style={styles.cellPeakBadge}>Peak</Text>}
                     </TouchableOpacity>
@@ -218,9 +289,18 @@ export function BookingPickerOptimized({
       {/* Leyenda de estados — mismo criterio visual que la cuadrícula del dashboard */}
       {times.length > 0 && courts.length > 0 && (
         <View style={styles.legendRow}>
-          <View style={styles.legendItem}><View style={[styles.legendDot, styles.cellAvailable]} /><Text style={styles.legendText}>Disponible</Text></View>
-          <View style={styles.legendItem}><View style={[styles.legendDot, styles.cellSelected]} /><Text style={styles.legendText}>Seleccionado</Text></View>
-          <View style={styles.legendItem}><View style={[styles.legendDot, styles.cellOccupied]} /><Text style={styles.legendText}>Ocupado</Text></View>
+          <View style={styles.legendItem}>
+            <View style={[styles.legendDot, styles.cellAvailable]} />
+            <Text style={styles.legendText}>Disponible</Text>
+          </View>
+          <View style={styles.legendItem}>
+            <View style={[styles.legendDot, styles.cellSelected]} />
+            <Text style={styles.legendText}>Seleccionado</Text>
+          </View>
+          <View style={styles.legendItem}>
+            <View style={[styles.legendDot, styles.cellOccupied]} />
+            <Text style={styles.legendText}>Ocupado</Text>
+          </View>
         </View>
       )}
     </View>
@@ -230,21 +310,37 @@ export function BookingPickerOptimized({
 const CELL_WIDTH = 92
 
 const styles = StyleSheet.create({
-  dateRow: { flexDirection: 'row', gap: 6, paddingHorizontal: spacing.lg, paddingBottom: spacing.sm },
-  dayBtn: { width: 52, alignItems: 'center', paddingVertical: 10, borderRadius: radius.md, backgroundColor: colors.gray100 },
-  dayBtnActive: { backgroundColor: colors.primary600 },
-  dayName: { fontSize: fontSize.xs, color: colors.gray400, fontWeight: '600' },
-  dayNameActive: { color: colors.primary100 },
+  dateRow: {
+    flexDirection: 'row',
+    gap: 6,
+    paddingHorizontal: spacing.lg,
+    paddingBottom: spacing.sm,
+  },
+  dayBtn: {
+    width: 52,
+    alignItems: 'center',
+    paddingVertical: 10,
+    borderRadius: radius.md,
+    backgroundColor: colors.ink100,
+  },
+  dayBtnActive: { backgroundColor: colors.court600 },
+  dayName: { fontSize: fontSize.xs, color: colors.ink400, fontWeight: '600' },
+  dayNameActive: { color: colors.court100 },
   dayNum: { fontSize: fontSize.lg, fontWeight: '800', color: colors.textPrimary, marginTop: 2 },
   dayNumActive: { color: colors.white },
 
   filtersWrap: { paddingHorizontal: spacing.lg, gap: 8, marginTop: spacing.sm },
   filterRow: { flexDirection: 'row', gap: 8, paddingBottom: 4 },
-  chip: { paddingHorizontal: 14, paddingVertical: 7, borderRadius: radius.full, backgroundColor: colors.gray100 },
+  chip: {
+    paddingHorizontal: 14,
+    paddingVertical: 7,
+    borderRadius: radius.full,
+    backgroundColor: colors.ink100,
+  },
   chipRow: { flexDirection: 'row', alignItems: 'center', gap: 5 },
-  chipSurface: { backgroundColor: colors.gray50, borderWidth: 1, borderColor: colors.gray200 },
-  chipActive: { backgroundColor: colors.primary600, borderColor: colors.primary600 },
-  chipText: { fontSize: fontSize.sm, color: colors.gray500, fontWeight: '500' },
+  chipSurface: { backgroundColor: colors.ink50, borderWidth: 1, borderColor: colors.ink200 },
+  chipActive: { backgroundColor: colors.court600, borderColor: colors.court600 },
+  chipText: { fontSize: fontSize.sm, color: colors.ink500, fontWeight: '500' },
   chipTextActive: { color: colors.white },
 
   gridHeaderRow: { flexDirection: 'row', paddingHorizontal: spacing.lg, marginTop: spacing.md },
@@ -254,20 +350,37 @@ const styles = StyleSheet.create({
 
   gridRow: { flexDirection: 'row', paddingHorizontal: spacing.lg, marginBottom: 6 },
   timeCell: { width: 56, justifyContent: 'center' },
-  timeCellText: { fontSize: fontSize.xs, fontWeight: '700', color: colors.gray500 },
+  timeCellText: { fontSize: fontSize.xs, fontWeight: '700', color: colors.ink500 },
 
-  cell: { width: CELL_WIDTH, marginLeft: 4, borderRadius: radius.md, paddingVertical: 10, alignItems: 'center', justifyContent: 'center', minHeight: 44 },
-  cellAvailable: { backgroundColor: colors.primary50, borderWidth: 1.5, borderColor: colors.primary200 },
-  cellPeak: { backgroundColor: colors.amber50, borderColor: colors.amber100 },
-  cellSelected: { backgroundColor: colors.primary600, borderColor: colors.primary600 },
-  cellOccupied: { backgroundColor: colors.gray50, borderWidth: 1, borderColor: colors.gray100 },
-  cellText: { fontSize: fontSize.xs, fontWeight: '700', color: colors.primary800 },
+  cell: {
+    width: CELL_WIDTH,
+    marginLeft: 4,
+    borderRadius: radius.md,
+    paddingVertical: 10,
+    alignItems: 'center',
+    justifyContent: 'center',
+    minHeight: 44,
+  },
+  cellAvailable: {
+    backgroundColor: colors.court50,
+    borderWidth: 1.5,
+    borderColor: colors.court200,
+  },
+  cellPeak: { backgroundColor: colors.trophy50, borderColor: colors.trophy100 },
+  cellSelected: { backgroundColor: colors.court600, borderColor: colors.court600 },
+  cellOccupied: { backgroundColor: colors.ink50, borderWidth: 1, borderColor: colors.ink100 },
+  cellText: { fontSize: fontSize.xs, fontWeight: '700', color: colors.court800 },
   cellTextSelected: { color: colors.white },
-  cellOccupiedText: { fontSize: fontSize.sm, color: colors.gray300 },
-  cellPeakBadge: { fontSize: 9, color: colors.amber600, fontWeight: '700', marginTop: 2 },
+  cellOccupiedText: { fontSize: fontSize.sm, color: colors.ink300 },
+  cellPeakBadge: { fontSize: 9, color: colors.trophy600, fontWeight: '700', marginTop: 2 },
 
-  legendRow: { flexDirection: 'row', gap: spacing.lg, paddingHorizontal: spacing.lg, marginTop: spacing.md },
+  legendRow: {
+    flexDirection: 'row',
+    gap: spacing.lg,
+    paddingHorizontal: spacing.lg,
+    marginTop: spacing.md,
+  },
   legendItem: { flexDirection: 'row', alignItems: 'center', gap: 6 },
   legendDot: { width: 12, height: 12, borderRadius: 4 },
-  legendText: { fontSize: fontSize.xs, color: colors.gray500 },
+  legendText: { fontSize: fontSize.xs, color: colors.ink500 },
 })

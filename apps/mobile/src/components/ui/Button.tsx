@@ -1,15 +1,27 @@
 import React from 'react'
-import { TouchableOpacity, Text, ActivityIndicator, StyleSheet, ViewStyle } from 'react-native'
+import { TouchableOpacity, ActivityIndicator, StyleSheet, ViewStyle } from 'react-native'
+import { Text } from './Text'
 import { colors, radius, fontSize, spacing } from '../../theme'
 
-type Variant = 'primary' | 'secondary' | 'ghost' | 'danger'
+type Variant = 'primary' | 'secondary' | 'ghost' | 'danger' | 'live'
 type Size = 'sm' | 'md'
 
 export function Button({
-  variant = 'primary', size = 'md', loading, disabled, onPress, children, style,
+  variant = 'primary',
+  size = 'md',
+  loading,
+  disabled,
+  onPress,
+  children,
+  style,
 }: {
-  variant?: Variant; size?: Size; loading?: boolean; disabled?: boolean
-  onPress?: () => void; children: React.ReactNode; style?: ViewStyle
+  variant?: Variant
+  size?: Size
+  loading?: boolean
+  disabled?: boolean
+  onPress?: () => void
+  children: React.ReactNode
+  style?: ViewStyle
 }) {
   const isDisabled = disabled || loading
   return (
@@ -26,9 +38,11 @@ export function Button({
       ]}
     >
       {loading ? (
-        <ActivityIndicator color={variant === 'primary' ? colors.white : colors.primary600} size="small" />
+        <ActivityIndicator color={TEXT_STYLES[variant].color} size="small" />
       ) : (
-        <Text style={[styles.text, TEXT_STYLES[variant], size === 'sm' && { fontSize: fontSize.sm }]}>
+        <Text
+          style={[styles.text, TEXT_STYLES[variant], size === 'sm' && { fontSize: fontSize.sm }]}
+        >
           {children}
         </Text>
       )}
@@ -51,15 +65,17 @@ const styles = StyleSheet.create({
 })
 
 const VARIANT_STYLES: Record<Variant, ViewStyle> = {
-  primary:   { backgroundColor: colors.primary600 },
-  secondary: { backgroundColor: colors.white, borderWidth: 1.5, borderColor: colors.gray200 },
-  ghost:     { backgroundColor: 'transparent' },
-  danger:    { backgroundColor: colors.red50 },
+  primary: { backgroundColor: colors.court600 },
+  secondary: { backgroundColor: colors.white, borderWidth: 1.5, borderColor: colors.ink200 },
+  ghost: { backgroundColor: 'transparent' },
+  danger: { backgroundColor: colors.referee50 },
+  live: { backgroundColor: colors.ball500 },
 }
 
 const TEXT_STYLES: Record<Variant, { color: string }> = {
-  primary:   { color: colors.white },
-  secondary: { color: colors.gray700 },
-  ghost:     { color: colors.gray600 },
-  danger:    { color: colors.red600 },
+  primary: { color: colors.white },
+  secondary: { color: colors.ink700 },
+  ghost: { color: colors.ink600 },
+  danger: { color: colors.referee600 },
+  live: { color: colors.ink900 },
 }

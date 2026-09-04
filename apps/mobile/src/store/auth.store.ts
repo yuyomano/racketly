@@ -10,7 +10,11 @@ interface AuthState {
   isLoading: boolean
   isAuthenticated: boolean
 
-  setAuth: (user: User & { profile?: PlayerProfile }, accessToken: string, refreshToken: string) => Promise<void>
+  setAuth: (
+    user: User & { profile?: PlayerProfile },
+    accessToken: string,
+    refreshToken: string
+  ) => Promise<void>
   logout: () => Promise<void>
   loadStoredAuth: () => Promise<void>
   updateProfile: (profile: PlayerProfile) => void

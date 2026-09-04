@@ -1,13 +1,20 @@
 import React, { useState, useEffect, useRef } from 'react'
 import {
-  View, Text, TouchableOpacity, StyleSheet,
-  Alert, ActivityIndicator, ScrollView,
+  View,
+  TouchableOpacity,
+  StyleSheet,
+  Alert,
+  ActivityIndicator,
+  ScrollView,
 } from 'react-native'
+import { Text } from '../../components/ui/Text'
+import { Ionicons } from '@expo/vector-icons'
 import { io, Socket } from 'socket.io-client'
 import { useQuery } from '@tanstack/react-query'
 import { useAuthStore } from '../../store/auth.store'
 import { matchesApi } from '../../services/api'
 import { BackButton } from '../../components/ui/BackButton'
+import { colors } from '../../theme'
 
 const WS_URL = process.env.EXPO_PUBLIC_API_URL
   ? process.env.EXPO_PUBLIC_API_URL.replace('http', 'ws')
@@ -26,8 +33,16 @@ type Match = {
 }
 
 function ScoreInput({
-  value, onInc, onDec, disabled,
-}: { value: number; onInc: () => void; onDec: () => void; disabled: boolean }) {
+  value,
+  onInc,
+  onDec,
+  disabled,
+}: {
+  value: number
+  onInc: () => void
+  onDec: () => void
+  disabled: boolean
+}) {
   return (
     <View style={styles.scoreControl}>
       <TouchableOpacity
@@ -58,7 +73,10 @@ export function LiveScoringScreen({ route, navigation }: { route: any; navigatio
   const [match, setMatch] = useState<Match | null>(null)
   const [sets, setSets] = useState<SetScore[]>([{ player1: 0, player2: 0 }])
   const [finished, setFinished] = useState(false)
-  const [eloChanges, setEloChanges] = useState<Record<string, { before: number; after: number; delta: number }> | null>(null)
+  const [eloChanges, setEloChanges] = useState<Record<
+    string,
+    { before: number; after: number; delta: number }
+  > | null>(null)
   const [spectatorScore, setSpectatorScore] = useState<SetScore[]>([])
 
   const { data: loadedMatch, isLoading: loadingMatch } = useQuery({
@@ -71,9 +89,10 @@ export function LiveScoringScreen({ route, navigation }: { route: any; navigatio
   useEffect(() => {
     if (!loadedMatch) return
     setMatch(loadedMatch)
-    const existingScore = Array.isArray(loadedMatch.score) && loadedMatch.score.length > 0
-      ? loadedMatch.score
-      : [{ player1: 0, player2: 0 }]
+    const existingScore =
+      Array.isArray(loadedMatch.score) && loadedMatch.score.length > 0
+        ? loadedMatch.score
+        : [{ player1: 0, player2: 0 }]
     setSets(existingScore)
     setSpectatorScore(existingScore)
     if (loadedMatch.status === 'completed' || loadedMatch.status === 'walkover') {
@@ -97,14 +116,23 @@ export function LiveScoringScreen({ route, navigation }: { route: any; navigatio
       setSpectatorScore(updatedSets)
     })
 
-    socket.on('match:finished', ({
-      sets: finalSets, eloChanges: changes, winnerId,
-    }: { sets: SetScore[]; eloChanges: any; winnerId: string }) => {
-      setSpectatorScore(finalSets)
-      setEloChanges(changes)
-      setFinished(true)
-      if (match) setMatch({ ...match, winnerId })
-    })
+    socket.on(
+      'match:finished',
+      ({
+        sets: finalSets,
+        eloChanges: changes,
+        winnerId,
+      }: {
+        sets: SetScore[]
+        eloChanges: any
+        winnerId: string
+      }) => {
+        setSpectatorScore(finalSets)
+        setEloChanges(changes)
+        setFinished(true)
+        if (match) setMatch({ ...match, winnerId })
+      }
+    )
 
     socket.on('error', ({ message }: { message: string }) => {
       Alert.alert('Error WebSocket', message)
@@ -162,7 +190,7 @@ export function LiveScoringScreen({ route, navigation }: { route: any; navigatio
 
     return (
       <View style={styles.finishedContainer}>
-        <Text style={styles.finishedTitle}>🏆 Partido finalizado</Text>
+        <Text style={styles.finishedTitle}>Partido finalizado</Text>
         <Text style={styles.finishedScore}>
           {finalSets.map((s, i) => `${s.player1}/${s.player2}`).join('  ')}
         </Text>
@@ -179,7 +207,12 @@ export function LiveScoringScreen({ route, navigation }: { route: any; navigatio
                 <Text style={styles.eloBefore}>{change.before}</Text>
                 <Text style={styles.eloArrow}>→</Text>
                 <Text style={styles.eloAfter}>{change.after}</Text>
-                <Text style={[styles.eloDelta, { color: change.delta > 0 ? '#059669' : '#dc2626' }]}>
+                <Text
+                  style={[
+                    styles.eloDelta,
+                    { color: change.delta > 0 ? colors.court600 : colors.referee600 },
+                  ]}
+                >
                   {change.delta > 0 ? `+${change.delta}` : change.delta}
                 </Text>
               </View>
@@ -201,8 +234,13 @@ export function LiveScoringScreen({ route, navigation }: { route: any; navigatio
         <View style={styles.header}>
           <BackButton onPress={() => navigation.goBack()} />
           <View style={styles.headerInfo}>
-            <Text style={styles.headerTitle}>⚡ Live Scoring</Text>
-            <View style={[styles.connDot, { backgroundColor: connected ? '#10b981' : '#ef4444' }]} />
+            <Text style={styles.headerTitle}>Live Scoring</Text>
+            <View
+              style={[
+                styles.connDot,
+                { backgroundColor: connected ? colors.court500 : colors.referee500 },
+              ]}
+            />
           </View>
           <Text style={styles.refereeLabel}>Árbitro</Text>
         </View>
@@ -263,11 +301,13 @@ export function LiveScoringScreen({ route, navigation }: { route: any; navigatio
             onPress={sendScore}
             disabled={!connected}
           >
-            <Text style={styles.updateBtnText}>📡 Enviar marcador en vivo</Text>
+            <Ionicons name="radio-outline" size={16} color={colors.white} />
+            <Text style={styles.updateBtnText}>Enviar marcador en vivo</Text>
           </TouchableOpacity>
 
           <TouchableOpacity style={styles.finishBtn} onPress={finishMatch}>
-            <Text style={styles.finishBtnText}>🏁 Finalizar partido</Text>
+            <Ionicons name="flag-outline" size={16} color={colors.white} />
+            <Text style={styles.finishBtnText}>Finalizar partido</Text>
           </TouchableOpacity>
 
           <View style={{ height: 60 }} />
@@ -280,7 +320,7 @@ export function LiveScoringScreen({ route, navigation }: { route: any; navigatio
   if (loadingMatch) {
     return (
       <View style={[styles.container, { justifyContent: 'center', alignItems: 'center' }]}>
-        <ActivityIndicator color="#10b981" size="large" />
+        <ActivityIndicator color={colors.court500} size="large" />
       </View>
     )
   }
@@ -293,15 +333,21 @@ export function LiveScoringScreen({ route, navigation }: { route: any; navigatio
     <View style={styles.container}>
       <View style={styles.header}>
         <BackButton onPress={() => navigation.goBack()} />
-        <Text style={styles.headerTitle}>🔴 EN VIVO</Text>
-        <View style={[styles.connDot, { backgroundColor: connected ? '#10b981' : '#9ca3af' }]} />
+        <Text style={styles.headerTitle}>EN VIVO</Text>
+        <View
+          style={[styles.connDot, { backgroundColor: connected ? colors.court500 : colors.ink300 }]}
+        />
       </View>
 
       {(match?.player1 || match?.player2) && (
         <View style={styles.spectatorNamesRow}>
-          <Text style={styles.spectatorName} numberOfLines={1}>{match?.player1?.displayName || 'Jugador 1'}</Text>
+          <Text style={styles.spectatorName} numberOfLines={1}>
+            {match?.player1?.displayName || 'Jugador 1'}
+          </Text>
           <Text style={styles.spectatorVs}>vs</Text>
-          <Text style={styles.spectatorName} numberOfLines={1}>{match?.player2?.displayName || 'Jugador 2'}</Text>
+          <Text style={styles.spectatorName} numberOfLines={1}>
+            {match?.player2?.displayName || 'Jugador 2'}
+          </Text>
         </View>
       )}
 
@@ -317,11 +363,15 @@ export function LiveScoringScreen({ route, navigation }: { route: any; navigatio
         <View style={styles.setsDetail}>
           {displaySets.map((s, i) => (
             <View key={i} style={styles.setDetailRow}>
-              <Text style={[styles.setDetailScore, s.player1 > s.player2 && styles.setDetailWinner]}>
+              <Text
+                style={[styles.setDetailScore, s.player1 > s.player2 && styles.setDetailWinner]}
+              >
                 {s.player1}
               </Text>
               <Text style={styles.setDetailSep}>-</Text>
-              <Text style={[styles.setDetailScore, s.player2 > s.player1 && styles.setDetailWinner]}>
+              <Text
+                style={[styles.setDetailScore, s.player2 > s.player1 && styles.setDetailWinner]}
+              >
                 {s.player2}
               </Text>
             </View>
@@ -346,73 +396,170 @@ export function LiveScoringScreen({ route, navigation }: { route: any; navigatio
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#0a0a0a' },
+  container: { flex: 1, backgroundColor: colors.ink900 },
   header: {
-    flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between',
-    paddingTop: 60, paddingBottom: 16, paddingHorizontal: 16, backgroundColor: '#111827',
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingTop: 60,
+    paddingBottom: 16,
+    paddingHorizontal: 16,
+    backgroundColor: colors.ink800,
   },
-  backBtn: { padding: 4 },
-  backText: { color: '#6ee7b7', fontSize: 24, fontWeight: '300' },
   headerInfo: { flexDirection: 'row', alignItems: 'center', gap: 8 },
-  headerTitle: { fontSize: 18, fontWeight: '800', color: '#fff' },
+  headerTitle: { fontSize: 18, fontWeight: '800', color: colors.white },
   connDot: { width: 10, height: 10, borderRadius: 5 },
-  refereeLabel: { backgroundColor: '#dc2626', paddingHorizontal: 10, paddingVertical: 4, borderRadius: 8 },
+  refereeLabel: {
+    backgroundColor: colors.referee600,
+    paddingHorizontal: 10,
+    paddingVertical: 4,
+    borderRadius: 8,
+  },
   scroll: { flex: 1 },
   // Referee
-  setCard: { margin: 12, backgroundColor: '#1f2937', borderRadius: 20, padding: 20 },
+  setCard: { margin: 12, backgroundColor: colors.ink700, borderRadius: 20, padding: 20 },
   setHeader: { flexDirection: 'row', justifyContent: 'space-between', marginBottom: 16 },
-  setTitle: { fontSize: 16, fontWeight: '700', color: '#fff' },
-  removeSetText: { color: '#ef4444', fontSize: 13 },
+  setTitle: { fontSize: 16, fontWeight: '700', color: colors.white },
+  removeSetText: { color: colors.referee500, fontSize: 13 },
   setRow: { flexDirection: 'row', alignItems: 'center', gap: 12 },
   playerScore: { flex: 1, alignItems: 'center', gap: 10 },
-  playerLabel: { fontSize: 13, color: '#9ca3af', fontWeight: '600', textAlign: 'center' },
-  setVs: { fontSize: 14, color: '#4b5563', fontWeight: '700' },
+  playerLabel: { fontSize: 13, color: colors.ink300, fontWeight: '600', textAlign: 'center' },
+  setVs: { fontSize: 14, color: colors.ink600, fontWeight: '700' },
   scoreControl: { flexDirection: 'row', alignItems: 'center', gap: 12 },
-  scoreBtn: { width: 44, height: 44, borderRadius: 22, justifyContent: 'center', alignItems: 'center' },
-  scoreBtnInc: { backgroundColor: '#059669' },
-  scoreBtnDec: { backgroundColor: '#374151' },
+  scoreBtn: {
+    width: 44,
+    height: 44,
+    borderRadius: 22,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  scoreBtnInc: { backgroundColor: colors.court600 },
+  scoreBtnDec: { backgroundColor: colors.ink600 },
   scoreBtnDisabled: { opacity: 0.4 },
-  scoreBtnText: { color: '#fff', fontSize: 22, fontWeight: '700', lineHeight: 26 },
-  scoreValue: { fontSize: 36, fontWeight: '900', color: '#fff', minWidth: 50, textAlign: 'center' },
-  addSetBtn: { margin: 12, borderWidth: 1.5, borderColor: '#374151', borderRadius: 14, paddingVertical: 12, alignItems: 'center', borderStyle: 'dashed' },
-  addSetText: { color: '#6b7280', fontSize: 14, fontWeight: '600' },
-  updateBtn: { margin: 12, backgroundColor: '#059669', borderRadius: 14, paddingVertical: 14, alignItems: 'center' },
+  scoreBtnText: { color: colors.white, fontSize: 22, fontWeight: '700', lineHeight: 26 },
+  scoreValue: {
+    fontSize: 36,
+    fontWeight: '900',
+    color: colors.white,
+    minWidth: 50,
+    textAlign: 'center',
+  },
+  addSetBtn: {
+    margin: 12,
+    borderWidth: 1.5,
+    borderColor: colors.ink600,
+    borderRadius: 14,
+    paddingVertical: 12,
+    alignItems: 'center',
+    borderStyle: 'dashed',
+  },
+  addSetText: { color: colors.ink400, fontSize: 14, fontWeight: '600' },
+  updateBtn: {
+    margin: 12,
+    flexDirection: 'row',
+    gap: 8,
+    backgroundColor: colors.court600,
+    borderRadius: 14,
+    paddingVertical: 14,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
   updateBtnDisabled: { opacity: 0.5 },
-  updateBtnText: { color: '#fff', fontSize: 15, fontWeight: '700' },
-  finishBtn: { marginHorizontal: 12, backgroundColor: '#dc2626', borderRadius: 14, paddingVertical: 14, alignItems: 'center' },
-  finishBtnText: { color: '#fff', fontSize: 15, fontWeight: '700' },
+  updateBtnText: { color: colors.white, fontSize: 15, fontWeight: '700' },
+  finishBtn: {
+    marginHorizontal: 12,
+    flexDirection: 'row',
+    gap: 8,
+    backgroundColor: colors.referee600,
+    borderRadius: 14,
+    paddingVertical: 14,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  finishBtnText: { color: colors.white, fontSize: 15, fontWeight: '700' },
   // Spectator
-  spectatorNamesRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 10, paddingHorizontal: 20, paddingTop: 12 },
-  spectatorName: { flex: 1, fontSize: 14, fontWeight: '700', color: '#fff', textAlign: 'center' },
-  spectatorVs: { fontSize: 12, color: '#6b7280', fontWeight: '700' },
+  spectatorNamesRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 10,
+    paddingHorizontal: 20,
+    paddingTop: 12,
+  },
+  spectatorName: {
+    flex: 1,
+    fontSize: 14,
+    fontWeight: '700',
+    color: colors.white,
+    textAlign: 'center',
+  },
+  spectatorVs: { fontSize: 12, color: colors.ink400, fontWeight: '700' },
   liveBoard: { padding: 24, alignItems: 'center' },
   setsCounter: { flexDirection: 'row', alignItems: 'center', gap: 24, marginBottom: 24 },
-  setsCountNum: { fontSize: 80, fontWeight: '900', color: '#fff' },
-  setsCountLabel: { fontSize: 12, color: '#6b7280', fontWeight: '700', letterSpacing: 2 },
+  setsCountNum: { fontSize: 80, fontWeight: '900', color: colors.white },
+  setsCountLabel: { fontSize: 12, color: colors.ink400, fontWeight: '700', letterSpacing: 2 },
   setsDetail: { flexDirection: 'row', gap: 20, marginBottom: 20 },
-  setDetailRow: { alignItems: 'center', backgroundColor: '#1f2937', borderRadius: 12, paddingHorizontal: 16, paddingVertical: 10 },
-  setDetailScore: { fontSize: 28, fontWeight: '800', color: '#6b7280' },
-  setDetailWinner: { color: '#10b981' },
-  setDetailSep: { fontSize: 16, color: '#374151' },
+  setDetailRow: {
+    alignItems: 'center',
+    backgroundColor: colors.ink700,
+    borderRadius: 12,
+    paddingHorizontal: 16,
+    paddingVertical: 10,
+  },
+  setDetailScore: { fontSize: 28, fontWeight: '800', color: colors.ink400 },
+  setDetailWinner: { color: colors.court500 },
+  setDetailSep: { fontSize: 16, color: colors.ink600 },
   liveIndicator: { flexDirection: 'row', alignItems: 'center', gap: 8 },
-  liveDot: { width: 8, height: 8, borderRadius: 4, backgroundColor: '#ef4444' },
-  liveText: { fontSize: 13, color: '#9ca3af' },
+  liveDot: { width: 8, height: 8, borderRadius: 4, backgroundColor: colors.referee500 },
+  liveText: { fontSize: 13, color: colors.ink300 },
   matchInfo: { padding: 24, alignItems: 'center' },
-  matchInfoTitle: { fontSize: 16, color: '#6b7280', fontWeight: '600' },
-  matchInfoSub: { fontSize: 12, color: '#4b5563', marginTop: 4 },
+  matchInfoTitle: { fontSize: 16, color: colors.ink400, fontWeight: '600' },
+  matchInfoSub: { fontSize: 12, color: colors.ink600, marginTop: 4 },
   // Finished
-  finishedContainer: { flex: 1, backgroundColor: '#064e3b', justifyContent: 'center', alignItems: 'center', padding: 32 },
-  finishedTitle: { fontSize: 28, fontWeight: '900', color: '#fff', textAlign: 'center' },
-  finishedScore: { fontSize: 32, fontWeight: '900', color: '#6ee7b7', marginTop: 12, letterSpacing: 4 },
-  finishedSets: { fontSize: 16, color: '#a7f3d0', marginTop: 8 },
-  eloChangesBox: { backgroundColor: '#fff', borderRadius: 20, padding: 20, marginTop: 24, width: '100%' },
-  eloChangesTitle: { fontSize: 15, fontWeight: '700', color: '#111827', marginBottom: 12 },
-  eloRow: { flexDirection: 'row', alignItems: 'center', gap: 8, paddingVertical: 8, borderBottomWidth: 1, borderBottomColor: '#f3f4f6' },
-  eloPlayerId: { flex: 1, fontSize: 12, color: '#6b7280' },
-  eloBefore: { fontSize: 14, color: '#6b7280', fontWeight: '600' },
-  eloArrow: { fontSize: 14, color: '#9ca3af' },
-  eloAfter: { fontSize: 14, color: '#111827', fontWeight: '700' },
+  finishedContainer: {
+    flex: 1,
+    backgroundColor: colors.court900,
+    justifyContent: 'center',
+    alignItems: 'center',
+    padding: 32,
+  },
+  finishedTitle: { fontSize: 28, fontWeight: '900', color: colors.white, textAlign: 'center' },
+  finishedScore: {
+    fontSize: 32,
+    fontWeight: '900',
+    color: colors.court300,
+    marginTop: 12,
+    letterSpacing: 4,
+  },
+  finishedSets: { fontSize: 16, color: colors.court200, marginTop: 8 },
+  eloChangesBox: {
+    backgroundColor: colors.white,
+    borderRadius: 20,
+    padding: 20,
+    marginTop: 24,
+    width: '100%',
+  },
+  eloChangesTitle: { fontSize: 15, fontWeight: '700', color: colors.textPrimary, marginBottom: 12 },
+  eloRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    paddingVertical: 8,
+    borderBottomWidth: 1,
+    borderBottomColor: colors.ink50,
+  },
+  eloPlayerId: { flex: 1, fontSize: 12, color: colors.textMuted },
+  eloBefore: { fontSize: 14, color: colors.textMuted, fontWeight: '600' },
+  eloArrow: { fontSize: 14, color: colors.ink300 },
+  eloAfter: { fontSize: 14, color: colors.textPrimary, fontWeight: '700' },
   eloDelta: { fontSize: 14, fontWeight: '700', minWidth: 40, textAlign: 'right' },
-  backBtn2: { marginTop: 24, borderWidth: 1.5, borderColor: '#6ee7b7', borderRadius: 14, paddingVertical: 12, paddingHorizontal: 28 },
-  backBtn2Text: { color: '#6ee7b7', fontSize: 15, fontWeight: '600' },
+  backBtn2: {
+    marginTop: 24,
+    borderWidth: 1.5,
+    borderColor: colors.court300,
+    borderRadius: 14,
+    paddingVertical: 12,
+    paddingHorizontal: 28,
+  },
+  backBtn2Text: { color: colors.court300, fontSize: 15, fontWeight: '600' },
 })

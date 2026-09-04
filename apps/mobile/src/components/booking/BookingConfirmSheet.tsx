@@ -1,5 +1,14 @@
 import React, { useEffect, useState } from 'react'
-import { View, Text, Modal, TouchableOpacity, StyleSheet, ActivityIndicator, KeyboardAvoidingView, Platform } from 'react-native'
+import {
+  View,
+  Modal,
+  TouchableOpacity,
+  StyleSheet,
+  ActivityIndicator,
+  KeyboardAvoidingView,
+  Platform,
+} from 'react-native'
+import { Text } from '../ui/Text'
 import * as Haptics from 'expo-haptics'
 import { Ionicons } from '@expo/vector-icons'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
@@ -15,7 +24,11 @@ function formatTime(time: string) {
 }
 function formatDate(date: string) {
   const [year, month, day] = date.split('-').map(Number)
-  return new Date(year, month - 1, day).toLocaleDateString('es', { weekday: 'long', day: 'numeric', month: 'long' })
+  return new Date(year, month - 1, day).toLocaleDateString('es', {
+    weekday: 'long',
+    day: 'numeric',
+    month: 'long',
+  })
 }
 
 // ── Confirmación rápida en Bottom Sheet — reemplaza la navegación a pantalla
@@ -25,7 +38,11 @@ function formatDate(date: string) {
 // "Agregar jugadores y dividir pago" navega a BookingScreen tal como antes.
 // Usa exactamente el mismo contrato de bookingsApi.create que BookingScreen.
 export function BookingConfirmSheet({
-  visible, slot, club, onClose, navigation,
+  visible,
+  slot,
+  club,
+  onClose,
+  navigation,
 }: {
   visible: boolean
   slot: Slot | null
@@ -43,7 +60,8 @@ export function BookingConfirmSheet({
 
   const { data: pricingData, isLoading: pricingLoading } = useQuery({
     queryKey: ['booking-pricing', slot?.id, user?.id, club?.id],
-    queryFn: () => membershipsApi.getPricing({ userId: user!.id, slotId: slot!.id, clubId: club!.id }),
+    queryFn: () =>
+      membershipsApi.getPricing({ userId: user!.id, slotId: slot!.id, clubId: club!.id }),
     select: (r) => r.data.data,
     enabled: !!user?.id && !!slot && !!club,
   })
@@ -60,14 +78,24 @@ export function BookingConfirmSheet({
   const slotBasePrice = slot.isPeak ? slot.peakPrice : slot.basePrice
   const capacity = slot.court.capacity || 4
   const pricing = pricingData ?? {
-    pricingType: 'pay_per_use', price: slotBasePrice, pricePerPlayer: slotBasePrice / capacity,
-    membershipPlan: null, currency: slot.currency,
+    pricingType: 'pay_per_use',
+    price: slotBasePrice,
+    pricePerPlayer: slotBasePrice / capacity,
+    membershipPlan: null,
+    currency: slot.currency,
   }
   const isMembershipIncluded = pricing.pricingType === 'membership_included'
   const isMembershipExtra = pricing.pricingType === 'membership_extra'
-  const perPlayerPrice = isMembershipIncluded ? 0 : (slotBasePrice / capacity)
-  const hasCoveringCredit = !isMembershipIncluded && !isMembershipExtra && (creditSummary?.total ?? 0) >= perPlayerPrice
-  const finalPrice = isMembershipIncluded ? 0 : isMembershipExtra ? (pricing.pricePerPlayer ?? perPlayerPrice) : (hasCoveringCredit ? 0 : perPlayerPrice)
+  const perPlayerPrice = isMembershipIncluded ? 0 : slotBasePrice / capacity
+  const hasCoveringCredit =
+    !isMembershipIncluded && !isMembershipExtra && (creditSummary?.total ?? 0) >= perPlayerPrice
+  const finalPrice = isMembershipIncluded
+    ? 0
+    : isMembershipExtra
+      ? (pricing.pricePerPlayer ?? perPlayerPrice)
+      : hasCoveringCredit
+        ? 0
+        : perPlayerPrice
 
   const mutation = useMutation({
     mutationFn: () =>
@@ -86,11 +114,17 @@ export function BookingConfirmSheet({
     onSuccess: async (res) => {
       const { booking, payment } = res.data.data
       qc.invalidateQueries({ queryKey: ['my-bookings'] })
-      const alreadyConfirmed = booking.status === 'confirmed' || payment?.devMode || payment?.provider === 'membership'
+      const alreadyConfirmed =
+        booking.status === 'confirmed' || payment?.devMode || payment?.provider === 'membership'
       if (!alreadyConfirmed) {
         try {
-          await bookingsApi.confirm(booking.id, { userId: user!.id, paymentIntentId: payment?.paymentIntentId })
-        } catch { /* el resumen en Mis reservas mostrará el estado real */ }
+          await bookingsApi.confirm(booking.id, {
+            userId: user!.id,
+            paymentIntentId: payment?.paymentIntentId,
+          })
+        } catch {
+          /* el resumen en Mis reservas mostrará el estado real */
+        }
       }
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success).catch(() => {})
       setShowSuccess(true)
@@ -116,30 +150,42 @@ export function BookingConfirmSheet({
 
   return (
     <Modal visible={visible} transparent animationType="slide" onRequestClose={onClose}>
-      <KeyboardAvoidingView style={styles.overlay} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
+      <KeyboardAvoidingView
+        style={styles.overlay}
+        behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+      >
         <TouchableOpacity style={styles.backdrop} activeOpacity={1} onPress={onClose} />
         <View style={styles.sheet}>
           <View style={styles.handle} />
 
           {showSuccess ? (
             <View style={styles.successBox}>
-              <View style={styles.successIcon}><Ionicons name="checkmark" size={28} color={colors.white} /></View>
+              <View style={styles.successIcon}>
+                <Ionicons name="checkmark" size={28} color={colors.white} />
+              </View>
               <Text style={styles.successText}>¡Reserva confirmada!</Text>
             </View>
           ) : (
             <>
               <View style={styles.headerRow}>
-                <SportIcon sport={slot.court.sport} size={16} color={colors.primary700} />
+                <SportIcon sport={slot.court.sport} size={16} color={colors.court700} />
                 <Text style={styles.title}>{slot.court.name}</Text>
-                <TouchableOpacity onPress={onClose} hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}>
-                  <Ionicons name="close" size={20} color={colors.gray400} />
+                <TouchableOpacity
+                  onPress={onClose}
+                  hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+                >
+                  <Ionicons name="close" size={20} color={colors.ink400} />
                 </TouchableOpacity>
               </View>
-              <Text style={styles.subtitle}>{club.name} · {sportLabel(slot.court.sport)}</Text>
+              <Text style={styles.subtitle}>
+                {club.name} · {sportLabel(slot.court.sport)}
+              </Text>
 
               <View style={styles.summaryRow}>
                 <Text style={styles.summaryLabel}>📅 {formatDate(slot.date)}</Text>
-                <Text style={styles.summaryLabel}>🕐 {formatTime(slot.startTime)}-{formatTime(slot.endTime)}</Text>
+                <Text style={styles.summaryLabel}>
+                  🕐 {formatTime(slot.startTime)}-{formatTime(slot.endTime)}
+                </Text>
               </View>
 
               <View style={[styles.priceCard, isMembershipIncluded && styles.priceCardMembership]}>
@@ -152,16 +198,20 @@ export function BookingConfirmSheet({
                   </>
                 ) : (
                   <>
-                    <Text style={styles.priceTag}>{hasCoveringCredit ? 'Cubierto con crédito' : 'Tu parte'}</Text>
-                    <Text style={styles.priceAmount}>{pricing.currency} {finalPrice.toLocaleString()}</Text>
+                    <Text style={styles.priceTag}>
+                      {hasCoveringCredit ? 'Cubierto con crédito' : 'Tu parte'}
+                    </Text>
+                    <Text style={styles.priceAmount}>
+                      {pricing.currency} {finalPrice.toLocaleString()}
+                    </Text>
                   </>
                 )}
               </View>
 
               <TouchableOpacity style={styles.addPlayersLink} onPress={openFullFlow}>
-                <Ionicons name="people-outline" size={14} color={colors.primary700} />
+                <Ionicons name="people-outline" size={14} color={colors.court700} />
                 <Text style={styles.addPlayersLinkText}>Agregar jugadores y dividir el pago</Text>
-                <Ionicons name="chevron-forward" size={14} color={colors.primary700} />
+                <Ionicons name="chevron-forward" size={14} color={colors.court700} />
               </TouchableOpacity>
 
               <TouchableOpacity
@@ -169,13 +219,19 @@ export function BookingConfirmSheet({
                 onPress={confirmTap}
                 disabled={mutation.isPending || pricingLoading}
               >
-                {mutation.isPending
-                  ? <ActivityIndicator color={colors.white} />
-                  : <Text style={styles.confirmBtnText}>{isMembershipIncluded ? 'Confirmar reserva ✅' : 'Reservar ahora 🎾'}</Text>}
+                {mutation.isPending ? (
+                  <ActivityIndicator color={colors.white} />
+                ) : (
+                  <Text style={styles.confirmBtnText}>
+                    {isMembershipIncluded ? 'Confirmar reserva ✅' : 'Reservar ahora 🎾'}
+                  </Text>
+                )}
               </TouchableOpacity>
 
               {mutation.isError && (
-                <Text style={styles.errorText}>No se pudo completar la reserva. Intenta de nuevo.</Text>
+                <Text style={styles.errorText}>
+                  No se pudo completar la reserva. Intenta de nuevo.
+                </Text>
               )}
             </>
           )}
@@ -188,24 +244,69 @@ export function BookingConfirmSheet({
 const styles = StyleSheet.create({
   overlay: { flex: 1, justifyContent: 'flex-end' },
   backdrop: { ...StyleSheet.absoluteFillObject, backgroundColor: 'rgba(0,0,0,0.4)' },
-  sheet: { backgroundColor: colors.white, borderTopLeftRadius: radius['2xl'], borderTopRightRadius: radius['2xl'], padding: spacing.xl, paddingBottom: spacing['3xl'] },
-  handle: { width: 40, height: 4, borderRadius: 2, backgroundColor: colors.gray200, alignSelf: 'center', marginBottom: spacing.lg },
+  sheet: {
+    backgroundColor: colors.white,
+    borderTopLeftRadius: radius['2xl'],
+    borderTopRightRadius: radius['2xl'],
+    padding: spacing.xl,
+    paddingBottom: spacing['3xl'],
+  },
+  handle: {
+    width: 40,
+    height: 4,
+    borderRadius: 2,
+    backgroundColor: colors.ink200,
+    alignSelf: 'center',
+    marginBottom: spacing.lg,
+  },
   headerRow: { flexDirection: 'row', alignItems: 'center', gap: 8 },
   title: { flex: 1, fontSize: fontSize.lg, fontWeight: '800', color: colors.textPrimary },
-  subtitle: { fontSize: fontSize.sm, color: colors.gray500, marginTop: 2, marginLeft: 24 },
+  subtitle: { fontSize: fontSize.sm, color: colors.ink500, marginTop: 2, marginLeft: 24 },
   summaryRow: { flexDirection: 'row', gap: spacing.lg, marginTop: spacing.lg },
-  summaryLabel: { fontSize: fontSize.sm, color: colors.gray700, fontWeight: '600' },
-  priceCard: { marginTop: spacing.lg, backgroundColor: colors.primary900, borderRadius: radius.xl, padding: spacing.lg, alignItems: 'center' },
-  priceCardMembership: { backgroundColor: colors.primary800 },
-  priceTag: { fontSize: fontSize.xs, color: colors.primary300, fontWeight: '700' },
+  summaryLabel: { fontSize: fontSize.sm, color: colors.ink700, fontWeight: '600' },
+  priceCard: {
+    marginTop: spacing.lg,
+    backgroundColor: colors.court900,
+    borderRadius: radius.xl,
+    padding: spacing.lg,
+    alignItems: 'center',
+  },
+  priceCardMembership: { backgroundColor: colors.court800 },
+  priceTag: { fontSize: fontSize.xs, color: colors.court300, fontWeight: '700' },
   priceAmount: { fontSize: fontSize['2xl'], fontWeight: '900', color: colors.white, marginTop: 4 },
-  addPlayersLink: { flexDirection: 'row', alignItems: 'center', gap: 6, justifyContent: 'center', marginTop: spacing.lg, paddingVertical: 8 },
-  addPlayersLinkText: { fontSize: fontSize.sm, color: colors.primary700, fontWeight: '700' },
-  confirmBtn: { backgroundColor: colors.primary600, borderRadius: radius.lg, paddingVertical: 16, alignItems: 'center', marginTop: spacing.sm },
+  addPlayersLink: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    justifyContent: 'center',
+    marginTop: spacing.lg,
+    paddingVertical: 8,
+  },
+  addPlayersLinkText: { fontSize: fontSize.sm, color: colors.court700, fontWeight: '700' },
+  confirmBtn: {
+    backgroundColor: colors.court600,
+    borderRadius: radius.lg,
+    paddingVertical: 16,
+    alignItems: 'center',
+    marginTop: spacing.sm,
+  },
   confirmBtnDisabled: { opacity: 0.7 },
   confirmBtnText: { color: colors.white, fontSize: fontSize.base, fontWeight: '800' },
-  errorText: { color: colors.red600, fontSize: fontSize.xs, textAlign: 'center', marginTop: spacing.sm },
+  errorText: {
+    color: colors.referee600,
+    fontSize: fontSize.xs,
+    textAlign: 'center',
+    marginTop: spacing.sm,
+  },
   successBox: { alignItems: 'center', paddingVertical: spacing['3xl'] },
-  successIcon: { width: 64, height: 64, borderRadius: 32, backgroundColor: colors.primary500, alignItems: 'center', justifyContent: 'center', marginBottom: spacing.lg },
+  successIcon: {
+    width: 64,
+    height: 64,
+    borderRadius: 32,
+    backgroundColor: colors.court500,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginBottom: spacing.lg,
+  },
   successText: { fontSize: fontSize.lg, fontWeight: '800', color: colors.textPrimary },
 })

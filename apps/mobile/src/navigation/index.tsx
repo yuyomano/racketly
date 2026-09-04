@@ -79,36 +79,61 @@ function MainTabs() {
     <Tab.Navigator
       screenOptions={{
         headerShown: false,
-        tabBarStyle: { backgroundColor: colors.surface, borderTopColor: colors.border, height: 64, paddingTop: 6 },
-        tabBarActiveTintColor: colors.primary600,
-        tabBarInactiveTintColor: colors.gray400,
+        tabBarStyle: {
+          backgroundColor: colors.surface,
+          borderTopColor: colors.border,
+          height: 64,
+          paddingTop: 6,
+        },
+        tabBarActiveTintColor: colors.court600,
+        tabBarInactiveTintColor: colors.ink400,
         tabBarLabelStyle: { fontSize: 11, fontWeight: '600', paddingBottom: 4 },
       }}
     >
       <Tab.Screen
         name="Reservas"
         component={BookingStack}
-        options={{ tabBarIcon: ({ color, focused }) => <Ionicons name={focused ? 'calendar' : 'calendar-outline'} size={22} color={color} /> }}
+        options={{
+          tabBarIcon: ({ color, focused }) => (
+            <Ionicons name={focused ? 'calendar' : 'calendar-outline'} size={22} color={color} />
+          ),
+        }}
       />
       <Tab.Screen
         name="Torneos"
         component={TournamentsStack}
-        options={{ tabBarIcon: ({ color, focused }) => <Ionicons name={focused ? 'trophy' : 'trophy-outline'} size={22} color={color} /> }}
+        options={{
+          tabBarIcon: ({ color, focused }) => (
+            <Ionicons name={focused ? 'trophy' : 'trophy-outline'} size={22} color={color} />
+          ),
+        }}
       />
       <Tab.Screen
         name="Comunidad"
         component={CommunityStack}
-        options={{ tabBarIcon: ({ color, focused }) => <Ionicons name={focused ? 'people' : 'people-outline'} size={22} color={color} /> }}
+        options={{
+          tabBarIcon: ({ color, focused }) => (
+            <Ionicons name={focused ? 'people' : 'people-outline'} size={22} color={color} />
+          ),
+        }}
       />
       <Tab.Screen
         name="Academia"
         component={AcademyScreen}
-        options={{ tabBarIcon: ({ color, focused }) => <Ionicons name={focused ? 'school' : 'school-outline'} size={22} color={color} /> }}
+        options={{
+          tabBarIcon: ({ color, focused }) => (
+            <Ionicons name={focused ? 'school' : 'school-outline'} size={22} color={color} />
+          ),
+        }}
       />
       <Tab.Screen
         name="Perfil"
         component={ProfileStack}
-        options={{ tabBarIcon: ({ color, focused }) => <Ionicons name={focused ? 'person' : 'person-outline'} size={22} color={color} /> }}
+        options={{
+          tabBarIcon: ({ color, focused }) => (
+            <Ionicons name={focused ? 'person' : 'person-outline'} size={22} color={color} />
+          ),
+        }}
       />
     </Tab.Navigator>
   )
@@ -135,15 +160,19 @@ function AuthStack() {
 export function RootNavigator() {
   const { isAuthenticated, isLoading } = useAuthStore()
 
-  if (isLoading) return (
-    <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: '#042b22' }}>
-      <ActivityIndicator size="large" color={colors.primary500} />
-    </View>
-  )
+  if (isLoading)
+    return (
+      <View
+        style={{
+          flex: 1,
+          justifyContent: 'center',
+          alignItems: 'center',
+          backgroundColor: '#042b22',
+        }}
+      >
+        <ActivityIndicator size="large" color={colors.court500} />
+      </View>
+    )
 
-  return (
-    <NavigationContainer>
-      {isAuthenticated ? <MainTabs /> : <AuthStack />}
-    </NavigationContainer>
-  )
+  return <NavigationContainer>{isAuthenticated ? <MainTabs /> : <AuthStack />}</NavigationContainer>
 }

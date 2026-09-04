@@ -45,7 +45,7 @@ export function ScheduleGridSkeleton({ rows = 4, cols = 3 }: { rows?: number; co
 }
 
 const styles = StyleSheet.create({
-  block: { backgroundColor: colors.gray200, borderRadius: radius.sm },
+  block: { backgroundColor: colors.ink200, borderRadius: radius.sm },
   headerRow: { flexDirection: 'row', gap: 8, marginBottom: 8 },
   headerCell: { flex: 1, height: 16, borderRadius: radius.sm },
   gridRow: { flexDirection: 'row', gap: 8, marginBottom: 8 },

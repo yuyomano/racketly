@@ -1,21 +1,30 @@
 import React, { useState } from 'react'
 import {
-  View, Text, TextInput, TouchableOpacity, StyleSheet,
-  ScrollView, ActivityIndicator, Alert, KeyboardAvoidingView, Platform,
+  View,
+  TextInput,
+  TouchableOpacity,
+  StyleSheet,
+  ScrollView,
+  ActivityIndicator,
+  Alert,
+  KeyboardAvoidingView,
+  Platform,
 } from 'react-native'
+import { Text } from '../../components/ui/Text'
 import { useMutation, useQueryClient } from '@tanstack/react-query'
 import { Ionicons } from '@expo/vector-icons'
 import { useAuthStore } from '../../store/auth.store'
 import { profileApi } from '../../services/api'
 import { BackButton } from '../../components/ui/BackButton'
+import { PadelIcon, PickleballIcon } from '../../components/ui/SportIcons'
 import { colors } from '../../theme'
 
 type Sport = 'padel' | 'pickleball' | 'both'
 
-const SPORT_OPTIONS: { value: Sport; label: string; emoji: string }[] = [
-  { value: 'padel',      label: 'Pádel',           emoji: '🎾' },
-  { value: 'pickleball', label: 'Pickleball',       emoji: '🏸' },
-  { value: 'both',       label: 'Ambos deportes',   emoji: '⚡' },
+const SPORT_OPTIONS: { value: Sport; label: string }[] = [
+  { value: 'padel', label: 'Pádel' },
+  { value: 'pickleball', label: 'Pickleball' },
+  { value: 'both', label: 'Ambos deportes' },
 ]
 
 const COUNTRY_OPTIONS = [
@@ -41,13 +50,12 @@ export function EditProfileScreen({ navigation }: { navigation: any }) {
   const [showCountryPicker, setShowCountryPicker] = useState(false)
 
   const mutation = useMutation({
-    mutationFn: () =>
-      profileApi.updateProfile({ displayName, bio, city, country, sport }),
+    mutationFn: () => profileApi.updateProfile({ displayName, bio, city, country, sport }),
     onSuccess: (res) => {
       // Actualiza el store con los nuevos datos del perfil
       updateProfile(res.data.data)
       qc.invalidateQueries({ queryKey: ['profile'] })
-      Alert.alert('✅ Perfil actualizado', 'Tus cambios se guardaron correctamente.', [
+      Alert.alert('Perfil actualizado', 'Tus cambios se guardaron correctamente.', [
         { text: 'OK', onPress: () => navigation.goBack() },
       ])
     },
@@ -78,17 +86,20 @@ export function EditProfileScreen({ navigation }: { navigation: any }) {
       <ScrollView style={styles.container} keyboardShouldPersistTaps="handled">
         {/* Header */}
         <View style={styles.header}>
-          <View style={styles.backBtn}><BackButton onPress={() => navigation.goBack()} /></View>
+          <View style={styles.backBtn}>
+            <BackButton onPress={() => navigation.goBack()} />
+          </View>
           <Text style={styles.title}>Editar Perfil</Text>
           <TouchableOpacity
             onPress={handleSave}
             disabled={mutation.isPending}
             style={styles.saveBtn}
           >
-            {mutation.isPending
-              ? <ActivityIndicator size="small" color="#fff" />
-              : <Text style={styles.saveBtnText}>Guardar</Text>
-            }
+            {mutation.isPending ? (
+              <ActivityIndicator size="small" color={colors.white} />
+            ) : (
+              <Text style={styles.saveBtnText}>Guardar</Text>
+            )}
           </TouchableOpacity>
         </View>
 
@@ -110,7 +121,7 @@ export function EditProfileScreen({ navigation }: { navigation: any }) {
               value={displayName}
               onChangeText={setDisplayName}
               placeholder="Tu nombre en la app"
-              placeholderTextColor="#9ca3af"
+              placeholderTextColor={colors.ink400}
               maxLength={50}
             />
             <Text style={styles.charCount}>{displayName.length}/50</Text>
@@ -124,7 +135,7 @@ export function EditProfileScreen({ navigation }: { navigation: any }) {
               value={bio}
               onChangeText={setBio}
               placeholder="Cuéntanos algo sobre ti..."
-              placeholderTextColor="#9ca3af"
+              placeholderTextColor={colors.ink400}
               multiline
               numberOfLines={3}
               maxLength={300}
@@ -140,7 +151,7 @@ export function EditProfileScreen({ navigation }: { navigation: any }) {
               value={city}
               onChangeText={setCity}
               placeholder="Tu ciudad"
-              placeholderTextColor="#9ca3af"
+              placeholderTextColor={colors.ink400}
             />
           </View>
 
@@ -152,7 +163,11 @@ export function EditProfileScreen({ navigation }: { navigation: any }) {
               onPress={() => setShowCountryPicker(!showCountryPicker)}
             >
               <Text style={styles.selectorText}>{selectedCountry?.label ?? country}</Text>
-              <Text style={styles.selectorArrow}>{showCountryPicker ? '▲' : '▼'}</Text>
+              <Ionicons
+                name={showCountryPicker ? 'chevron-up' : 'chevron-down'}
+                size={16}
+                color={colors.ink400}
+              />
             </TouchableOpacity>
             {showCountryPicker && (
               <View style={styles.pickerList}>
@@ -160,9 +175,17 @@ export function EditProfileScreen({ navigation }: { navigation: any }) {
                   <TouchableOpacity
                     key={c.value}
                     style={[styles.pickerItem, country === c.value && styles.pickerItemActive]}
-                    onPress={() => { setCountry(c.value); setShowCountryPicker(false) }}
+                    onPress={() => {
+                      setCountry(c.value)
+                      setShowCountryPicker(false)
+                    }}
                   >
-                    <Text style={[styles.pickerItemText, country === c.value && styles.pickerItemTextActive]}>
+                    <Text
+                      style={[
+                        styles.pickerItemText,
+                        country === c.value && styles.pickerItemTextActive,
+                      ]}
+                    >
                       {c.label}
                     </Text>
                   </TouchableOpacity>
@@ -181,7 +204,23 @@ export function EditProfileScreen({ navigation }: { navigation: any }) {
                   style={[styles.sportBtn, sport === s.value && styles.sportBtnActive]}
                   onPress={() => setSport(s.value)}
                 >
-                  <Text style={styles.sportEmoji}>{s.emoji}</Text>
+                  {s.value === 'padel' ? (
+                    <PadelIcon
+                      size={22}
+                      color={sport === s.value ? colors.court600 : colors.ink400}
+                    />
+                  ) : s.value === 'pickleball' ? (
+                    <PickleballIcon
+                      size={22}
+                      color={sport === s.value ? colors.court600 : colors.ink400}
+                    />
+                  ) : (
+                    <Ionicons
+                      name="flash"
+                      size={22}
+                      color={sport === s.value ? colors.court600 : colors.ink400}
+                    />
+                  )}
                   <Text style={[styles.sportLabel, sport === s.value && styles.sportLabelActive]}>
                     {s.label}
                   </Text>
@@ -193,7 +232,10 @@ export function EditProfileScreen({ navigation }: { navigation: any }) {
 
         {/* ELO info (solo lectura) */}
         <View style={styles.eloCard}>
-          <Text style={styles.eloCardTitle}>📊 Estadísticas (solo lectura)</Text>
+          <View style={styles.eloCardTitleRow}>
+            <Ionicons name="stats-chart" size={16} color={colors.textPrimary} />
+            <Text style={styles.eloCardTitle}>Estadísticas (solo lectura)</Text>
+          </View>
           <View style={styles.eloRow}>
             <View style={styles.eloItem}>
               <Text style={styles.eloValue}>{profile?.eloPadel ?? 1000}</Text>
@@ -212,7 +254,9 @@ export function EditProfileScreen({ navigation }: { navigation: any }) {
               <Text style={styles.eloLabel}>XP</Text>
             </View>
           </View>
-          <Text style={styles.eloHint}>El ELO y XP se actualizan automáticamente tras partidos y torneos.</Text>
+          <Text style={styles.eloHint}>
+            El ELO y XP se actualizan automáticamente tras partidos y torneos.
+          </Text>
         </View>
 
         <View style={{ height: 32 }} />
@@ -222,81 +266,115 @@ export function EditProfileScreen({ navigation }: { navigation: any }) {
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#f9fafb' },
+  container: { flex: 1, backgroundColor: colors.bg },
 
   // Header
   header: {
-    backgroundColor: '#064e3b', paddingTop: 60, paddingBottom: 16,
-    paddingHorizontal: 16, flexDirection: 'row', alignItems: 'center',
+    backgroundColor: colors.court900,
+    paddingTop: 60,
+    paddingBottom: 16,
+    paddingHorizontal: 16,
+    flexDirection: 'row',
+    alignItems: 'center',
   },
   backBtn: { padding: 4, marginRight: 12 },
-  backText: { color: '#6ee7b7', fontSize: 24, fontWeight: '300' },
-  title: { flex: 1, fontSize: 18, fontWeight: '800', color: '#fff' },
+  backText: { color: colors.court300, fontSize: 24, fontWeight: '300' },
+  title: { flex: 1, fontSize: 18, fontWeight: '800', color: colors.white },
   saveBtn: {
-    backgroundColor: '#10b981', borderRadius: 10,
-    paddingHorizontal: 16, paddingVertical: 8, minWidth: 80, alignItems: 'center',
+    backgroundColor: colors.court500,
+    borderRadius: 10,
+    paddingHorizontal: 16,
+    paddingVertical: 8,
+    minWidth: 80,
+    alignItems: 'center',
   },
-  saveBtnText: { color: '#fff', fontWeight: '700', fontSize: 14 },
+  saveBtnText: { color: colors.white, fontWeight: '700', fontSize: 14 },
 
   // Avatar
-  avatarSection: { alignItems: 'center', paddingVertical: 24, backgroundColor: '#064e3b' },
+  avatarSection: { alignItems: 'center', paddingVertical: 24, backgroundColor: colors.court900 },
   avatarCircle: {
-    width: 88, height: 88, borderRadius: 44,
-    backgroundColor: '#10b981', alignItems: 'center', justifyContent: 'center',
-    borderWidth: 3, borderColor: '#6ee7b7',
+    width: 88,
+    height: 88,
+    borderRadius: 44,
+    backgroundColor: colors.court500,
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderWidth: 3,
+    borderColor: colors.court300,
   },
-  avatarEmoji: { fontSize: 40 },
-  avatarHint: { color: '#6ee7b7', fontSize: 12, marginTop: 8 },
+  avatarHint: { color: colors.court300, fontSize: 12, marginTop: 8 },
 
   // Form
   form: { padding: 16, gap: 4 },
   field: { marginBottom: 20 },
-  label: { fontSize: 12, fontWeight: '700', color: '#6b7280', textTransform: 'uppercase', letterSpacing: 0.5, marginBottom: 8 },
+  label: { fontSize: 12, fontWeight: '700', color: colors.textMuted, marginBottom: 8 },
   input: {
-    backgroundColor: '#fff', borderRadius: 12, padding: 14,
-    fontSize: 15, color: '#111827',
-    borderWidth: 1.5, borderColor: '#e5e7eb',
+    backgroundColor: colors.white,
+    borderRadius: 12,
+    padding: 14,
+    fontSize: 15,
+    color: colors.textPrimary,
+    borderWidth: 1.5,
+    borderColor: colors.ink100,
   },
   textArea: { minHeight: 80, textAlignVertical: 'top' },
-  charCount: { fontSize: 11, color: '#9ca3af', textAlign: 'right', marginTop: 4 },
+  charCount: { fontSize: 11, color: colors.ink400, textAlign: 'right', marginTop: 4 },
 
   // Country selector
   selector: {
-    backgroundColor: '#fff', borderRadius: 12, padding: 14,
-    borderWidth: 1.5, borderColor: '#e5e7eb',
-    flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center',
+    backgroundColor: colors.white,
+    borderRadius: 12,
+    padding: 14,
+    borderWidth: 1.5,
+    borderColor: colors.ink100,
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
   },
-  selectorText: { fontSize: 15, color: '#111827' },
-  selectorArrow: { fontSize: 12, color: '#9ca3af' },
+  selectorText: { fontSize: 15, color: colors.textPrimary },
   pickerList: {
-    backgroundColor: '#fff', borderRadius: 12, marginTop: 4,
-    borderWidth: 1.5, borderColor: '#e5e7eb', overflow: 'hidden',
+    backgroundColor: colors.white,
+    borderRadius: 12,
+    marginTop: 4,
+    borderWidth: 1.5,
+    borderColor: colors.ink100,
+    overflow: 'hidden',
   },
-  pickerItem: { padding: 14, borderBottomWidth: 1, borderBottomColor: '#f3f4f6' },
-  pickerItemActive: { backgroundColor: '#f0fdf4' },
-  pickerItemText: { fontSize: 15, color: '#374151' },
-  pickerItemTextActive: { color: '#059669', fontWeight: '700' },
+  pickerItem: { padding: 14, borderBottomWidth: 1, borderBottomColor: colors.ink100 },
+  pickerItemActive: { backgroundColor: colors.court50 },
+  pickerItemText: { fontSize: 15, color: colors.ink700 },
+  pickerItemTextActive: { color: colors.court600, fontWeight: '700' },
 
   // Sport selector
   sportRow: { flexDirection: 'row', gap: 8 },
   sportBtn: {
-    flex: 1, backgroundColor: '#fff', borderRadius: 12, padding: 12,
-    alignItems: 'center', borderWidth: 1.5, borderColor: '#e5e7eb',
+    flex: 1,
+    backgroundColor: colors.white,
+    borderRadius: 12,
+    padding: 12,
+    alignItems: 'center',
+    borderWidth: 1.5,
+    borderColor: colors.ink100,
+    gap: 4,
   },
-  sportBtnActive: { backgroundColor: '#f0fdf4', borderColor: '#059669' },
-  sportEmoji: { fontSize: 22, marginBottom: 4 },
-  sportLabel: { fontSize: 11, color: '#6b7280', fontWeight: '600', textAlign: 'center' },
-  sportLabelActive: { color: '#059669' },
+  sportBtnActive: { backgroundColor: colors.court50, borderColor: colors.court600 },
+  sportLabel: { fontSize: 11, color: colors.textMuted, fontWeight: '600', textAlign: 'center' },
+  sportLabelActive: { color: colors.court600 },
 
   // ELO card (read-only)
   eloCard: {
-    margin: 16, backgroundColor: '#fff', borderRadius: 16,
-    padding: 16, shadowColor: '#000', shadowOpacity: 0.04, shadowRadius: 6, elevation: 1,
+    margin: 16,
+    backgroundColor: colors.white,
+    borderRadius: 16,
+    padding: 16,
+    borderWidth: 1,
+    borderColor: colors.ink100,
   },
-  eloCardTitle: { fontSize: 14, fontWeight: '700', color: '#111827', marginBottom: 14 },
+  eloCardTitleRow: { flexDirection: 'row', alignItems: 'center', gap: 6, marginBottom: 14 },
+  eloCardTitle: { fontSize: 14, fontWeight: '700', color: colors.textPrimary },
   eloRow: { flexDirection: 'row', justifyContent: 'space-around', marginBottom: 12 },
   eloItem: { alignItems: 'center' },
-  eloValue: { fontSize: 20, fontWeight: '900', color: '#059669' },
-  eloLabel: { fontSize: 11, color: '#9ca3af', marginTop: 2 },
-  eloHint: { fontSize: 11, color: '#9ca3af', textAlign: 'center', fontStyle: 'italic' },
+  eloValue: { fontSize: 20, fontWeight: '900', color: colors.court600 },
+  eloLabel: { fontSize: 11, color: colors.ink400, marginTop: 2 },
+  eloHint: { fontSize: 11, color: colors.ink400, textAlign: 'center', fontStyle: 'italic' },
 })

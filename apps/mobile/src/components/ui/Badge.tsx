@@ -1,19 +1,28 @@
 import React from 'react'
-import { View, Text, StyleSheet } from 'react-native'
+import { View, StyleSheet } from 'react-native'
+import { Text } from './Text'
 import { colors, radius, fontSize, spacing } from '../../theme'
 
 type Tone = 'emerald' | 'amber' | 'gray' | 'red' | 'blue' | 'violet'
 
 const TONES: Record<Tone, { bg: string; text: string }> = {
-  emerald: { bg: colors.primary100, text: colors.primary700 },
-  amber:   { bg: colors.amber100,   text: colors.amber700 },
-  gray:    { bg: colors.gray100,    text: colors.gray600 },
-  red:     { bg: colors.red100,     text: colors.red600 },
-  blue:    { bg: colors.blue50,     text: colors.blue600 },
-  violet:  { bg: colors.violet50,   text: colors.violet700 },
+  emerald: { bg: colors.court100, text: colors.court700 },
+  amber: { bg: colors.trophy100, text: colors.trophy700 },
+  gray: { bg: colors.ink100, text: colors.ink600 },
+  red: { bg: colors.referee100, text: colors.referee600 },
+  blue: { bg: colors.court50, text: colors.court700 },
+  violet: { bg: colors.trophy50, text: colors.trophy800 },
 }
 
-export function Badge({ tone = 'gray', icon, children }: { tone?: Tone; icon?: React.ReactNode; children: React.ReactNode }) {
+export function Badge({
+  tone = 'gray',
+  icon,
+  children,
+}: {
+  tone?: Tone
+  icon?: React.ReactNode
+  children: React.ReactNode
+}) {
   const t = TONES[tone]
   return (
     <View style={[styles.badge, { backgroundColor: t.bg }, icon ? styles.badgeWithIcon : null]}>

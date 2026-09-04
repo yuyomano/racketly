@@ -45,8 +45,18 @@ export function PickleballIcon({ size = 24, color = '#111827' }: IconProps) {
   )
 }
 
-export function SportIcon({ sport, size = 16, color }: { sport?: string; size?: number; color?: string }) {
-  return sport === 'padel'
-    ? <PadelIcon size={size} color={color} />
-    : <PickleballIcon size={size} color={color} />
+export function SportIcon({
+  sport,
+  size = 16,
+  color,
+}: {
+  sport?: string
+  size?: number
+  color?: string
+}) {
+  return sport === 'padel' ? (
+    <PadelIcon size={size} color={color} />
+  ) : (
+    <PickleballIcon size={size} color={color} />
+  )
 }

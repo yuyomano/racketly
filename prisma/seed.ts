@@ -22,7 +22,7 @@ function dateStr(days: number): string {
 }
 
 async function hash(password: string) {
-  return bcrypt.hash(password, 10)
+  return bcrypt.hash(password, 12) // mismo costo que auth-service, para no acostumbrar a un valor distinto
 }
 
 // ─── Main ────────────────────────────────────────────────────────────────────

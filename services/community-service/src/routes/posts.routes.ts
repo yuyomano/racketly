@@ -1,5 +1,7 @@
 import { Router, Request, Response, NextFunction } from 'express'
 import { PrismaClient } from '@prisma/client'
+import { requireAuth } from '../middleware/auth.middleware'
+import { createPostSchema, createCommentSchema, validate } from '../validators/community.validators'
 
 const router = Router()
 const prisma = new PrismaClient()
@@ -40,26 +42,32 @@ router.get('/', async (req: Request, res: Response, next: NextFunction) => {
 })
 
 // POST /api/posts — crear post
-router.post('/', async (req: Request, res: Response, next: NextFunction) => {
-  try {
-    const post = await prisma.post.create({
-      data: req.body,
-      include: {
-        author: {
-          select: { id: true, playerProfile: { select: { displayName: true, avatarUrl: true } } },
+router.post(
+  '/',
+  requireAuth,
+  validate(createPostSchema),
+  async (req: Request, res: Response, next: NextFunction) => {
+    try {
+      const { type, content, mediaUrls, sportTag, groupId } = req.body
+      const post = await prisma.post.create({
+        data: { type, content, mediaUrls, sportTag, groupId, authorId: req.userId! },
+        include: {
+          author: {
+            select: { id: true, playerProfile: { select: { displayName: true, avatarUrl: true } } },
+          },
         },
-      },
-    })
-    return res.status(201).json({ success: true, data: post })
-  } catch (err) {
-    return next(err)
+      })
+      return res.status(201).json({ success: true, data: post })
+    } catch (err) {
+      return next(err)
+    }
   }
-})
+)
 
 // POST /api/posts/:id/like
-router.post('/:id/like', async (req: Request, res: Response, next: NextFunction) => {
+router.post('/:id/like', requireAuth, async (req: Request, res: Response, next: NextFunction) => {
   try {
-    const { userId } = req.body
+    const userId = req.userId!
     const existing = await prisma.postLike.findUnique({
       where: { postId_userId: { postId: req.params.id, userId } },
     })
@@ -85,20 +93,26 @@ router.post('/:id/like', async (req: Request, res: Response, next: NextFunction)
 })
 
 // POST /api/posts/:id/comments
-router.post('/:id/comments', async (req: Request, res: Response, next: NextFunction) => {
-  try {
-    const comment = await prisma.comment.create({
-      data: { postId: req.params.id, ...req.body },
-    })
-    await prisma.post.update({
-      where: { id: req.params.id },
-      data: { commentsCount: { increment: 1 } },
-    })
-    return res.status(201).json({ success: true, data: comment })
-  } catch (err) {
-    return next(err)
+router.post(
+  '/:id/comments',
+  requireAuth,
+  validate(createCommentSchema),
+  async (req: Request, res: Response, next: NextFunction) => {
+    try {
+      const { content, parentId } = req.body
+      const comment = await prisma.comment.create({
+        data: { postId: req.params.id, authorId: req.userId!, content, parentId },
+      })
+      await prisma.post.update({
+        where: { id: req.params.id },
+        data: { commentsCount: { increment: 1 } },
+      })
+      return res.status(201).json({ success: true, data: comment })
+    } catch (err) {
+      return next(err)
+    }
   }
-})
+)
 
 // GET /api/posts/:id/comments
 router.get('/:id/comments', async (req: Request, res: Response, next: NextFunction) => {

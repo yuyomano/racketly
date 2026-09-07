@@ -13,7 +13,6 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { clubsApi, membershipsApi, tournamentsApi, classesApi } from '../../services/api'
 import { useAuthStore } from '../../store/auth.store'
 import { BackButton } from '../../components/ui/BackButton'
-import { EmptyState } from '../../components/ui/EmptyState'
 import { colors } from '../../theme'
 import { sportLabel } from '../../constants/sportIcons'
 import { SportIcon } from '../../components/ui/SportIcons'
@@ -23,10 +22,6 @@ import {
   type Slot as PickerSlot,
 } from '../../components/booking/BookingPickerOptimized'
 import { BookingConfirmSheet } from '../../components/booking/BookingConfirmSheet'
-
-function formatDate(d: Date) {
-  return d.toISOString().split('T')[0]
-}
 
 export function ClubDetailScreen({ route, navigation }: { route: any; navigation: any }) {
   const { clubId } = route.params

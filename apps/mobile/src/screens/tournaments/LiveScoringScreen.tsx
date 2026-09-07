@@ -11,7 +11,6 @@ import { Text } from '../../components/ui/Text'
 import { Ionicons } from '@expo/vector-icons'
 import { io, Socket } from 'socket.io-client'
 import { useQuery } from '@tanstack/react-query'
-import { useAuthStore } from '../../store/auth.store'
 import { matchesApi } from '../../services/api'
 import { BackButton } from '../../components/ui/BackButton'
 import { colors } from '../../theme'
@@ -66,7 +65,6 @@ function ScoreInput({
 
 export function LiveScoringScreen({ route, navigation }: { route: any; navigation: any }) {
   const { matchId, isReferee = false } = route.params as { matchId: string; isReferee?: boolean }
-  const { user } = useAuthStore()
   const socketRef = useRef<Socket | null>(null)
 
   const [connected, setConnected] = useState(false)
@@ -192,7 +190,7 @@ export function LiveScoringScreen({ route, navigation }: { route: any; navigatio
       <View style={styles.finishedContainer}>
         <Text style={styles.finishedTitle}>Partido finalizado</Text>
         <Text style={styles.finishedScore}>
-          {finalSets.map((s, i) => `${s.player1}/${s.player2}`).join('  ')}
+          {finalSets.map((s) => `${s.player1}/${s.player2}`).join('  ')}
         </Text>
         <Text style={styles.finishedSets}>
           Sets: {p1Score} – {p2Score}

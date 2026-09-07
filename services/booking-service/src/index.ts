@@ -4,6 +4,7 @@ import cors from 'cors'
 import helmet from 'helmet'
 import morgan from 'morgan'
 import cron from 'node-cron'
+import { initSentry, withErrorReporting } from '@racketly/utils/observability'
 
 import { clubsRouter } from './routes/clubs.routes'
 import { courtsRouter } from './routes/courts.routes'
@@ -26,6 +27,8 @@ import {
   warnPendingPaymentBookings,
   warnIncompleteRosterBookings,
 } from './services/pre-cancellation-warning.service'
+
+initSentry({ serviceName: 'booking-service' })
 
 const app = express()
 const PORT = process.env.PORT || 3002
@@ -60,48 +63,53 @@ app.use('/api/exchange-rates', exchangeRatesRouter)
 app.use(errorHandler)
 
 // Cron: liberar slots con pago pendiente cada 5 min
-cron.schedule('*/5 * * * *', async () => {
-  await releaseExpiredSlots()
-})
+cron.schedule('*/5 * * * *', withErrorReporting('releaseExpiredSlots', releaseExpiredSlots))
 
 // Cron: avisar a jugadores con pago pendiente antes de que se libere el slot, cada 5 min
-cron.schedule('*/5 * * * *', async () => {
-  await warnPendingPaymentBookings()
-})
+cron.schedule(
+  '*/5 * * * *',
+  withErrorReporting('warnPendingPaymentBookings', warnPendingPaymentBookings)
+)
 
 // Cron: cada hora en punto, revisa qué clubs tienen esa hora configurada como su
 // `slotGenerationHour` (default 6am, editable por club) y genera los slots que
 // falten dentro de su horizonte de reservas.
-cron.schedule('0 * * * *', async () => {
-  await runScheduledSlotGeneration()
-})
+cron.schedule(
+  '0 * * * *',
+  withErrorReporting('runScheduledSlotGeneration', runScheduledSlotGeneration)
+)
 
 // Cron: completar reservas confirmadas cuyo horario ya pasó, cada 15 min
-cron.schedule('*/15 * * * *', async () => {
-  await completeExpiredBookings()
-})
+cron.schedule(
+  '*/15 * * * *',
+  withErrorReporting('completeExpiredBookings', completeExpiredBookings)
+)
 
 // Cron: aceptar tácitamente (y aplicar ELO a) resultados de partido que nadie objetó, cada 30 min
-cron.schedule('*/30 * * * *', async () => {
-  await autoConfirmPendingMatches()
-})
+cron.schedule(
+  '*/30 * * * *',
+  withErrorReporting('autoConfirmPendingMatches', autoConfirmPendingMatches)
+)
 
 // Cron: cancelar reservas confirmadas que sigan con cupo incompleto a 24h del partido,
 // devolviendo crédito a quien ya pagó. Cada 30 min.
-cron.schedule('*/30 * * * *', async () => {
-  await cancelIncompleteRosterBookings()
-})
+cron.schedule(
+  '*/30 * * * *',
+  withErrorReporting('cancelIncompleteRosterBookings', cancelIncompleteRosterBookings)
+)
 
 // Cron: avisar a jugadores con roster incompleto antes de la cancelación automática, cada 30 min
-cron.schedule('*/30 * * * *', async () => {
-  await warnIncompleteRosterBookings()
-})
+cron.schedule(
+  '*/30 * * * *',
+  withErrorReporting('warnIncompleteRosterBookings', warnIncompleteRosterBookings)
+)
 
 // Cron: pasar a 'cancelled' las membresías cuyo período ya pagado terminó (el socio
 // pidió cancelar pero mantuvo el beneficio hasta nextBillingDate). Cada hora.
-cron.schedule('0 * * * *', async () => {
-  await expireCancelledMemberships()
-})
+cron.schedule(
+  '0 * * * *',
+  withErrorReporting('expireCancelledMemberships', expireCancelledMemberships)
+)
 
 app.listen(PORT, () => {
   console.info(`📅 Booking Service running on port ${PORT}`)

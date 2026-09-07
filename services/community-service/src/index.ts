@@ -3,11 +3,15 @@ import express from 'express'
 import cors from 'cors'
 import helmet from 'helmet'
 import morgan from 'morgan'
+import { initSentry } from '@racketly/utils/observability'
 
 import { postsRouter } from './routes/posts.routes'
 import { groupsRouter } from './routes/groups.routes'
 import { gearRouter } from './routes/gear.routes'
 import { gamificationRouter } from './routes/gamification.routes'
+import { errorHandler } from './middleware/error.middleware'
+
+initSentry({ serviceName: 'community-service' })
 
 const app = express()
 const PORT = process.env.PORT || 3004
@@ -25,5 +29,6 @@ app.use('/api/posts', postsRouter)
 app.use('/api/groups', groupsRouter)
 app.use('/api/gear', gearRouter)
 app.use('/api/gamification', gamificationRouter)
+app.use(errorHandler)
 
 app.listen(PORT, () => console.info(`👥 Community Service running on port ${PORT}`))

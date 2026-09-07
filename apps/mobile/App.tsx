@@ -4,6 +4,7 @@ import { StatusBar } from 'expo-status-bar'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { SafeAreaProvider } from 'react-native-safe-area-context'
 import * as SplashScreen from 'expo-splash-screen'
+import * as Sentry from '@sentry/react-native'
 import {
   useFonts as useArchivoFonts,
   Archivo_600SemiBold,
@@ -18,6 +19,18 @@ import {
 } from '@expo-google-fonts/ibm-plex-sans'
 import { useAuthStore } from './src/store/auth.store'
 import { RootNavigator } from './src/navigation'
+
+// Sin EXPO_PUBLIC_SENTRY_DSN (dev, o antes de tener cuenta configurada), Sentry.init
+// queda deshabilitado — no revienta el arranque, solo no reporta.
+// ponytail: sin el plugin @sentry/react-native/expo en app.json, los stack traces no
+// vienen desofuscados (sin sourcemaps) — agregar cuando haya org/project de Sentry.
+if (process.env.EXPO_PUBLIC_SENTRY_DSN) {
+  Sentry.init({
+    dsn: process.env.EXPO_PUBLIC_SENTRY_DSN,
+    environment: __DEV__ ? 'development' : 'production',
+    tracesSampleRate: 0.1,
+  })
+}
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -38,7 +51,7 @@ function AppContent() {
   return <RootNavigator />
 }
 
-export default function App() {
+function App() {
   const [archivoLoaded] = useArchivoFonts({ Archivo_600SemiBold, Archivo_700Bold })
   const [plexLoaded] = usePlexFonts({
     IBMPlexSans_400Regular,
@@ -63,3 +76,5 @@ export default function App() {
     </QueryClientProvider>
   )
 }
+
+export default Sentry.wrap(App)

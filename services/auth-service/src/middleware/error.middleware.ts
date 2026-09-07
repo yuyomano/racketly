@@ -1,4 +1,5 @@
 import { Request, Response, NextFunction } from 'express'
+import { Sentry } from '@racketly/utils/observability'
 
 export class AppError extends Error {
   public readonly statusCode: number
@@ -26,6 +27,7 @@ export function errorHandler(
   }
 
   console.error('Unhandled error:', err)
+  Sentry.captureException(err)
   return res.status(500).json({
     success: false,
     error: 'Error interno del servidor',

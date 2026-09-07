@@ -4,6 +4,10 @@ import helmet from 'helmet'
 import cors from 'cors'
 import { Queue, Worker } from 'bullmq'
 import sgMail from '@sendgrid/mail'
+import { initSentry, Sentry } from '@racketly/utils/observability'
+import { errorHandler } from './middleware/error.middleware'
+
+initSentry({ serviceName: 'notification-service' })
 
 const app = express()
 const PORT = process.env.PORT || 3006
@@ -52,7 +56,10 @@ new Worker(
     console.info(`[Push] Sent via Expo: ${title}`, result)
   },
   { connection: redisConnection }
-)
+).on('failed', (job, err) => {
+  console.error(`[Push] Job ${job?.id} failed:`, err)
+  Sentry.captureException(err, { tags: { queue: 'push-notifications' } })
+})
 
 new Worker(
   'email-notifications',
@@ -72,7 +79,10 @@ new Worker(
     console.info(`[Email] Sent to ${to}: ${subject}`)
   },
   { connection: redisConnection }
-)
+).on('failed', (job, err) => {
+  console.error(`[Email] Job ${job?.id} failed:`, err)
+  Sentry.captureException(err, { tags: { queue: 'email-notifications' } })
+})
 
 new Worker(
   'smart-alerts',
@@ -85,7 +95,10 @@ new Worker(
     // - Torneo en su categoría
   },
   { connection: redisConnection }
-)
+).on('failed', (job, err) => {
+  console.error(`[SmartAlert] Job ${job?.id} failed:`, err)
+  Sentry.captureException(err, { tags: { queue: 'smart-alerts' } })
+})
 
 // ─── Express API ──────────────────────────────────────────────────────────────
 app.use(express.json())
@@ -104,25 +117,39 @@ app.get('/health', (_req, res) => {
 })
 
 // POST /api/notifications/send — enqueue notificación push
-app.post('/api/notifications/send', async (req, res) => {
-  const { userId, token, type, title, body, data } = req.body
-  await pushQueue.add(type, { userId, token, title, body, data })
-  return res.json({ success: true, message: 'Notification queued' })
+app.post('/api/notifications/send', async (req, res, next) => {
+  try {
+    const { userId, token, type, title, body, data } = req.body
+    await pushQueue.add(type, { userId, token, title, body, data })
+    return res.json({ success: true, message: 'Notification queued' })
+  } catch (err) {
+    return next(err)
+  }
 })
 
 // POST /api/notifications/email
-app.post('/api/notifications/email', async (req, res) => {
-  const { to, subject, html } = req.body
-  await emailQueue.add('email', { to, subject, html })
-  return res.json({ success: true, message: 'Email queued' })
+app.post('/api/notifications/email', async (req, res, next) => {
+  try {
+    const { to, subject, html } = req.body
+    await emailQueue.add('email', { to, subject, html })
+    return res.json({ success: true, message: 'Email queued' })
+  } catch (err) {
+    return next(err)
+  }
 })
 
 // POST /api/notifications/smart-alert
-app.post('/api/notifications/smart-alert', async (req, res) => {
-  const { type, userId, payload } = req.body
-  await smartAlertQueue.add(type, { type, userId, payload })
-  return res.json({ success: true, message: 'Smart alert queued' })
+app.post('/api/notifications/smart-alert', async (req, res, next) => {
+  try {
+    const { type, userId, payload } = req.body
+    await smartAlertQueue.add(type, { type, userId, payload })
+    return res.json({ success: true, message: 'Smart alert queued' })
+  } catch (err) {
+    return next(err)
+  }
 })
+
+app.use(errorHandler)
 
 app.listen(PORT, () => {
   console.info(`🔔 Notification Service running on port ${PORT}`)

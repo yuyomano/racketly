@@ -152,7 +152,11 @@ function CourtSettingsModal({
   }
 
   async function handleSave(andGenerate = false) {
-    andGenerate ? setGenerating(true) : setSaving(true)
+    if (andGenerate) {
+      setGenerating(true)
+    } else {
+      setSaving(true)
+    }
     try {
       const res = await fetch(`${GW}/api/courts/${court.id}`, {
         method: 'PUT',

@@ -1,6 +1,8 @@
 import { Router, Request, Response, NextFunction } from 'express'
 import { PrismaClient } from '@prisma/client'
 import { mux } from '../index'
+import { requireAuth } from '../middleware/auth.middleware'
+import { updateProgressSchema, validate } from '../validators/academy.validators'
 
 const router = Router()
 const prisma = new PrismaClient()
@@ -83,9 +85,9 @@ router.get('/enrollments/user/:userId', async (req: Request, res: Response, next
 })
 
 // POST /api/courses/:id/enroll
-router.post('/:id/enroll', async (req: Request, res: Response, next: NextFunction) => {
+router.post('/:id/enroll', requireAuth, async (req: Request, res: Response, next: NextFunction) => {
   try {
-    const { userId } = req.body
+    const userId = req.userId!
     const existing = await prisma.enrollment.findUnique({
       where: { userId_courseId: { userId, courseId: req.params.id } },
     })
@@ -101,33 +103,44 @@ router.post('/:id/enroll', async (req: Request, res: Response, next: NextFunctio
 })
 
 // PUT /api/courses/enrollments/:id/progress
-router.put('/enrollments/:id/progress', async (req: Request, res: Response, next: NextFunction) => {
-  try {
-    const { progressPercent, lastLessonId } = req.body
-    const enrollment = await prisma.enrollment.update({
-      where: { id: req.params.id },
-      data: {
-        progressPercent,
-        lastLessonId,
-        completedAt: progressPercent >= 100 ? new Date().toISOString() : undefined,
-      },
-    })
-    return res.json({ success: true, data: enrollment })
-  } catch (err) {
-    return next(err)
+router.put(
+  '/enrollments/:id/progress',
+  requireAuth,
+  validate(updateProgressSchema),
+  async (req: Request, res: Response, next: NextFunction) => {
+    try {
+      const { progressPercent, lastLessonId } = req.body
+      const existing = await prisma.enrollment.findUnique({ where: { id: req.params.id } })
+      if (!existing)
+        return res.status(404).json({ success: false, error: 'Inscripción no encontrada' })
+      if (existing.userId !== req.userId!)
+        return res
+          .status(403)
+          .json({ success: false, error: 'No tienes acceso a esta inscripción' })
+
+      const enrollment = await prisma.enrollment.update({
+        where: { id: req.params.id },
+        data: {
+          progressPercent,
+          lastLessonId,
+          completedAt: progressPercent >= 100 ? new Date() : undefined,
+        },
+      })
+      return res.json({ success: true, data: enrollment })
+    } catch (err) {
+      return next(err)
+    }
   }
-})
+)
 
 // POST /api/courses/upload-video — obtener URL de upload para Mux
 router.post('/upload-video', async (_req: Request, res: Response, next: NextFunction) => {
   try {
     if (!mux) {
-      return res
-        .status(503)
-        .json({
-          success: false,
-          error: 'Servicio de video no configurado (MUX_TOKEN_ID requerido)',
-        })
+      return res.status(503).json({
+        success: false,
+        error: 'Servicio de video no configurado (MUX_TOKEN_ID requerido)',
+      })
     }
     const upload = await mux.video.uploads.create({
       cors_origin: process.env.ALLOWED_ORIGINS?.split(',')[0] || 'http://localhost:3000',

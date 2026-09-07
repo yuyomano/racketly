@@ -120,6 +120,10 @@ services:
         NEXT_PUBLIC_GATEWAY_URL: https://api.racketly.club
         NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY: ${NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY}
         API_GATEWAY_URL: http://api-gateway:3000
+        NEXT_PUBLIC_SENTRY_DSN: ${NEXT_PUBLIC_SENTRY_DSN}
+        SENTRY_ORG: ${SENTRY_ORG}
+        SENTRY_PROJECT: ${SENTRY_PROJECT}
+        SENTRY_AUTH_TOKEN: ${SENTRY_AUTH_TOKEN}
     container_name: racketly-web
     restart: unless-stopped
     environment:
@@ -127,6 +131,8 @@ services:
       # queda baked en las rewrites de next.config.ts) — deben coincidir.
       API_GATEWAY_URL: http://api-gateway:3000
       NODE_ENV: production
+      # sentry.server.config.ts lo lee en runtime (SSR corre en el contenedor, no en build)
+      SENTRY_DSN: ${SENTRY_DSN}
     depends_on:
       - api-gateway
 

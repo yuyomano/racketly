@@ -5,6 +5,7 @@ import cors from 'cors'
 import helmet from 'helmet'
 import morgan from 'morgan'
 import { Server as SocketServer } from 'socket.io'
+import { initSentry } from '@racketly/utils/observability'
 
 import { tournamentsRouter } from './routes/tournaments.routes'
 import { tournamentEventsRouter } from './routes/tournament-events.routes'
@@ -13,6 +14,8 @@ import { rankingsRouter } from './routes/rankings.routes'
 import { partnerRouter } from './routes/partner.routes'
 import { errorHandler } from './middleware/error.middleware'
 import { setupLiveScoring } from './sockets/liveScoring'
+
+initSentry({ serviceName: 'tournament-service' })
 
 const app = express()
 const server = http.createServer(app)

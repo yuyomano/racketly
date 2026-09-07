@@ -4,9 +4,13 @@ import cors from 'cors'
 import helmet from 'helmet'
 import morgan from 'morgan'
 import Mux from '@mux/mux-node'
+import { initSentry } from '@racketly/utils/observability'
 
 import { coursesRouter } from './routes/courses.routes'
 import { instructorsRouter } from './routes/instructors.routes'
+import { errorHandler } from './middleware/error.middleware'
+
+initSentry({ serviceName: 'academy-service' })
 
 // Mux es opcional en dev — se necesita solo para upload de videos
 export const mux =
@@ -30,5 +34,6 @@ app.get('/health', (_req, res) =>
 
 app.use('/api/courses', coursesRouter)
 app.use('/api/instructors', instructorsRouter)
+app.use(errorHandler)
 
 app.listen(PORT, () => console.info(`🎓 Academy Service running on port ${PORT}`))

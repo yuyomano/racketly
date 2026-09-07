@@ -10,7 +10,6 @@ import {
   Image,
   Linking,
   Share,
-  FlatList,
   Modal,
   KeyboardAvoidingView,
   Platform,

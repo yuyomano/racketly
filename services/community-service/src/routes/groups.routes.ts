@@ -1,5 +1,6 @@
 import { Router, Request, Response, NextFunction } from 'express'
 import { PrismaClient } from '@prisma/client'
+import { requireAuth } from '../middleware/auth.middleware'
 
 const router = Router()
 const prisma = new PrismaClient()
@@ -21,9 +22,9 @@ router.get('/', async (req: Request, res: Response, next: NextFunction) => {
   }
 })
 
-router.post('/:id/join', async (req: Request, res: Response, next: NextFunction) => {
+router.post('/:id/join', requireAuth, async (req: Request, res: Response, next: NextFunction) => {
   try {
-    const { userId } = req.body
+    const userId = req.userId!
     await prisma.groupMember.create({ data: { groupId: req.params.id, userId } })
     await prisma.group.update({
       where: { id: req.params.id },
@@ -35,9 +36,9 @@ router.post('/:id/join', async (req: Request, res: Response, next: NextFunction)
   }
 })
 
-router.post('/:id/leave', async (req: Request, res: Response, next: NextFunction) => {
+router.post('/:id/leave', requireAuth, async (req: Request, res: Response, next: NextFunction) => {
   try {
-    const { userId } = req.body
+    const userId = req.userId!
     await prisma.groupMember.deleteMany({ where: { groupId: req.params.id, userId } })
     await prisma.group.update({
       where: { id: req.params.id },

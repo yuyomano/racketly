@@ -1,5 +1,6 @@
 import { Router, Request, Response, NextFunction } from 'express'
 import { PrismaClient } from '@prisma/client'
+import { requireAuth } from '../middleware/auth.middleware'
 
 const router = Router()
 const prisma = new PrismaClient()
@@ -39,21 +40,29 @@ router.get('/:id/sessions', async (req: Request, res: Response, next: NextFuncti
 })
 
 // POST /api/instructors/sessions/:id/book
-router.post('/sessions/:id/book', async (req: Request, res: Response, next: NextFunction) => {
-  try {
-    const session = await prisma.instructorSession.findUnique({ where: { id: req.params.id } })
-    if (!session) return res.status(404).json({ success: false, error: 'Sesión no encontrada' })
-    if (session.bookedCount >= session.maxStudents)
-      return res.status(400).json({ success: false, error: 'Sesión llena' })
+// ponytail: solo exige login y evita sobrecupo — no persiste quién reservó (no hay tabla
+// de asistentes, solo bookedCount) ni cobra pricePerPerson. Falta un modelo tipo
+// InstructorSessionBooking (igual a ClassBooking en booking-service) antes de usar esto
+// en producción; hoy dos reservas del mismo usuario cuentan como dos cupos distintos.
+router.post(
+  '/sessions/:id/book',
+  requireAuth,
+  async (req: Request, res: Response, next: NextFunction) => {
+    try {
+      const session = await prisma.instructorSession.findUnique({ where: { id: req.params.id } })
+      if (!session) return res.status(404).json({ success: false, error: 'Sesión no encontrada' })
+      if (session.bookedCount >= session.maxStudents)
+        return res.status(400).json({ success: false, error: 'Sesión llena' })
 
-    await prisma.instructorSession.update({
-      where: { id: req.params.id },
-      data: { bookedCount: { increment: 1 } },
-    })
-    return res.json({ success: true, message: 'Reserva de clase confirmada' })
-  } catch (err) {
-    return next(err)
+      await prisma.instructorSession.update({
+        where: { id: req.params.id },
+        data: { bookedCount: { increment: 1 } },
+      })
+      return res.json({ success: true, message: 'Reserva de clase confirmada' })
+    } catch (err) {
+      return next(err)
+    }
   }
-})
+)
 
 export { router as instructorsRouter }

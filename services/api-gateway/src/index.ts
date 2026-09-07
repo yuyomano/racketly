@@ -7,6 +7,9 @@ import rateLimit from 'express-rate-limit'
 import { createProxyMiddleware } from 'http-proxy-middleware'
 import http from 'http'
 import jwt from 'jsonwebtoken'
+import { initSentry, Sentry } from '@racketly/utils/observability'
+
+initSentry({ serviceName: 'api-gateway' })
 
 const app = express()
 const PORT = Number(process.env.PORT) || 3000
@@ -167,6 +170,7 @@ function makeProxy(target: string, pathFilter: string | string[]): any {
     on: {
       error: (err: any, _req: any, res: any) => {
         console.error(`[gateway] proxy error → ${target}: ${err.message}`)
+        Sentry.captureException(err, { tags: { proxyTarget: target } })
         if (res && typeof res.headersSent !== 'undefined' && !res.headersSent) {
           res.writeHead(502, { 'Content-Type': 'application/json' })
           res.end(
@@ -216,7 +220,9 @@ app.use(
     '/api/match-requests',
   ])
 )
-app.use(makeProxy(SERVICES.community, ['/api/posts', '/api/groups']))
+app.use(
+  makeProxy(SERVICES.community, ['/api/posts', '/api/groups', '/api/gear', '/api/gamification'])
+)
 app.use(makeProxy(SERVICES.academy, ['/api/courses', '/api/instructors', '/api/lessons']))
 app.use(makeProxy(SERVICES.notification, ['/api/notifications']))
 
@@ -256,7 +262,8 @@ server.listen(PORT, () => {
   console.log(`  /api/professors, /api/classes           →  ${SERVICES.booking}`)
   console.log(`  /api/tournaments, /api/rankings        →  ${SERVICES.tournament}`)
   console.log(`  /api/match-requests, /api/matches      →  ${SERVICES.tournament}`)
-  console.log(`  /api/posts, /api/groups                →  ${SERVICES.community}`)
+  console.log(`  /api/posts, /api/groups, /api/gear      →  ${SERVICES.community}`)
+  console.log(`  /api/gamification                       →  ${SERVICES.community}`)
   console.log(`  /api/courses, /api/instructors         →  ${SERVICES.academy}`)
   console.log(`  /api/notifications                     →  ${SERVICES.notification}`)
   console.log(`  /socket.io  (ws)                       →  ${SERVICES.tournament}`)

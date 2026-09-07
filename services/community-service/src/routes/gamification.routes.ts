@@ -1,9 +1,19 @@
 import { Router, Request, Response, NextFunction } from 'express'
 import { PrismaClient } from '@prisma/client'
 import { xpToLevel, xpForNextLevel } from '@racketly/utils'
+import { requireAuth } from '../middleware/auth.middleware'
+import { validate } from '../validators/community.validators'
+import { z } from 'zod'
 
 const router = Router()
 const prisma = new PrismaClient()
+
+const awardXpSchema = z.object({
+  body: z.object({
+    amount: z.number().int().min(1).max(500),
+    reason: z.string().min(1).max(100),
+  }),
+})
 
 // GET /api/gamification/:userId/badges
 router.get('/:userId/badges', async (req: Request, res: Response, next: NextFunction) => {
@@ -41,31 +51,42 @@ router.get('/:userId/progress', async (req: Request, res: Response, next: NextFu
 })
 
 // POST /api/gamification/:userId/award-xp
-router.post('/:userId/award-xp', async (req: Request, res: Response, next: NextFunction) => {
-  try {
-    const { amount, reason } = req.body
-    const profile = await prisma.playerProfile.update({
-      where: { userId: req.params.userId },
-      data: { xpPoints: { increment: amount } },
-    })
-    const newLevel = xpToLevel(profile.xpPoints)
-    const leveledUp = newLevel > profile.level
-
-    if (leveledUp) {
-      await prisma.playerProfile.update({
+// ponytail: solo exige que el caller esté autenticado y acota el monto — no valida
+// todavía que `reason` corresponda a una acción real completada (partido, misión...),
+// así que un usuario logueado podría auto-otorgarse XP repetidamente hasta el tope por
+// llamada. Nada llama hoy este endpoint desde otro servicio; cuando tournament-service
+// o booking-service empiecen a otorgar XP automáticamente, mover la validación de la
+// acción a ese caller (o a un check server-side aquí) antes de exponerlo de verdad.
+router.post(
+  '/:userId/award-xp',
+  requireAuth,
+  validate(awardXpSchema),
+  async (req: Request, res: Response, next: NextFunction) => {
+    try {
+      const { amount, reason } = req.body
+      const profile = await prisma.playerProfile.update({
         where: { userId: req.params.userId },
-        data: { level: newLevel },
+        data: { xpPoints: { increment: amount } },
       })
-    }
+      const newLevel = xpToLevel(profile.xpPoints)
+      const leveledUp = newLevel > profile.level
 
-    return res.json({
-      success: true,
-      data: { newXp: profile.xpPoints, newLevel, leveledUp, reason },
-    })
-  } catch (err) {
-    return next(err)
+      if (leveledUp) {
+        await prisma.playerProfile.update({
+          where: { userId: req.params.userId },
+          data: { level: newLevel },
+        })
+      }
+
+      return res.json({
+        success: true,
+        data: { newXp: profile.xpPoints, newLevel, leveledUp, reason },
+      })
+    } catch (err) {
+      return next(err)
+    }
   }
-})
+)
 
 // GET /api/gamification/missions
 router.get('/missions', async (_req: Request, res: Response, next: NextFunction) => {

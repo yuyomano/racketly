@@ -1,4 +1,5 @@
 import { Request, Response, NextFunction } from 'express'
+import { Sentry } from '@racketly/utils/observability'
 
 export class AppError extends Error {
   constructor(
@@ -17,7 +18,10 @@ export function errorHandler(
 ) {
   const status = err instanceof AppError ? err.statusCode : 500
   const message = err instanceof AppError ? err.message : 'Error interno del servidor'
-  if (!(err instanceof AppError)) console.error(err)
+  if (!(err instanceof AppError)) {
+    console.error(err)
+    Sentry.captureException(err)
+  }
   const detail =
     process.env.NODE_ENV !== 'production' && !(err instanceof AppError)
       ? (err as any).message

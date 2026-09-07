@@ -291,7 +291,7 @@ export function TournamentDetailScreen({ route, navigation }: { route: any; navi
   const qc = useQueryClient()
   const [tab, setTab] = useState<'info' | 'groups' | 'bracket' | 'players'>('info')
 
-  const { data: tournament, isLoading } = useQuery({
+  const { data: tournament } = useQuery({
     queryKey: ['tournament', initial.id],
     queryFn: () => tournamentsApi.getById(initial.id),
     select: (r) => r.data.data ?? r.data,

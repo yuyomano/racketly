@@ -1,5 +1,6 @@
 import type { NextConfig } from 'next'
 import createNextIntlPlugin from 'next-intl/plugin'
+import { withSentryConfig } from '@sentry/nextjs'
 
 const withNextIntl = createNextIntlPlugin('./i18n/request.ts')
 
@@ -42,10 +43,20 @@ const nextConfig: NextConfig = {
       { source: '/api/match-requests/:path*', destination: `${GW}/api/match-requests/:path*` },
       { source: '/api/posts/:path*', destination: `${GW}/api/posts/:path*` },
       { source: '/api/groups/:path*', destination: `${GW}/api/groups/:path*` },
+      { source: '/api/gear/:path*', destination: `${GW}/api/gear/:path*` },
+      { source: '/api/gamification/:path*', destination: `${GW}/api/gamification/:path*` },
+      { source: '/api/exchange-rates/:path*', destination: `${GW}/api/exchange-rates/:path*` },
       { source: '/api/courses/:path*', destination: `${GW}/api/courses/:path*` },
       { source: '/api/instructors/:path*', destination: `${GW}/api/instructors/:path*` },
     ]
   },
 }
 
-export default withNextIntl(nextConfig)
+// withSentryConfig sin SENTRY_AUTH_TOKEN sigue funcionando (solo se salta el
+// upload de source maps, que requiere login a Sentry) — no bloquea el build.
+export default withSentryConfig(withNextIntl(nextConfig), {
+  org: process.env.SENTRY_ORG,
+  project: process.env.SENTRY_PROJECT,
+  silent: true,
+  disableLogger: true,
+})

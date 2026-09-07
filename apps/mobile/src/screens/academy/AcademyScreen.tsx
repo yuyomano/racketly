@@ -20,7 +20,8 @@ const LEVEL_LABELS: Record<string, string> = {
 
 export function AcademyScreen({ navigation }: { navigation: any }) {
   const [level, setLevel] = useState('all')
-  const [sport, setSport] = useState<string | null>(null)
+  // ponytail: filtro de sport ya está en el query, falta el toggle en la UI
+  const [sport, _setSport] = useState<string | null>(null)
 
   const { data, isLoading } = useQuery({
     queryKey: ['courses', { level, sport }],

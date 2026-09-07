@@ -16,7 +16,8 @@ import { SportIcon } from '../../components/ui/SportIcons'
 
 export function TournamentsScreen({ navigation }: { navigation: any }) {
   const { user } = useAuthStore()
-  const [sport, setSport] = useState<string | null>(null)
+  // ponytail: filtro de sport ya está en el query, falta el toggle en la UI
+  const [sport, _setSport] = useState<string | null>(null)
   const [status, setStatus] = useState<string>('open')
   const [location, setLocation] = useState<{ lat: number; lng: number } | null>(null)
 

@@ -4,11 +4,14 @@ import cors from 'cors'
 import helmet from 'helmet'
 import morgan from 'morgan'
 import rateLimit from 'express-rate-limit'
+import { initSentry } from '@racketly/utils/observability'
 
 import { authRouter } from './routes/auth.routes'
 import { profileRouter } from './routes/profile.routes'
 import { usersRouter } from './routes/users.routes'
 import { errorHandler } from './middleware/error.middleware'
+
+initSentry({ serviceName: 'auth-service' })
 
 const app = express()
 const PORT = process.env.PORT || 3001

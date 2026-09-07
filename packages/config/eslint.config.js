@@ -17,7 +17,16 @@ module.exports = [
     },
     rules: {
       ...tsPlugin.configs['recommended'].rules,
-      '@typescript-eslint/no-unused-vars': ['error', { argsIgnorePattern: '^_' }],
+      // ignoreRestSiblings: permite `const { fieldToDrop, ...rest } = obj` sin usar
+      // fieldToDrop — es el patrón estándar para omitir un campo de un objeto.
+      '@typescript-eslint/no-unused-vars': [
+        'error',
+        { argsIgnorePattern: '^_', varsIgnorePattern: '^_', ignoreRestSiblings: true },
+      ],
+      // `declare global { namespace Express { ... } }` es el patrón estándar para
+      // extender el tipo Request con campos propios (userId, clubAdmin...) en varios
+      // servicios — no es un namespace "de verdad", así que no debe marcarse.
+      '@typescript-eslint/no-namespace': ['error', { allowDeclarations: true }],
       '@typescript-eslint/no-explicit-any': 'warn',
       '@typescript-eslint/explicit-function-return-type': 'off',
       '@typescript-eslint/explicit-module-boundary-types': 'off',

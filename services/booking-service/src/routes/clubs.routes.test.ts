@@ -19,8 +19,8 @@ describe('/api/clubs', () => {
     ownerId = owner.id
     otherId = other.id
 
-    const res = await request(app).post('/api/clubs').send({
-      ownerId,
+    const res = await request(app).post('/api/clubs').set('x-user-id', ownerId).send({
+      ownerId: otherId, // debe ser ignorado — el owner es quien está autenticado
       name: 'Club Test',
       country: 'DO',
       city: 'Santo Domingo',
@@ -35,6 +35,21 @@ describe('/api/clubs', () => {
     await prisma.club.delete({ where: { id: clubId } })
     await prisma.user.deleteMany({ where: { id: { in: [ownerId, otherId] } } })
     await prisma.$disconnect()
+  })
+
+  it('POST / sin x-user-id responde 401', async () => {
+    const res = await request(app)
+      .post('/api/clubs')
+      .send({ ownerId, name: 'Club Sin Auth', country: 'DO', city: 'Santo Domingo', address: 'x' })
+    expect(res.status).toBe(401)
+  })
+
+  it('POST / crea el club con ownerId del header, no del body', async () => {
+    expect(clubId).toBeTruthy()
+    const admin = await prisma.clubAdmin.findFirst({ where: { clubId, userId: ownerId } })
+    expect(admin?.role).toBe('owner')
+    const asOther = await prisma.clubAdmin.findFirst({ where: { clubId, userId: otherId } })
+    expect(asOther).toBeNull()
   })
 
   it('POST /:id/courts sin x-user-id responde 401', async () => {

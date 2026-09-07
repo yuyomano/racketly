@@ -1,8 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { getSessionUser, gatewayFetch } from '@/lib/auth-web'
 
-const BOOKING = process.env.BOOKING_SERVICE_URL || 'http://localhost:3002'
-
 // GET /api/clubs — buscar/listar clubes (para que el jugador elija dónde reservar)
 export async function GET(req: NextRequest) {
   try {
@@ -24,10 +22,12 @@ export async function POST(req: NextRequest) {
 
   try {
     const body = await req.json()
-    const res = await fetch(`${BOOKING}/api/clubs`, {
+    // Vía gateway (no directo al servicio) — mismo patrón que /api/clubs/invitations/accept.
+    // El gateway inyecta x-user-id desde el JWT; booking-service usa ese id como owner, no
+    // uno que mande el body.
+    const res = await gatewayFetch('/api/clubs', {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ ...body, ownerId: user.id }),
+      body: JSON.stringify(body),
     })
     const data = await res.json()
     return NextResponse.json(data, { status: res.status })

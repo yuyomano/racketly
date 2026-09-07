@@ -135,8 +135,13 @@ const COUNTRY_CURRENCY: Record<string, string> = {
 // POST /api/clubs — crear nuevo club (auto-asigna owner)
 router.post('/', async (req: Request, res: Response, next: NextFunction) => {
   try {
+    // Mismo patrón que POST /invitations/accept: el owner es quien está autenticado, nunca un
+    // id que venga del body — si no, cualquiera podía crear clubes y asignarle la propiedad
+    // (con acceso admin completo vía ClubAdmin) a cualquier usuario existente sin su permiso.
+    const ownerId = req.headers['x-user-id'] as string | undefined
+    if (!ownerId) throw new AppError('Autenticación requerida', 401)
+
     const {
-      ownerId,
       name,
       description,
       country,
@@ -156,8 +161,8 @@ router.post('/', async (req: Request, res: Response, next: NextFunction) => {
       slotGenerationHour,
     } = req.body
 
-    if (!ownerId || !name || !country || !city || !address) {
-      throw new AppError('Faltan campos requeridos: ownerId, name, country, city, address', 400)
+    if (!name || !country || !city || !address) {
+      throw new AppError('Faltan campos requeridos: name, country, city, address', 400)
     }
 
     const owner = await prisma.user.findUnique({ where: { id: ownerId } })

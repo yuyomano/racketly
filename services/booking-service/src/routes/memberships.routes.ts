@@ -1,6 +1,7 @@
 import { Router, Request, Response, NextFunction } from 'express'
 import { PrismaClient } from '@prisma/client'
 import { AppError } from '../middleware/error.middleware'
+import { requireClubAccess, assertClubAdmin } from '../middleware/club-auth.middleware'
 import { countMembershipSessionsForDate } from '../services/membership-sessions.service'
 import { recordPayment, resolvePaymentMethod } from '../services/payment-ledger.service'
 import { decryptPII } from '@racketly/utils/pii-crypto'
@@ -38,6 +39,7 @@ router.get('/:clubId/membership-plans', async (req: Request, res: Response, next
 // Crear un plan de membresía para el club (uso admin)
 router.post(
   '/:clubId/membership-plans',
+  requireClubAccess,
   async (req: Request, res: Response, next: NextFunction) => {
     try {
       const { name, description, price, currency, sessionsPerDay, priceExtraSession } = req.body
@@ -74,6 +76,7 @@ router.post(
 // Editar o activar/desactivar un plan
 router.patch(
   '/:clubId/membership-plans/:planId',
+  requireClubAccess,
   async (req: Request, res: Response, next: NextFunction) => {
     try {
       const existing = await prisma.clubMembershipPlan.findUnique({
@@ -144,70 +147,74 @@ router.get('/:clubId/memberships', async (req: Request, res: Response, next: Nex
 // registrado a un plan del club, con cobro opcional en efectivo/tarjeta. Si se
 // omite paymentMethod y el plan tiene precio, queda como cortesía/sin cobro —
 // igual que las reservas, requiere un motivo (ej. "Profesora del club").
-router.post('/:clubId/memberships', async (req: Request, res: Response, next: NextFunction) => {
-  try {
-    const { clubId } = req.params
-    const { userId, planId, paymentMethod, courtesyReason } = req.body
-    if (!userId || !planId) throw new AppError('userId y planId requeridos', 400)
+router.post(
+  '/:clubId/memberships',
+  requireClubAccess,
+  async (req: Request, res: Response, next: NextFunction) => {
+    try {
+      const { clubId } = req.params
+      const { userId, planId, paymentMethod, courtesyReason } = req.body
+      if (!userId || !planId) throw new AppError('userId y planId requeridos', 400)
 
-    const plan = await prisma.clubMembershipPlan.findUnique({ where: { id: planId } })
-    if (!plan || plan.clubId !== clubId || !plan.isActive)
-      throw new AppError('Plan no disponible', 404)
+      const plan = await prisma.clubMembershipPlan.findUnique({ where: { id: planId } })
+      if (!plan || plan.clubId !== clubId || !plan.isActive)
+        throw new AppError('Plan no disponible', 404)
 
-    const user = await prisma.user.findUnique({
-      where: { id: userId },
-      select: { id: true, email: true, firstName: true, lastName: true },
-    })
-    if (!user) throw new AppError('Jugador no encontrado', 404)
-
-    const existing = await prisma.userClubMembership.findFirst({
-      where: { userId, clubId, status: 'active' },
-    })
-    if (existing) throw new AppError('Este jugador ya tiene una membresía activa en el club', 409)
-
-    const isCourtesy = !paymentMethod && plan.price > 0
-    if (isCourtesy && !courtesyReason?.trim()) {
-      throw new AppError('Se requiere un motivo para la membresía de cortesía', 400)
-    }
-
-    const now = new Date()
-    const membership = await prisma.userClubMembership.create({
-      data: {
-        userId,
-        planId,
-        clubId,
-        status: 'active',
-        startDate: now,
-        nextBillingDate: addMonths(now, 1),
-        isCourtesy,
-        courtesyReason: isCourtesy ? courtesyReason.trim() : null,
-      },
-      include: { plan: true },
-    })
-
-    let paid = false
-    if (paymentMethod) {
-      const fullName =
-        user.firstName || user.lastName
-          ? `${user.firstName ?? ''} ${user.lastName ?? ''}`.trim()
-          : undefined
-      await recordPayment({
-        clubId,
-        membershipId: membership.id,
-        playerUserId: userId,
-        playerName: fullName || user.email?.split('@')[0],
-        amount: plan.price,
-        currency: plan.currency,
-        method: resolvePaymentMethod(paymentMethod),
+      const user = await prisma.user.findUnique({
+        where: { id: userId },
+        select: { id: true, email: true, firstName: true, lastName: true },
       })
-      paid = plan.price > 0
-    }
+      if (!user) throw new AppError('Jugador no encontrado', 404)
 
-    return res.status(201).json({ success: true, data: { ...membership, paid } })
-  } catch (err) {
-    return next(err)
+      const existing = await prisma.userClubMembership.findFirst({
+        where: { userId, clubId, status: 'active' },
+      })
+      if (existing) throw new AppError('Este jugador ya tiene una membresía activa en el club', 409)
+
+      const isCourtesy = !paymentMethod && plan.price > 0
+      if (isCourtesy && !courtesyReason?.trim()) {
+        throw new AppError('Se requiere un motivo para la membresía de cortesía', 400)
+      }
+
+      const now = new Date()
+      const membership = await prisma.userClubMembership.create({
+        data: {
+          userId,
+          planId,
+          clubId,
+          status: 'active',
+          startDate: now,
+          nextBillingDate: addMonths(now, 1),
+          isCourtesy,
+          courtesyReason: isCourtesy ? courtesyReason.trim() : null,
+        },
+        include: { plan: true },
+      })
+
+      let paid = false
+      if (paymentMethod) {
+        const fullName =
+          user.firstName || user.lastName
+            ? `${user.firstName ?? ''} ${user.lastName ?? ''}`.trim()
+            : undefined
+        await recordPayment({
+          clubId,
+          membershipId: membership.id,
+          playerUserId: userId,
+          playerName: fullName || user.email?.split('@')[0],
+          amount: plan.price,
+          currency: plan.currency,
+          method: resolvePaymentMethod(paymentMethod),
+        })
+        paid = plan.price > 0
+      }
+
+      return res.status(201).json({ success: true, data: { ...membership, paid } })
+    } catch (err) {
+      return next(err)
+    }
   }
-})
+)
 
 // ─── GET /api/clubs/:clubId/players ──────────────────────────────────────────
 // Directorio de jugadores del club: cruza reservas, membresías, créditos y torneos.
@@ -735,8 +742,10 @@ router.get('/user/:userId', async (req: Request, res: Response, next: NextFuncti
 // Suscribir usuario a un plan de membresía
 router.post('/subscribe', async (req: Request, res: Response, next: NextFunction) => {
   try {
-    const { userId, planId } = req.body
-    if (!userId || !planId) throw new AppError('userId y planId requeridos', 400)
+    const { planId } = req.body
+    const userId = req.headers['x-user-id'] as string | undefined
+    if (!userId) throw new AppError('Autenticación requerida', 401)
+    if (!planId) throw new AppError('planId requerido', 400)
 
     const plan = await prisma.clubMembershipPlan.findUnique({
       where: { id: planId },
@@ -787,6 +796,12 @@ router.delete('/:id/cancel', async (req: Request, res: Response, next: NextFunct
       include: { plan: true, club: { select: { name: true } } },
     })
     if (!membership) throw new AppError('Membresía no encontrada', 404)
+
+    const requestingUserId = req.headers['x-user-id'] as string | undefined
+    if (requestingUserId !== membership.userId) {
+      await assertClubAdmin(requestingUserId, membership.clubId)
+    }
+
     if (membership.status !== 'active') throw new AppError('La membresía no está activa', 400)
     if (membership.cancelAtPeriodEnd)
       throw new AppError('Esta membresía ya está en proceso de cancelación', 400)

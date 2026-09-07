@@ -3,6 +3,7 @@ import { PrismaClient } from '@prisma/client'
 import { generateSlotsFromCourtConfig } from '../services/slot.service'
 import { toMinutes, hasConflictingMaintenance } from '../services/schedule-conflict.service'
 import { AppError } from '../middleware/error.middleware'
+import { assertClubAdmin } from '../middleware/club-auth.middleware'
 
 const router = Router()
 const prisma = new PrismaClient()
@@ -48,6 +49,13 @@ router.get('/:id/slots', async (req: Request, res: Response, next: NextFunction)
 // PUT /api/courts/:id — actualizar configuración de la cancha
 router.put('/:id', async (req: Request, res: Response, next: NextFunction) => {
   try {
+    const existing = await prisma.court.findUnique({
+      where: { id: req.params.id },
+      select: { clubId: true },
+    })
+    if (!existing) throw new AppError('Pista no encontrada', 404)
+    await assertClubAdmin(req.headers['x-user-id'] as string | undefined, existing.clubId)
+
     const {
       name,
       isActive,
@@ -104,6 +112,13 @@ router.put('/:id', async (req: Request, res: Response, next: NextFunction) => {
 // POST /api/courts/:id/generate-slots — genera slots usando la config guardada en DB
 router.post('/:id/generate-slots', async (req: Request, res: Response, next: NextFunction) => {
   try {
+    const court = await prisma.court.findUnique({
+      where: { id: req.params.id },
+      select: { clubId: true },
+    })
+    if (!court) throw new AppError('Pista no encontrada', 404)
+    await assertClubAdmin(req.headers['x-user-id'] as string | undefined, court.clubId)
+
     const count = await generateSlotsFromCourtConfig(req.params.id)
     return res.json({ success: true, data: { slotsCreated: count } })
   } catch (err) {
@@ -147,6 +162,7 @@ router.post('/:id/maintenance', async (req: Request, res: Response, next: NextFu
 
     const court = await prisma.court.findUnique({ where: { id: req.params.id } })
     if (!court) throw new AppError('Pista no encontrada', 404)
+    await assertClubAdmin(req.headers['x-user-id'] as string | undefined, court.clubId)
 
     const block = await prisma.maintenanceBlock.create({
       data: {
@@ -169,9 +185,13 @@ router.delete(
   '/:id/maintenance/:blockId',
   async (req: Request, res: Response, next: NextFunction) => {
     try {
-      const block = await prisma.maintenanceBlock.findUnique({ where: { id: req.params.blockId } })
+      const block = await prisma.maintenanceBlock.findUnique({
+        where: { id: req.params.blockId },
+        include: { court: { select: { clubId: true } } },
+      })
       if (!block || block.courtId !== req.params.id)
         throw new AppError('Bloqueo no encontrado', 404)
+      await assertClubAdmin(req.headers['x-user-id'] as string | undefined, block.court.clubId)
 
       await prisma.maintenanceBlock.delete({ where: { id: req.params.blockId } })
       return res.json({ success: true, message: 'Bloqueo de mantenimiento eliminado.' })

@@ -1,6 +1,7 @@
 import { Router, Request, Response, NextFunction } from 'express'
 import { PrismaClient } from '@prisma/client'
 import { AppError } from '../middleware/error.middleware'
+import { assertClubAdmin } from '../middleware/club-auth.middleware'
 
 const router = Router()
 const prisma = new PrismaClient()
@@ -14,6 +15,7 @@ router.post('/', async (req: Request, res: Response, next: NextFunction) => {
       throw new AppError('userId, clubId, amount y reason son requeridos', 400)
     }
     if (amount <= 0) throw new AppError('El monto debe ser mayor a 0', 400)
+    await assertClubAdmin(req.headers['x-user-id'] as string | undefined, clubId)
 
     const [user, club] = await Promise.all([
       prisma.user.findUnique({ where: { id: userId } }),
@@ -106,6 +108,7 @@ router.patch('/:id/use', async (req: Request, res: Response, next: NextFunction)
     const credit = await prisma.userCredit.findUnique({ where: { id: req.params.id } })
     if (!credit) throw new AppError('Crédito no encontrado', 404)
     if (credit.status !== 'available') throw new AppError('El crédito ya fue utilizado', 400)
+    await assertClubAdmin(req.headers['x-user-id'] as string | undefined, credit.clubId)
 
     const updated = await prisma.userCredit.update({
       where: { id: req.params.id },

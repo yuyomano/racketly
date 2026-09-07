@@ -1,6 +1,7 @@
 import { Router, Request, Response, NextFunction } from 'express'
 import { PrismaClient } from '@prisma/client'
 import { AppError } from '../middleware/error.middleware'
+import { assertClubAdmin } from '../middleware/club-auth.middleware'
 import {
   recordPayment,
   resolvePaymentMethod,
@@ -70,6 +71,7 @@ router.post('/', async (req: Request, res: Response, next: NextFunction) => {
     if (!professorId) throw new AppError('professorId es requerido', 400)
     if (!date || !startTime) throw new AppError('Fecha y hora son requeridas', 400)
     if (typeof price !== 'number' || price < 0) throw new AppError('Precio inválido', 400)
+    await assertClubAdmin(req.headers['x-user-id'] as string | undefined, clubId)
 
     if (courtId) {
       const startMin = toMinutes(startTime)
@@ -120,6 +122,7 @@ router.patch('/:id', async (req: Request, res: Response, next: NextFunction) => 
 
     const existing = await prisma.classSlot.findUnique({ where: { id: req.params.id } })
     if (!existing) throw new AppError('Clase no encontrada', 404)
+    await assertClubAdmin(req.headers['x-user-id'] as string | undefined, existing.clubId)
 
     const data: Record<string, unknown> = {}
     if (courtId !== undefined) data.courtId = courtId || null
@@ -183,6 +186,12 @@ router.post('/:id/book', async (req: Request, res: Response, next: NextFunction)
       include: { bookings: { where: { status: 'active' } } },
     })
     if (!slot) throw new AppError('Clase no encontrada', 404)
+    // Self-o-admin: el propio alumno reservando su cupo, o el dashboard reservando a nombre
+    // de un jugador que buscó — nunca un studentUserId de terceros sin más.
+    const requestingUserId = req.headers['x-user-id'] as string | undefined
+    if (requestingUserId !== studentUserId) {
+      await assertClubAdmin(requestingUserId, slot.clubId)
+    }
     if (slot.status !== 'open') throw new AppError('Esta clase ya no está disponible', 400)
     if (slot.bookings.length >= slot.maxStudents)
       throw new AppError('Esta clase ya no tiene cupos', 400)
@@ -246,6 +255,11 @@ router.delete('/bookings/:id', async (req: Request, res: Response, next: NextFun
     if (!existing) throw new AppError('Reserva de clase no encontrada', 404)
     if (existing.status === 'cancelled') throw new AppError('Ya está cancelada', 400)
 
+    const requestingUserId = req.headers['x-user-id'] as string | undefined
+    if (requestingUserId !== existing.studentUserId) {
+      await assertClubAdmin(requestingUserId, existing.classSlot.clubId)
+    }
+
     const classStart = new Date(`${existing.classSlot.date}T${existing.classSlot.startTime}:00`)
     const hoursUntil = (classStart.getTime() - Date.now()) / (1000 * 60 * 60)
     const refunds = hoursUntil >= CLASS_CANCEL_DEADLINE_HOURS && existing.amountPaid > 0
@@ -290,6 +304,7 @@ router.patch('/bookings/:id/pay', async (req: Request, res: Response, next: Next
     })
     if (!booking) throw new AppError('Reserva de clase no encontrada', 404)
     if (booking.paymentStatus === 'paid') throw new AppError('Ya está pagada', 400)
+    await assertClubAdmin(req.headers['x-user-id'] as string | undefined, booking.classSlot.clubId)
 
     const amountToCollect = booking.amountOwed - booking.amountPaid
     const updated = await prisma.classBooking.update({

@@ -1,6 +1,7 @@
 import { Router, Request, Response, NextFunction } from 'express'
 import { PrismaClient } from '@prisma/client'
 import { AppError } from '../middleware/error.middleware'
+import { assertClubAdmin } from '../middleware/club-auth.middleware'
 
 const router = Router()
 const prisma = new PrismaClient()
@@ -31,6 +32,7 @@ router.post('/', async (req: Request, res: Response, next: NextFunction) => {
     if (!clubId) throw new AppError('clubId es requerido', 400)
     if (typeof hourlyRate !== 'number' || hourlyRate < 0)
       throw new AppError('Tarifa por hora inválida', 400)
+    await assertClubAdmin(req.headers['x-user-id'] as string | undefined, clubId)
 
     let resolvedName = name?.trim()
     if (!isExternal) {
@@ -86,6 +88,7 @@ router.patch('/:id', async (req: Request, res: Response, next: NextFunction) => 
 
     const existing = await prisma.clubProfessor.findUnique({ where: { id: req.params.id } })
     if (!existing) throw new AppError('Profesor no encontrado', 404)
+    await assertClubAdmin(req.headers['x-user-id'] as string | undefined, existing.clubId)
     const nextIsExternal = isExternal !== undefined ? !!isExternal : existing.isExternal
     const nextUserId = userId !== undefined ? userId : existing.userId
 

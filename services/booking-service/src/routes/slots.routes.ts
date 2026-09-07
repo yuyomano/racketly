@@ -2,6 +2,7 @@ import { Router, Request, Response, NextFunction } from 'express'
 import { PrismaClient } from '@prisma/client'
 import { toMinutes, hasConflictingMaintenance } from '../services/schedule-conflict.service'
 import { AppError } from '../middleware/error.middleware'
+import { assertClubAdmin } from '../middleware/club-auth.middleware'
 
 const router = Router()
 const prisma = new PrismaClient()
@@ -50,8 +51,12 @@ router.patch('/:id/block', async (req: Request, res: Response, next: NextFunctio
     const { reason, blockedForUserId } = req.body
     if (!reason?.trim()) throw new AppError('Se requiere una razón para bloquear el slot', 400)
 
-    const slot = await prisma.timeSlot.findUnique({ where: { id: req.params.id } })
+    const slot = await prisma.timeSlot.findUnique({
+      where: { id: req.params.id },
+      include: { court: { select: { clubId: true } } },
+    })
     if (!slot) throw new AppError('Slot no encontrado', 404)
+    await assertClubAdmin(req.headers['x-user-id'] as string | undefined, slot.court.clubId)
 
     const now = new Date()
     const expiresAt = new Date(now)
@@ -82,8 +87,12 @@ router.patch('/:id/block', async (req: Request, res: Response, next: NextFunctio
 // Desbloquea un slot manualmente antes de que expire.
 router.delete('/:id/block', async (req: Request, res: Response, next: NextFunction) => {
   try {
-    const slot = await prisma.timeSlot.findUnique({ where: { id: req.params.id } })
+    const slot = await prisma.timeSlot.findUnique({
+      where: { id: req.params.id },
+      include: { court: { select: { clubId: true } } },
+    })
     if (!slot) throw new AppError('Slot no encontrado', 404)
+    await assertClubAdmin(req.headers['x-user-id'] as string | undefined, slot.court.clubId)
 
     const updated = await prisma.timeSlot.update({
       where: { id: req.params.id },

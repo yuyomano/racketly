@@ -45,8 +45,11 @@ app.use(errorHandler)
 // Configurar namespaces de Socket.IO
 setupLiveScoring(io)
 
-server.listen(PORT, () => {
-  console.info(`🏆 Tournament Service running on port ${PORT} (with WebSocket)`)
-})
-
 export default app
+
+// Guard: al importar `app` desde un test (supertest) no queremos bindear el puerto real.
+if (require.main === module) {
+  server.listen(PORT, () => {
+    console.info(`🏆 Tournament Service running on port ${PORT} (with WebSocket)`)
+  })
+}

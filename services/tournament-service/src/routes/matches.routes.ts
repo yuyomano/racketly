@@ -1,17 +1,39 @@
 import { Router, Request, Response, NextFunction } from 'express'
 import { PrismaClient } from '@prisma/client'
 import { AppError } from '../middleware/error.middleware'
+import { requireAuth } from '../middleware/auth.middleware'
 import { io } from '../index'
 
 const router = Router()
 const prisma = new PrismaClient()
 
-// PUT /api/matches/:id/score — actualizar marcador (REST fallback para live scoring)
-router.put('/:id/score', async (req: Request, res: Response, next: NextFunction) => {
+// PUT /api/matches/:id/score — actualizar marcador (REST fallback para live scoring).
+// Autorizado: cualquiera de los 4 jugadores en cancha (singles o dobles), el árbitro
+// asignado, o el organizador del torneo (si el partido pertenece a uno).
+router.put('/:id/score', requireAuth, async (req: Request, res: Response, next: NextFunction) => {
   try {
     const { sets, isFinished } = req.body
     const match = await prisma.match.findUnique({ where: { id: req.params.id } })
     if (!match) throw new AppError('Partido no encontrado', 404)
+
+    const allowedIds = new Set(
+      [
+        match.player1Id,
+        match.player1PartnerId,
+        match.player2Id,
+        match.player2PartnerId,
+        match.refereeId,
+      ].filter((x): x is string => !!x)
+    )
+    let authorized = allowedIds.has(req.userId!)
+    if (!authorized && match.tournamentId) {
+      const tournament = await prisma.tournament.findUnique({
+        where: { id: match.tournamentId },
+        select: { organizerId: true },
+      })
+      authorized = tournament?.organizerId === req.userId
+    }
+    if (!authorized) throw new AppError('No puedes actualizar el marcador de este partido', 403)
 
     const updated = await prisma.match.update({
       where: { id: req.params.id },

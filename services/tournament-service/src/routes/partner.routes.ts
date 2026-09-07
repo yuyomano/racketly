@@ -1,18 +1,43 @@
 import { Router, Request, Response, NextFunction } from 'express'
 import { PrismaClient } from '@prisma/client'
 import { AppError } from '../middleware/error.middleware'
+import { requireAuth } from '../middleware/auth.middleware'
 
 const router = Router()
 const prisma = new PrismaClient()
 
 // POST /api/match-requests — publicar solicitud de pareja
-router.post('/', async (req: Request, res: Response, next: NextFunction) => {
+router.post('/', requireAuth, async (req: Request, res: Response, next: NextFunction) => {
   try {
+    const {
+      sport,
+      levelMin,
+      levelMax,
+      city,
+      maxDistanceKm,
+      preferredDate,
+      timePreference,
+      courtId,
+      message,
+    } = req.body
     const expiresAt = new Date()
     expiresAt.setDate(expiresAt.getDate() + 7)
 
     const request = await prisma.matchRequest.create({
-      data: { ...req.body, status: 'open', expiresAt: expiresAt.toISOString() },
+      data: {
+        requesterId: req.userId!,
+        sport,
+        levelMin,
+        levelMax,
+        city,
+        ...(maxDistanceKm !== undefined && { maxDistanceKm: Number(maxDistanceKm) }),
+        ...(preferredDate && { preferredDate }),
+        ...(timePreference && { timePreference }),
+        ...(courtId && { courtId }),
+        ...(message && { message }),
+        status: 'open',
+        expiresAt,
+      },
     })
     return res.status(201).json({ success: true, data: request })
   } catch (err) {
@@ -51,14 +76,11 @@ router.get('/', async (req: Request, res: Response, next: NextFunction) => {
   }
 })
 
-// GET /api/match-requests/mine?userId= — mis solicitudes publicadas (con aplicantes)
-router.get('/mine', async (req: Request, res: Response, next: NextFunction) => {
+// GET /api/match-requests/mine — mis solicitudes publicadas (con aplicantes)
+router.get('/mine', requireAuth, async (req: Request, res: Response, next: NextFunction) => {
   try {
-    const { userId } = req.query
-    if (!userId) throw new AppError('userId es requerido', 400)
-
     const requests = await prisma.matchRequest.findMany({
-      where: { requesterId: userId as string },
+      where: { requesterId: req.userId },
       include: {
         applications: {
           include: {
@@ -84,9 +106,10 @@ router.get('/mine', async (req: Request, res: Response, next: NextFunction) => {
 })
 
 // POST /api/match-requests/:id/apply — aplicar a una solicitud
-router.post('/:id/apply', async (req: Request, res: Response, next: NextFunction) => {
+router.post('/:id/apply', requireAuth, async (req: Request, res: Response, next: NextFunction) => {
   try {
-    const { applicantId, message } = req.body
+    const { message } = req.body
+    const applicantId = req.userId!
     const request = await prisma.matchRequest.findUnique({ where: { id: req.params.id } })
     if (!request) throw new AppError('Solicitud no encontrada', 404)
     if (request.status !== 'open') throw new AppError('Esta solicitud ya no está disponible', 400)
@@ -108,34 +131,48 @@ router.post('/:id/apply', async (req: Request, res: Response, next: NextFunction
 })
 
 // PUT /api/match-applications/:id/respond — aceptar o rechazar aplicación
-router.put('/applications/:id/respond', async (req: Request, res: Response, next: NextFunction) => {
-  try {
-    const { status } = req.body // 'accepted' | 'rejected'
-    const application = await prisma.matchApplication.update({
-      where: { id: req.params.id },
-      data: { status, respondedAt: new Date().toISOString() },
-    })
+router.put(
+  '/applications/:id/respond',
+  requireAuth,
+  async (req: Request, res: Response, next: NextFunction) => {
+    try {
+      const { status } = req.body // 'accepted' | 'rejected'
+      if (!['accepted', 'rejected'].includes(status)) throw new AppError('Estado inválido', 400)
 
-    // Si se acepta: cerrar la solicitud y rechazar automáticamente las otras aplicaciones
-    if (status === 'accepted') {
-      await prisma.matchRequest.update({
-        where: { id: application.requestId },
-        data: { status: 'matched' },
+      const existing = await prisma.matchApplication.findUnique({
+        where: { id: req.params.id },
+        include: { request: { select: { requesterId: true } } },
       })
-      await prisma.matchApplication.updateMany({
-        where: {
-          requestId: application.requestId,
-          id: { not: req.params.id },
-          status: 'pending',
-        },
-        data: { status: 'rejected', respondedAt: new Date().toISOString() },
+      if (!existing) throw new AppError('Aplicación no encontrada', 404)
+      if (existing.request.requesterId !== req.userId)
+        throw new AppError('No puedes responder aplicaciones de otra persona', 403)
+
+      const application = await prisma.matchApplication.update({
+        where: { id: req.params.id },
+        data: { status, respondedAt: new Date().toISOString() },
       })
+
+      // Si se acepta: cerrar la solicitud y rechazar automáticamente las otras aplicaciones
+      if (status === 'accepted') {
+        await prisma.matchRequest.update({
+          where: { id: application.requestId },
+          data: { status: 'matched' },
+        })
+        await prisma.matchApplication.updateMany({
+          where: {
+            requestId: application.requestId,
+            id: { not: req.params.id },
+            status: 'pending',
+          },
+          data: { status: 'rejected', respondedAt: new Date().toISOString() },
+        })
+      }
+
+      return res.json({ success: true, data: application })
+    } catch (err) {
+      return next(err)
     }
-
-    return res.json({ success: true, data: application })
-  } catch (err) {
-    return next(err)
   }
-})
+)
 
 export { router as partnerRouter }

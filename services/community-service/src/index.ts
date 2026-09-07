@@ -31,4 +31,9 @@ app.use('/api/gear', gearRouter)
 app.use('/api/gamification', gamificationRouter)
 app.use(errorHandler)
 
-app.listen(PORT, () => console.info(`👥 Community Service running on port ${PORT}`))
+export { app }
+
+// Guard: al importar `app` desde un test (supertest) no queremos bindear el puerto real.
+if (require.main === module) {
+  app.listen(PORT, () => console.info(`👥 Community Service running on port ${PORT}`))
+}

@@ -62,57 +62,61 @@ app.use('/api/clubs', membershipsRouter)
 app.use('/api/exchange-rates', exchangeRatesRouter)
 app.use(errorHandler)
 
-// Cron: liberar slots con pago pendiente cada 5 min
-cron.schedule('*/5 * * * *', withErrorReporting('releaseExpiredSlots', releaseExpiredSlots))
-
-// Cron: avisar a jugadores con pago pendiente antes de que se libere el slot, cada 5 min
-cron.schedule(
-  '*/5 * * * *',
-  withErrorReporting('warnPendingPaymentBookings', warnPendingPaymentBookings)
-)
-
-// Cron: cada hora en punto, revisa qué clubs tienen esa hora configurada como su
-// `slotGenerationHour` (default 6am, editable por club) y genera los slots que
-// falten dentro de su horizonte de reservas.
-cron.schedule(
-  '0 * * * *',
-  withErrorReporting('runScheduledSlotGeneration', runScheduledSlotGeneration)
-)
-
-// Cron: completar reservas confirmadas cuyo horario ya pasó, cada 15 min
-cron.schedule(
-  '*/15 * * * *',
-  withErrorReporting('completeExpiredBookings', completeExpiredBookings)
-)
-
-// Cron: aceptar tácitamente (y aplicar ELO a) resultados de partido que nadie objetó, cada 30 min
-cron.schedule(
-  '*/30 * * * *',
-  withErrorReporting('autoConfirmPendingMatches', autoConfirmPendingMatches)
-)
-
-// Cron: cancelar reservas confirmadas que sigan con cupo incompleto a 24h del partido,
-// devolviendo crédito a quien ya pagó. Cada 30 min.
-cron.schedule(
-  '*/30 * * * *',
-  withErrorReporting('cancelIncompleteRosterBookings', cancelIncompleteRosterBookings)
-)
-
-// Cron: avisar a jugadores con roster incompleto antes de la cancelación automática, cada 30 min
-cron.schedule(
-  '*/30 * * * *',
-  withErrorReporting('warnIncompleteRosterBookings', warnIncompleteRosterBookings)
-)
-
-// Cron: pasar a 'cancelled' las membresías cuyo período ya pagado terminó (el socio
-// pidió cancelar pero mantuvo el beneficio hasta nextBillingDate). Cada hora.
-cron.schedule(
-  '0 * * * *',
-  withErrorReporting('expireCancelledMemberships', expireCancelledMemberships)
-)
-
-app.listen(PORT, () => {
-  console.info(`📅 Booking Service running on port ${PORT}`)
-})
-
 export default app
+
+// Guard: al importar `app` desde un test (supertest) no queremos bindear el puerto real
+// ni disparar los 7 cron jobs de fondo.
+if (require.main === module) {
+  // Cron: liberar slots con pago pendiente cada 5 min
+  cron.schedule('*/5 * * * *', withErrorReporting('releaseExpiredSlots', releaseExpiredSlots))
+
+  // Cron: avisar a jugadores con pago pendiente antes de que se libere el slot, cada 5 min
+  cron.schedule(
+    '*/5 * * * *',
+    withErrorReporting('warnPendingPaymentBookings', warnPendingPaymentBookings)
+  )
+
+  // Cron: cada hora en punto, revisa qué clubs tienen esa hora configurada como su
+  // `slotGenerationHour` (default 6am, editable por club) y genera los slots que
+  // falten dentro de su horizonte de reservas.
+  cron.schedule(
+    '0 * * * *',
+    withErrorReporting('runScheduledSlotGeneration', runScheduledSlotGeneration)
+  )
+
+  // Cron: completar reservas confirmadas cuyo horario ya pasó, cada 15 min
+  cron.schedule(
+    '*/15 * * * *',
+    withErrorReporting('completeExpiredBookings', completeExpiredBookings)
+  )
+
+  // Cron: aceptar tácitamente (y aplicar ELO a) resultados de partido que nadie objetó, cada 30 min
+  cron.schedule(
+    '*/30 * * * *',
+    withErrorReporting('autoConfirmPendingMatches', autoConfirmPendingMatches)
+  )
+
+  // Cron: cancelar reservas confirmadas que sigan con cupo incompleto a 24h del partido,
+  // devolviendo crédito a quien ya pagó. Cada 30 min.
+  cron.schedule(
+    '*/30 * * * *',
+    withErrorReporting('cancelIncompleteRosterBookings', cancelIncompleteRosterBookings)
+  )
+
+  // Cron: avisar a jugadores con roster incompleto antes de la cancelación automática, cada 30 min
+  cron.schedule(
+    '*/30 * * * *',
+    withErrorReporting('warnIncompleteRosterBookings', warnIncompleteRosterBookings)
+  )
+
+  // Cron: pasar a 'cancelled' las membresías cuyo período ya pagado terminó (el socio
+  // pidió cancelar pero mantuvo el beneficio hasta nextBillingDate). Cada hora.
+  cron.schedule(
+    '0 * * * *',
+    withErrorReporting('expireCancelledMemberships', expireCancelledMemberships)
+  )
+
+  app.listen(PORT, () => {
+    console.info(`📅 Booking Service running on port ${PORT}`)
+  })
+}

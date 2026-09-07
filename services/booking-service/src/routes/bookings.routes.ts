@@ -165,6 +165,14 @@ router.post('/', async (req: Request, res: Response, next: NextFunction) => {
   const paymentMethod = resolvePaymentMethod(req.body.paymentMethod)
 
   try {
+    // Mismo patrón que el resto de este archivo (DELETE /:id, etc.): si el gateway mandó
+    // x-user-id, debe coincidir con el `userId` de la reserva — si no, cualquiera podía crear
+    // reservas (con cobros asociados) a nombre de otra persona con solo mandar su id en el body.
+    const requestingUserId = req.headers['x-user-id'] as string | undefined
+    if (requestingUserId && userId !== requestingUserId) {
+      throw new AppError('No puedes crear una reserva a nombre de otro usuario', 403)
+    }
+
     // Verificar disponibilidad
     const available = await isSlotAvailable(slotId)
     if (!available) throw new AppError('Esta cancha ya no está disponible', 409)

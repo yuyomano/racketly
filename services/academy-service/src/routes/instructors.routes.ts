@@ -1,6 +1,7 @@
 import { Router, Request, Response, NextFunction } from 'express'
 import { PrismaClient } from '@prisma/client'
 import { requireAuth } from '../middleware/auth.middleware'
+import { AppError } from '../middleware/error.middleware'
 
 const router = Router()
 const prisma = new PrismaClient()
@@ -40,25 +41,49 @@ router.get('/:id/sessions', async (req: Request, res: Response, next: NextFuncti
 })
 
 // POST /api/instructors/sessions/:id/book
-// ponytail: solo exige login y evita sobrecupo — no persiste quién reservó (no hay tabla
-// de asistentes, solo bookedCount) ni cobra pricePerPerson. Falta un modelo tipo
-// InstructorSessionBooking (igual a ClassBooking en booking-service) antes de usar esto
-// en producción; hoy dos reservas del mismo usuario cuentan como dos cupos distintos.
+// ponytail: sin cobro todavía — pricePerPerson queda solo como referencia hasta que se
+// integre un flujo de pago para clases de instructor (ver comentario en el modelo).
 router.post(
   '/sessions/:id/book',
   requireAuth,
   async (req: Request, res: Response, next: NextFunction) => {
     try {
-      const session = await prisma.instructorSession.findUnique({ where: { id: req.params.id } })
-      if (!session) return res.status(404).json({ success: false, error: 'Sesión no encontrada' })
-      if (session.bookedCount >= session.maxStudents)
-        return res.status(400).json({ success: false, error: 'Sesión llena' })
+      const userId = req.userId!
 
-      await prisma.instructorSession.update({
-        where: { id: req.params.id },
-        data: { bookedCount: { increment: 1 } },
+      const booking = await prisma.$transaction(async (tx) => {
+        const session = await tx.instructorSession.findUnique({ where: { id: req.params.id } })
+        if (!session) throw new AppError('Sesión no encontrada', 404)
+
+        const existing = await tx.instructorSessionBooking.findUnique({
+          where: { sessionId_userId: { sessionId: req.params.id, userId } },
+        })
+        if (existing && existing.status === 'active')
+          throw new AppError('Ya estás inscrito en esta sesión', 409)
+
+        // Cuenta reservas activas reales en vez de confiar en bookedCount para el chequeo
+        // de cupo — bookedCount es un contador denormalizado de conveniencia para listados.
+        const activeCount = await tx.instructorSessionBooking.count({
+          where: { sessionId: req.params.id, status: 'active' },
+        })
+        if (activeCount >= session.maxStudents) throw new AppError('Sesión llena', 400)
+
+        const created = existing
+          ? await tx.instructorSessionBooking.update({
+              where: { id: existing.id },
+              data: { status: 'active' },
+            })
+          : await tx.instructorSessionBooking.create({
+              data: { sessionId: req.params.id, userId, status: 'active' },
+            })
+
+        await tx.instructorSession.update({
+          where: { id: req.params.id },
+          data: { bookedCount: activeCount + 1 },
+        })
+        return created
       })
-      return res.json({ success: true, message: 'Reserva de clase confirmada' })
+
+      return res.status(201).json({ success: true, data: booking })
     } catch (err) {
       return next(err)
     }

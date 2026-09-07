@@ -208,33 +208,34 @@ model User {
   updatedAt        DateTime         @updatedAt
 
   // Relaciones
-  playerProfile       PlayerProfile?
-  accountInvite       AccountInvite?
-  instructorProfile   InstructorProfile?
-  clubOwned           Club[]
-  clubAdmins          ClubAdmin[]
-  bookings            Booking[]
-  posts               Post[]
-  comments            Comment[]
-  postLikes           PostLike[]
-  gearReviews         GearReview[]
-  enrollments         Enrollment[]
-  userBadges          UserBadge[]
-  userMissions        UserMission[]
-  matchRequests       MatchRequest[]
-  matchApplications   MatchApplication[]
-  notifications       Notification[]
-  follows             Follow[]             @relation("follower")
-  followers           Follow[]             @relation("following")
-  groupMembers        GroupMember[]
-  reputationsGiven    PlayerReputation[]   @relation("reviewer")
-  reputationsReceived PlayerReputation[]   @relation("reviewed")
-  refereeMatches      Match[]              @relation("referee")
-  clubMemberships     UserClubMembership[]
-  credits             UserCredit[]
-  classBookings       ClassBooking[]
-  professorProfiles   ClubProfessor[]
-  refreshTokens       RefreshToken[]
+  playerProfile             PlayerProfile?
+  accountInvite             AccountInvite?
+  instructorProfile         InstructorProfile?
+  clubOwned                 Club[]
+  clubAdmins                ClubAdmin[]
+  bookings                  Booking[]
+  posts                     Post[]
+  comments                  Comment[]
+  postLikes                 PostLike[]
+  gearReviews               GearReview[]
+  enrollments               Enrollment[]
+  userBadges                UserBadge[]
+  userMissions              UserMission[]
+  matchRequests             MatchRequest[]
+  matchApplications         MatchApplication[]
+  notifications             Notification[]
+  follows                   Follow[]                   @relation("follower")
+  followers                 Follow[]                   @relation("following")
+  groupMembers              GroupMember[]
+  reputationsGiven          PlayerReputation[]         @relation("reviewer")
+  reputationsReceived       PlayerReputation[]         @relation("reviewed")
+  refereeMatches            Match[]                    @relation("referee")
+  clubMemberships           UserClubMembership[]
+  credits                   UserCredit[]
+  classBookings             ClassBooking[]
+  professorProfiles         ClubProfessor[]
+  refreshTokens             RefreshToken[]
+  instructorSessionBookings InstructorSessionBooking[]
 
   @@map("users")
 }
@@ -311,35 +312,35 @@ model InstructorProfile {
 // ═══════════════════════════════════════════════════════════════════════════════
 
 model Club {
-  id                 String             @id @default(cuid())
-  ownerId            String
-  name               String
-  description        String?
-  country            String
-  city               String
-  address            String
-  latitude           Float
-  longitude          Float
-  photos             String[]           @default([])
-  subscriptionTier   SubscriptionTier   @default(club_starter)
-  verified           Boolean            @default(false)
-  isActive           Boolean            @default(true)
-  contactEmail       String?
-  phone              String?
-  website            String?
-  sports             Sport[]            @default([padel])
-  amenities          String[]           @default([])
-  cancellationPolicy CancellationPolicy @default(flexible)
-  currency           String             @default("USD")
-  bookingHorizonDays Int                @default(14)
-  slotGenerationHour Int                @default(6) // hora local (0-23) a la que corre la generación automática diaria de slots
-  timezone           String             @default("UTC") // IANA (ej. "America/Santo_Domingo") — usada para interpretar en hora local las franjas horarias de eventos (TournamentEvent.schedulingWindows)
-  paymentWarningMinutesBefore Int       @default(5) // minutos antes del cutoff de pago (15 min, fijo) para avisar al jugador
-  rosterWarningHoursBefore    Int       @default(6) // horas antes del deadline de roster (24h, fijo) para avisar al jugador
-  ratingAvg          Float              @default(0)
-  totalReviews       Int                @default(0)
-  createdAt          DateTime           @default(now())
-  updatedAt          DateTime           @updatedAt
+  id                          String             @id @default(cuid())
+  ownerId                     String
+  name                        String
+  description                 String?
+  country                     String
+  city                        String
+  address                     String
+  latitude                    Float
+  longitude                   Float
+  photos                      String[]           @default([])
+  subscriptionTier            SubscriptionTier   @default(club_starter)
+  verified                    Boolean            @default(false)
+  isActive                    Boolean            @default(true)
+  contactEmail                String?
+  phone                       String?
+  website                     String?
+  sports                      Sport[]            @default([padel])
+  amenities                   String[]           @default([])
+  cancellationPolicy          CancellationPolicy @default(flexible)
+  currency                    String             @default("USD")
+  bookingHorizonDays          Int                @default(14)
+  slotGenerationHour          Int                @default(6) // hora local (0-23) a la que corre la generación automática diaria de slots
+  timezone                    String             @default("UTC") // IANA (ej. "America/Santo_Domingo") — usada para interpretar en hora local las franjas horarias de eventos (TournamentEvent.schedulingWindows)
+  paymentWarningMinutesBefore Int                @default(5) // minutos antes del cutoff de pago (15 min, fijo) para avisar al jugador
+  rosterWarningHoursBefore    Int                @default(6) // horas antes del deadline de roster (24h, fijo) para avisar al jugador
+  ratingAvg                   Float              @default(0)
+  totalReviews                Int                @default(0)
+  createdAt                   DateTime           @default(now())
+  updatedAt                   DateTime           @updatedAt
 
   owner            User                    @relation(fields: [ownerId], references: [id])
   admins           ClubAdmin[]
@@ -1173,9 +1174,28 @@ model InstructorSession {
   status              String      @default("open")
   createdAt           DateTime    @default(now())
 
-  instructor InstructorProfile @relation(fields: [instructorId], references: [userId])
+  instructor InstructorProfile          @relation(fields: [instructorId], references: [userId])
+  bookings   InstructorSessionBooking[]
 
   @@map("instructor_sessions")
+}
+
+// ponytail: sin cobro — pricePerPerson queda como referencia para reconciliación manual
+// hasta que se integre un flujo de pago para clases de instructor (igual que
+// ClassBooking, pero eso vive en booking-service junto a Payment/Stripe).
+model InstructorSessionBooking {
+  id        String   @id @default(cuid())
+  sessionId String
+  userId    String
+  status    String   @default("active") // active | cancelled
+  createdAt DateTime @default(now())
+
+  session InstructorSession @relation(fields: [sessionId], references: [id])
+  user    User              @relation(fields: [userId], references: [id])
+
+  @@unique([sessionId, userId])
+  @@index([sessionId])
+  @@map("instructor_session_bookings")
 }
 
 // ═══════════════════════════════════════════════════════════════════════════════

@@ -36,4 +36,9 @@ app.use('/api/courses', coursesRouter)
 app.use('/api/instructors', instructorsRouter)
 app.use(errorHandler)
 
-app.listen(PORT, () => console.info(`🎓 Academy Service running on port ${PORT}`))
+export { app }
+
+// Guard: al importar `app` desde un test (supertest) no queremos bindear el puerto real.
+if (require.main === module) {
+  app.listen(PORT, () => console.info(`🎓 Academy Service running on port ${PORT}`))
+}

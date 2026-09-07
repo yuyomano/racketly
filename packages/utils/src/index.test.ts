@@ -7,6 +7,8 @@ import {
   PAIR_DAILY_MATCH_LIMIT,
   PAIR_DAILY_SET_LIMIT,
   PAIR_HALF_DAY_MATCH_LIMIT,
+  xpToLevel,
+  xpForNextLevel,
 } from './index'
 
 describe('zonedTimeToUtc', () => {
@@ -142,5 +144,37 @@ describe('findWorkloadEligibleStart', () => {
         maxIterations: 0,
       })
     ).toThrow()
+  })
+})
+
+describe('xpToLevel', () => {
+  it('0 XP es nivel 1', () => {
+    expect(xpToLevel(0)).toBe(1)
+  })
+
+  it('XP justo en un umbral sube de nivel', () => {
+    expect(xpToLevel(99)).toBe(1)
+    expect(xpToLevel(100)).toBe(2)
+  })
+
+  it('XP por encima del último umbral se queda en el nivel máximo (11)', () => {
+    expect(xpToLevel(15000)).toBe(11)
+    expect(xpToLevel(999999)).toBe(11)
+  })
+})
+
+describe('xpForNextLevel', () => {
+  it('a mitad de camino entre dos umbrales da ~50%', () => {
+    // nivel 1: 0-100
+    expect(xpForNextLevel(50)).toEqual({ current: 0, next: 100, percent: 50 })
+  })
+
+  it('en el nivel máximo no divide por cero — da 100% en vez de NaN', () => {
+    expect(xpForNextLevel(15000)).toEqual({ current: 15000, next: 15000, percent: 100 })
+    expect(xpForNextLevel(999999)).toEqual({ current: 15000, next: 15000, percent: 100 })
+  })
+
+  it('justo al empezar un nivel da 0%', () => {
+    expect(xpForNextLevel(100)).toEqual({ current: 100, next: 250, percent: 0 })
   })
 })

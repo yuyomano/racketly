@@ -197,7 +197,9 @@ export function xpForNextLevel(xp: number): { current: number; next: number; per
   const level = xpToLevel(xp)
   const current = XP_THRESHOLDS[level - 1] ?? 0
   const next = XP_THRESHOLDS[level] ?? XP_THRESHOLDS[XP_THRESHOLDS.length - 1]
-  const percent = Math.round(((xp - current) / (next - current)) * 100)
+  // En el nivel máximo, next === current (no hay siguiente umbral) — sin este caso
+  // especial la división da 0/0 = NaN y rompe la barra de progreso en el cliente.
+  const percent = next === current ? 100 : Math.round(((xp - current) / (next - current)) * 100)
   return { current, next, percent }
 }
 

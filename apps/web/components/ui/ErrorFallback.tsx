@@ -30,18 +30,18 @@ export function ErrorFallback({
         <div className="w-14 h-14 rounded-2xl bg-red-50 flex items-center justify-center mx-auto mb-4">
           <AlertTriangle className="w-6 h-6 text-red-500" strokeWidth={1.75} />
         </div>
-        <h1 className="text-lg font-bold text-gray-900">{t('title')}</h1>
-        <p className="text-sm text-gray-400 mt-1.5">{t('description')}</p>
+        <h1 className="text-lg font-bold text-ink-900">{t('title')}</h1>
+        <p className="text-sm text-ink-400 mt-1.5">{t('description')}</p>
         <div className="flex items-center justify-center gap-3 mt-6">
           <button
             onClick={reset}
-            className="flex items-center gap-1.5 text-sm font-semibold text-white bg-emerald-600 hover:bg-emerald-700 rounded-xl px-4 py-2.5 transition-colors"
+            className="flex items-center gap-1.5 text-sm font-semibold text-white bg-court-600 hover:bg-court-700 rounded-xl px-4 py-2.5 transition-colors"
           >
             <RotateCcw className="w-4 h-4" /> {t('retry')}
           </button>
           <Link
             href={homeHref}
-            className="text-sm font-semibold text-gray-600 bg-gray-100 hover:bg-gray-200 rounded-xl px-4 py-2.5 transition-colors"
+            className="text-sm font-semibold text-ink-600 bg-ink-100 hover:bg-ink-200 rounded-xl px-4 py-2.5 transition-colors"
           >
             {homeLabel}
           </Link>

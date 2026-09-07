@@ -47,14 +47,14 @@ export function ClubTournamentsClient({ clubId }: { clubId: string }) {
   })
 
   return (
-    <div className="min-h-screen bg-gray-50">
-      <div className="bg-emerald-800 text-white px-5 pt-10 pb-6">
-        <p className="text-emerald-300 text-xs font-semibold uppercase tracking-wide mb-1">
+    <div className="min-h-screen bg-ink-50">
+      <div className="bg-court-800 text-white px-5 pt-10 pb-6">
+        <p className="text-court-300 text-xs font-semibold uppercase tracking-wide mb-1">
           Torneos del club
         </p>
         <h1 className="text-2xl font-black tracking-tight">{club?.name ?? ' '}</h1>
         {club && (
-          <p className="text-emerald-200 text-sm mt-1 flex items-center gap-1.5">
+          <p className="text-court-200 text-sm mt-1 flex items-center gap-1.5">
             <MapPin className="w-3.5 h-3.5" /> {club.address}, {club.city}
           </p>
         )}
@@ -67,7 +67,7 @@ export function ClubTournamentsClient({ clubId }: { clubId: string }) {
               key={t.value}
               onClick={() => setStatus(t.value)}
               className={`flex-1 text-sm font-semibold py-2.5 rounded-xl transition-colors ${
-                status === t.value ? 'bg-emerald-600 text-white' : 'text-gray-500 hover:bg-gray-50'
+                status === t.value ? 'bg-court-600 text-white' : 'text-ink-500 hover:bg-ink-50'
               }`}
             >
               {t.label}
@@ -78,7 +78,7 @@ export function ClubTournamentsClient({ clubId }: { clubId: string }) {
         <div className="py-5 space-y-3">
           {isLoading ? (
             <div className="flex justify-center py-16">
-              <Loader2 className="w-6 h-6 text-emerald-500 animate-spin" />
+              <Loader2 className="w-6 h-6 text-court-500 animate-spin" />
             </div>
           ) : !tournaments || tournaments.length === 0 ? (
             <EmptyState
@@ -100,8 +100,8 @@ export function ClubTournamentsClient({ clubId }: { clubId: string }) {
                         </Badge>
                       )}
                     </div>
-                    <p className="font-bold text-gray-900">{t.name}</p>
-                    <div className="flex items-center justify-between text-xs text-gray-500">
+                    <p className="font-bold text-ink-900">{t.name}</p>
+                    <div className="flex items-center justify-between text-xs text-ink-500">
                       <span className="flex items-center gap-1.5">
                         <Calendar className="w-3.5 h-3.5" />{' '}
                         {new Date(t.startDate).toLocaleDateString('es-CO')}

@@ -186,7 +186,7 @@ export function TournamentDetailClient({
     <div className="space-y-6 max-w-3xl mx-auto">
       <Link
         href="/tournaments"
-        className="flex items-center gap-1.5 text-sm text-gray-400 hover:text-gray-600 transition-colors"
+        className="flex items-center gap-1.5 text-sm text-ink-400 hover:text-ink-600 transition-colors"
       >
         <ArrowLeft className="w-4 h-4" /> {t('backLink')}
       </Link>
@@ -194,8 +194,8 @@ export function TournamentDetailClient({
       <Card className="p-6">
         <div className="flex items-start justify-between gap-3">
           <div>
-            <h1 className="text-xl font-black text-gray-900 tracking-tight">{tournament.name}</h1>
-            <p className="flex items-center gap-1 text-sm text-gray-400 mt-1">
+            <h1 className="text-xl font-black text-ink-900 tracking-tight">{tournament.name}</h1>
+            <p className="flex items-center gap-1 text-sm text-ink-400 mt-1">
               <MapPin className="w-3.5 h-3.5" /> {tournament.club?.name ?? tournament.location}
             </p>
           </div>
@@ -226,15 +226,15 @@ export function TournamentDetailClient({
         </div>
 
         {tournament.description && (
-          <p className="text-sm text-gray-500 mt-4">{tournament.description}</p>
+          <p className="text-sm text-ink-500 mt-4">{tournament.description}</p>
         )}
 
-        <div className="grid grid-cols-3 gap-4 mt-5 pt-5 border-t border-gray-100">
+        <div className="grid grid-cols-3 gap-4 mt-5 pt-5 border-t border-ink-100">
           <div>
-            <p className="flex items-center gap-1 text-xs text-gray-400">
+            <p className="flex items-center gap-1 text-xs text-ink-400">
               <CalendarDays className="w-3.5 h-3.5" /> {t('dateLabel')}
             </p>
-            <p className="text-sm font-semibold text-gray-800 mt-0.5">
+            <p className="text-sm font-semibold text-ink-800 mt-0.5">
               {new Date(tournament.startDate).toLocaleDateString(locale, {
                 day: 'numeric',
                 month: 'short',
@@ -242,19 +242,19 @@ export function TournamentDetailClient({
             </p>
           </div>
           <div>
-            <p className="flex items-center gap-1 text-xs text-gray-400">
+            <p className="flex items-center gap-1 text-xs text-ink-400">
               <Users className="w-3.5 h-3.5" /> {t('participantsLabel')}
             </p>
-            <p className="text-sm font-semibold text-gray-800 mt-0.5">
+            <p className="text-sm font-semibold text-ink-800 mt-0.5">
               {tournament.currentParticipants}/{tournament.maxParticipants}
             </p>
           </div>
           {tournament.prizeInfo && (
             <div>
-              <p className="flex items-center gap-1 text-xs text-gray-400">
+              <p className="flex items-center gap-1 text-xs text-ink-400">
                 <Trophy className="w-3.5 h-3.5" /> {t('prizeLabel')}
               </p>
-              <p className="text-sm font-semibold text-gray-800 mt-0.5 truncate">
+              <p className="text-sm font-semibold text-ink-800 mt-0.5 truncate">
                 {tournament.prizeInfo}
               </p>
             </div>
@@ -269,8 +269,8 @@ export function TournamentDetailClient({
 
         <div className="mt-5">
           {myParticipation ? (
-            <div className="flex items-center justify-between gap-3 bg-emerald-50 rounded-xl px-4 py-3">
-              <p className="flex items-center gap-2 text-sm font-semibold text-emerald-700">
+            <div className="flex items-center justify-between gap-3 bg-court-50 rounded-xl px-4 py-3">
+              <p className="flex items-center gap-2 text-sm font-semibold text-court-700">
                 <CheckCircle2 className="w-4 h-4" />
                 {myParticipation.confirmed ? t('alreadyRegistered') : t('registeredIncomplete')}
               </p>
@@ -297,7 +297,7 @@ export function TournamentDetailClient({
               )}
             </Button>
           ) : (
-            <p className="text-xs text-gray-400 text-center">{t('registrationsClosed')}</p>
+            <p className="text-xs text-ink-400 text-center">{t('registrationsClosed')}</p>
           )}
 
           {myParticipation &&
@@ -322,9 +322,9 @@ export function TournamentDetailClient({
 
       {showBracket && (
         <Card className="p-6">
-          <h2 className="font-bold text-gray-900 mb-4">{t('bracketTitle')}</h2>
+          <h2 className="font-bold text-ink-900 mb-4">{t('bracketTitle')}</h2>
           {bracketLoading ? (
-            <div className="flex items-center justify-center py-10 text-gray-400">
+            <div className="flex items-center justify-center py-10 text-ink-400">
               <Loader2 className="w-5 h-5 animate-spin" />
             </div>
           ) : rounds.length === 0 ? (
@@ -333,20 +333,20 @@ export function TournamentDetailClient({
             <div className="space-y-5">
               {rounds.map((round) => (
                 <div key={round}>
-                  <p className="text-xs font-bold text-gray-400 uppercase tracking-wide mb-2">
+                  <p className="text-xs font-bold text-ink-400 uppercase tracking-wide mb-2">
                     {t('roundLabel', { round })}
                   </p>
                   <div className="space-y-2">
                     {bracket![round].map((m) => (
                       <div
                         key={m.id}
-                        className="flex items-center justify-between gap-3 border border-gray-100 rounded-xl px-4 py-2.5 text-sm"
+                        className="flex items-center justify-between gap-3 border border-ink-100 rounded-xl px-4 py-2.5 text-sm"
                       >
                         <div className="min-w-0">
                           <p
                             className={cn(
                               'truncate',
-                              m.winnerId === m.player1Id && 'font-bold text-emerald-700'
+                              m.winnerId === m.player1Id && 'font-bold text-court-700'
                             )}
                           >
                             {m.player1?.displayName ?? t('tbdPlayer')}
@@ -355,14 +355,14 @@ export function TournamentDetailClient({
                           <p
                             className={cn(
                               'truncate',
-                              m.winnerId === m.player2Id && 'font-bold text-emerald-700'
+                              m.winnerId === m.player2Id && 'font-bold text-court-700'
                             )}
                           >
                             {m.player2?.displayName ?? t('tbdPlayer')}
                             {m.player2PartnerName ? ` / ${m.player2PartnerName}` : ''}
                           </p>
                         </div>
-                        <span className="text-xs text-gray-400 font-mono shrink-0">
+                        <span className="text-xs text-ink-400 font-mono shrink-0">
                           {formatScore(m.score) || '—'}
                         </span>
                       </div>

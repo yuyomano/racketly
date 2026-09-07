@@ -26,9 +26,7 @@ export function AppNavLink({
       href={href}
       className={cn(
         'flex items-center gap-2 px-3.5 py-2 rounded-xl text-sm font-medium transition-colors',
-        isActive
-          ? 'text-emerald-700 bg-emerald-50'
-          : 'text-gray-500 hover:bg-gray-50 hover:text-gray-700'
+        isActive ? 'text-court-700 bg-court-50' : 'text-ink-500 hover:bg-ink-50 hover:text-ink-700'
       )}
     >
       <Icon className="w-4 h-4" strokeWidth={2} />

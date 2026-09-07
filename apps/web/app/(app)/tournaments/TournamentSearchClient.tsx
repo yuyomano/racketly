@@ -75,44 +75,40 @@ export function TournamentSearchClient({ userId: _userId }: { userId: string }) 
     <div className="space-y-6">
       <div className="flex items-center justify-between gap-4">
         <div>
-          <h1 className="text-xl font-black text-gray-900 tracking-tight">{t('title')}</h1>
-          <p className="text-sm text-gray-400 mt-0.5">{t('subtitle')}</p>
+          <h1 className="text-xl font-black text-ink-900 tracking-tight">{t('title')}</h1>
+          <p className="text-sm text-ink-400 mt-0.5">{t('subtitle')}</p>
         </div>
         <Link
           href="/tournaments/mine"
-          className="flex items-center gap-1.5 text-sm font-semibold text-emerald-700 bg-emerald-50 hover:bg-emerald-100 px-3.5 py-2 rounded-xl transition-colors shrink-0"
+          className="flex items-center gap-1.5 text-sm font-semibold text-court-700 bg-court-50 hover:bg-court-100 px-3.5 py-2 rounded-xl transition-colors shrink-0"
         >
           <CalendarClock className="w-4 h-4" /> {t('myTournamentsLink')}
         </Link>
       </div>
 
       <div className="flex flex-col sm:flex-row gap-3 sm:items-center sm:justify-between">
-        <div className="flex border border-gray-200 rounded-xl overflow-hidden w-fit">
+        <div className="flex border border-ink-200 rounded-xl overflow-hidden w-fit">
           {STATUS_TABS.map((v) => (
             <button
               key={v}
               onClick={() => setStatus(v)}
               className={cn(
                 'px-4 py-2 text-sm font-semibold transition-colors',
-                status === v
-                  ? 'bg-emerald-600 text-white'
-                  : 'bg-white text-gray-500 hover:bg-gray-50'
+                status === v ? 'bg-court-600 text-white' : 'bg-white text-ink-500 hover:bg-ink-50'
               )}
             >
               {STATUS_TAB_LABEL[v]}
             </button>
           ))}
         </div>
-        <div className="flex border border-gray-200 rounded-xl overflow-hidden w-fit">
+        <div className="flex border border-ink-200 rounded-xl overflow-hidden w-fit">
           {(['all', 'padel', 'pickleball'] as const).map((v) => (
             <button
               key={v}
               onClick={() => setSport(v)}
               className={cn(
                 'px-4 py-2 text-sm font-semibold transition-colors',
-                sport === v
-                  ? 'bg-emerald-600 text-white'
-                  : 'bg-white text-gray-500 hover:bg-gray-50'
+                sport === v ? 'bg-court-600 text-white' : 'bg-white text-ink-500 hover:bg-ink-50'
               )}
             >
               {SPORT_TAB_LABEL[v]}
@@ -122,7 +118,7 @@ export function TournamentSearchClient({ userId: _userId }: { userId: string }) 
       </div>
 
       {isLoading ? (
-        <div className="flex items-center justify-center py-16 text-gray-400">
+        <div className="flex items-center justify-center py-16 text-ink-400">
           <Loader2 className="w-5 h-5 animate-spin" />
         </div>
       ) : error ? (
@@ -133,16 +129,16 @@ export function TournamentSearchClient({ userId: _userId }: { userId: string }) 
         <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-4">
           {tournaments.map((t) => (
             <Link key={t.id} href={`/tournaments/${t.id}`}>
-              <Card className="p-5 h-full hover:border-emerald-200 hover:shadow-md transition-all cursor-pointer">
+              <Card className="p-5 h-full hover:border-court-200 hover:shadow-md transition-all cursor-pointer">
                 <div className="flex items-start justify-between gap-2">
-                  <h3 className="font-bold text-gray-900 leading-snug">{t.name}</h3>
+                  <h3 className="font-bold text-ink-900 leading-snug">{t.name}</h3>
                   {t.sport === 'padel' ? (
-                    <PadelIcon size={16} className="text-gray-300 shrink-0" />
+                    <PadelIcon size={16} className="text-ink-300 shrink-0" />
                   ) : (
-                    <PickleballIcon size={16} className="text-gray-300 shrink-0" />
+                    <PickleballIcon size={16} className="text-ink-300 shrink-0" />
                   )}
                 </div>
-                <p className="flex items-center gap-1 text-xs text-gray-400 mt-1">
+                <p className="flex items-center gap-1 text-xs text-ink-400 mt-1">
                   <MapPin className="w-3 h-3" /> {t.club?.name ?? t.location}
                 </p>
                 <div className="flex items-center gap-1.5 flex-wrap mt-3">
@@ -154,7 +150,7 @@ export function TournamentSearchClient({ userId: _userId }: { userId: string }) 
                     </Badge>
                   )}
                 </div>
-                <div className="flex items-center justify-between mt-3 text-xs text-gray-400">
+                <div className="flex items-center justify-between mt-3 text-xs text-ink-400">
                   <span className="flex items-center gap-1">
                     <Users className="w-3.5 h-3.5" /> {t.currentParticipants}/{t.maxParticipants}
                   </span>

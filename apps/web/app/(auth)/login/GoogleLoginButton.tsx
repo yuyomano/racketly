@@ -43,9 +43,9 @@ export function GoogleLoginButton({ onError }: { onError: (msg: string) => void 
       type="button"
       onClick={() => login()}
       disabled={loading}
-      className="w-full flex items-center justify-center gap-3 border border-gray-200 rounded-xl py-3 px-4 text-sm font-semibold text-gray-700 hover:bg-gray-50 disabled:opacity-60 transition-all active:scale-[0.99]"
+      className="w-full flex items-center justify-center gap-3 border border-ink-200 rounded-xl py-3 px-4 text-sm font-semibold text-ink-700 hover:bg-ink-50 disabled:opacity-60 transition-all active:scale-[0.99]"
     >
-      {loading ? <Loader2 className="w-4 h-4 animate-spin text-gray-400" /> : <GoogleIcon />}
+      {loading ? <Loader2 className="w-4 h-4 animate-spin text-ink-400" /> : <GoogleIcon />}
       Continuar con Google
     </button>
   )

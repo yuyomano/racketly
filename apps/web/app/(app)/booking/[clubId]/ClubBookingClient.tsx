@@ -116,23 +116,23 @@ export function ClubBookingClient({
   if (confirmed) {
     return (
       <div className="max-w-md mx-auto text-center py-16">
-        <div className="w-14 h-14 rounded-2xl bg-emerald-50 flex items-center justify-center mx-auto mb-4">
-          <CheckCircle2 className="w-7 h-7 text-emerald-600" />
+        <div className="w-14 h-14 rounded-2xl bg-court-50 flex items-center justify-center mx-auto mb-4">
+          <CheckCircle2 className="w-7 h-7 text-court-600" />
         </div>
-        <h1 className="text-lg font-bold text-gray-900">{t('confirmedTitle')}</h1>
-        <p className="text-sm text-gray-400 mt-1.5">
+        <h1 className="text-lg font-bold text-ink-900">{t('confirmedTitle')}</h1>
+        <p className="text-sm text-ink-400 mt-1.5">
           {club.name} · {selectedSlot?.date} · {selectedSlot?.startTime.slice(0, 5)}
         </p>
         <div className="flex gap-3 mt-6 justify-center">
           <Link
             href="/booking/mine"
-            className="text-sm font-semibold text-white bg-emerald-600 hover:bg-emerald-700 rounded-xl px-5 py-2.5 transition-colors"
+            className="text-sm font-semibold text-white bg-court-600 hover:bg-court-700 rounded-xl px-5 py-2.5 transition-colors"
           >
             {t('viewMyBookings')}
           </Link>
           <Link
             href="/booking"
-            className="text-sm font-semibold text-gray-600 bg-gray-100 hover:bg-gray-200 rounded-xl px-5 py-2.5 transition-colors"
+            className="text-sm font-semibold text-ink-600 bg-ink-100 hover:bg-ink-200 rounded-xl px-5 py-2.5 transition-colors"
           >
             {t('bookAnother')}
           </Link>
@@ -145,14 +145,14 @@ export function ClubBookingClient({
     <div className="space-y-6 pb-24">
       <Link
         href="/booking"
-        className="flex items-center gap-1.5 text-sm text-gray-400 hover:text-gray-600 transition-colors"
+        className="flex items-center gap-1.5 text-sm text-ink-400 hover:text-ink-600 transition-colors"
       >
         <ArrowLeft className="w-4 h-4" /> {t('backToClubs')}
       </Link>
 
       <div>
-        <h1 className="text-xl font-black text-gray-900 tracking-tight">{club.name}</h1>
-        <p className="flex items-center gap-1 text-sm text-gray-400 mt-0.5">
+        <h1 className="text-xl font-black text-ink-900 tracking-tight">{club.name}</h1>
+        <p className="flex items-center gap-1 text-sm text-ink-400 mt-0.5">
           <MapPin className="w-3.5 h-3.5" /> {club.city}, {club.country}
         </p>
       </div>
@@ -168,8 +168,8 @@ export function ClubBookingClient({
             className={cn(
               'flex flex-col items-center shrink-0 w-16 py-2.5 rounded-xl border text-sm font-semibold transition-colors',
               selectedDate === d.date
-                ? 'bg-emerald-600 border-emerald-600 text-white'
-                : 'bg-white border-gray-200 text-gray-500 hover:border-gray-300'
+                ? 'bg-court-600 border-court-600 text-white'
+                : 'bg-white border-ink-200 text-ink-500 hover:border-ink-300'
             )}
           >
             <span className="text-[11px] font-medium capitalize opacity-80">{d.label}</span>
@@ -179,7 +179,7 @@ export function ClubBookingClient({
       </div>
 
       {isLoading ? (
-        <div className="flex items-center justify-center py-16 text-gray-400">
+        <div className="flex items-center justify-center py-16 text-ink-400">
           <Loader2 className="w-5 h-5 animate-spin" />
         </div>
       ) : courts.length === 0 ? (
@@ -194,14 +194,14 @@ export function ClubBookingClient({
               <Card key={court.id} className="p-5">
                 <div className="flex items-center gap-2 mb-3">
                   {court.sport === 'padel' ? (
-                    <PadelIcon size={16} className="text-gray-400" />
+                    <PadelIcon size={16} className="text-ink-400" />
                   ) : (
-                    <PickleballIcon size={16} className="text-gray-400" />
+                    <PickleballIcon size={16} className="text-ink-400" />
                   )}
-                  <h3 className="font-bold text-gray-800 text-sm">{court.name}</h3>
+                  <h3 className="font-bold text-ink-800 text-sm">{court.name}</h3>
                 </div>
                 {courtSlots.length === 0 ? (
-                  <p className="text-xs text-gray-400">{t('noSlots')}</p>
+                  <p className="text-xs text-ink-400">{t('noSlots')}</p>
                 ) : (
                   <div className="flex flex-wrap gap-2">
                     {courtSlots.map((slot) => {
@@ -215,17 +215,17 @@ export function ClubBookingClient({
                           className={cn(
                             'flex flex-col items-center px-3 py-2 rounded-xl border text-xs font-semibold min-w-[64px] transition-colors',
                             !slot.isAvailable
-                              ? 'bg-gray-50 border-gray-100 text-gray-300 cursor-not-allowed'
+                              ? 'bg-ink-50 border-ink-100 text-ink-300 cursor-not-allowed'
                               : isSelected
-                                ? 'bg-emerald-600 border-emerald-600 text-white'
-                                : 'bg-white border-gray-200 text-gray-700 hover:border-emerald-300'
+                                ? 'bg-court-600 border-court-600 text-white'
+                                : 'bg-white border-ink-200 text-ink-700 hover:border-court-300'
                           )}
                         >
                           <span>{slot.startTime.slice(0, 5)}</span>
                           <span
                             className={cn(
                               'text-[10px] font-normal mt-0.5',
-                              isSelected ? 'text-emerald-50' : 'text-gray-400'
+                              isSelected ? 'text-court-50' : 'text-ink-400'
                             )}
                           >
                             {club.currency} {price.toFixed(0)}
@@ -242,14 +242,14 @@ export function ClubBookingClient({
       )}
 
       {selectedSlot && (
-        <div className="fixed bottom-0 left-0 right-0 bg-white border-t border-gray-100 shadow-[0_-4px_16px_rgba(0,0,0,0.06)] px-4 py-4 z-30">
+        <div className="fixed bottom-0 left-0 right-0 bg-white border-t border-ink-100 shadow-[0_-4px_16px_rgba(0,0,0,0.06)] px-4 py-4 z-30">
           <div className="max-w-5xl mx-auto flex items-center justify-between gap-4">
             <div>
-              <p className="text-sm font-bold text-gray-900">
+              <p className="text-sm font-bold text-ink-900">
                 {courts.find((c) => c.id === selectedSlot.courtId)?.name} ·{' '}
                 {selectedSlot.startTime.slice(0, 5)}
               </p>
-              <p className="text-xs text-gray-400">
+              <p className="text-xs text-ink-400">
                 {selectedDate} · {club.currency}{' '}
                 {(selectedSlot.isPeak ? selectedSlot.peakPrice : selectedSlot.basePrice).toFixed(0)}
               </p>
@@ -262,7 +262,7 @@ export function ClubBookingClient({
             <button
               onClick={() => bookMutation.mutate()}
               disabled={bookMutation.isPending}
-              className="shrink-0 bg-emerald-600 hover:bg-emerald-700 disabled:opacity-60 text-white font-bold px-6 py-3 rounded-xl transition-all flex items-center gap-2"
+              className="shrink-0 bg-court-600 hover:bg-court-700 disabled:opacity-60 text-white font-bold px-6 py-3 rounded-xl transition-all flex items-center gap-2"
             >
               {bookMutation.isPending ? (
                 <Loader2 className="w-4 h-4 animate-spin" />

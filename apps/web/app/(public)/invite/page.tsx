@@ -55,8 +55,8 @@ function AcceptInviteContent() {
     return (
       <div className="text-center space-y-3">
         <XCircle className="w-14 h-14 text-red-400 mx-auto" />
-        <h2 className="text-xl font-bold text-gray-800">Enlace inválido</h2>
-        <p className="text-gray-500 text-sm">No se encontró un token de invitación en el enlace.</p>
+        <h2 className="text-xl font-bold text-ink-800">Enlace inválido</h2>
+        <p className="text-ink-500 text-sm">No se encontró un token de invitación en el enlace.</p>
         <Button onClick={() => router.push('/login')}>Ir al inicio</Button>
       </div>
     )
@@ -65,8 +65,8 @@ function AcceptInviteContent() {
   if (status === 'loading' || status === 'idle') {
     return (
       <div className="text-center space-y-4">
-        <Loader2 className="w-12 h-12 text-emerald-500 mx-auto animate-spin" />
-        <p className="text-gray-500 text-sm">Procesando invitación...</p>
+        <Loader2 className="w-12 h-12 text-court-500 mx-auto animate-spin" />
+        <p className="text-ink-500 text-sm">Procesando invitación...</p>
       </div>
     )
   }
@@ -75,8 +75,8 @@ function AcceptInviteContent() {
     return (
       <div className="text-center space-y-3">
         <XCircle className="w-14 h-14 text-red-400 mx-auto" />
-        <h2 className="text-xl font-bold text-gray-800">No se pudo aceptar</h2>
-        <p className="text-gray-500 text-sm">{message}</p>
+        <h2 className="text-xl font-bold text-ink-800">No se pudo aceptar</h2>
+        <p className="text-ink-500 text-sm">{message}</p>
         <div className="flex gap-3 justify-center mt-4">
           <Button onClick={() => router.push('/login')} variant="ghost">
             Ir al login
@@ -89,9 +89,9 @@ function AcceptInviteContent() {
 
   return (
     <div className="text-center space-y-3">
-      <CheckCircle className="w-14 h-14 text-emerald-500 mx-auto" />
-      <h2 className="text-xl font-bold text-gray-800">¡Invitación aceptada!</h2>
-      <p className="text-gray-500 text-sm">
+      <CheckCircle className="w-14 h-14 text-court-500 mx-auto" />
+      <h2 className="text-xl font-bold text-ink-800">¡Invitación aceptada!</h2>
+      <p className="text-ink-500 text-sm">
         Ya tienes acceso como administrador{clubName ? ` del club ${clubName}` : ''}.
       </p>
       <Button onClick={() => router.push('/dashboard')} className="mt-4">
@@ -103,19 +103,19 @@ function AcceptInviteContent() {
 
 export default function InvitePage() {
   return (
-    <main className="min-h-screen bg-gradient-to-br from-emerald-900 via-emerald-800 to-emerald-950 flex items-center justify-center p-4">
+    <main className="min-h-screen bg-gradient-to-br from-court-900 via-court-800 to-court-900 flex items-center justify-center p-4">
       <div className="bg-white rounded-3xl shadow-2xl p-10 w-full max-w-md">
         <div className="flex items-center gap-3 mb-8">
-          <div className="w-10 h-10 rounded-xl bg-emerald-500 flex items-center justify-center text-lg">
+          <div className="w-10 h-10 rounded-xl bg-court-500 flex items-center justify-center text-lg">
             🎾
           </div>
           <div>
-            <p className="font-black text-emerald-900 text-lg leading-none">Racketly</p>
-            <p className="text-emerald-600 text-xs">Invitación de administrador</p>
+            <p className="font-black text-court-900 text-lg leading-none">Racketly</p>
+            <p className="text-court-600 text-xs">Invitación de administrador</p>
           </div>
-          <ShieldCheck className="w-5 h-5 text-emerald-500 ml-auto" />
+          <ShieldCheck className="w-5 h-5 text-court-500 ml-auto" />
         </div>
-        <Suspense fallback={<div className="text-center text-gray-400 text-sm">Cargando...</div>}>
+        <Suspense fallback={<div className="text-center text-ink-400 text-sm">Cargando...</div>}>
           <AcceptInviteContent />
         </Suspense>
       </div>

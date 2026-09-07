@@ -89,14 +89,14 @@ export function CourseDetailClient({ course, userId }: { course: Course; userId:
     <div className="space-y-6 max-w-3xl mx-auto">
       <Link
         href="/academy"
-        className="flex items-center gap-1.5 text-sm text-gray-400 hover:text-gray-600 transition-colors"
+        className="flex items-center gap-1.5 text-sm text-ink-400 hover:text-ink-600 transition-colors"
       >
         <ArrowLeft className="w-4 h-4" /> {t('backLink')}
       </Link>
 
       <Card className="p-6">
-        <h1 className="text-xl font-black text-gray-900 tracking-tight">{course.title}</h1>
-        <p className="text-sm text-gray-400 mt-1">
+        <h1 className="text-xl font-black text-ink-900 tracking-tight">{course.title}</h1>
+        <p className="text-sm text-ink-400 mt-1">
           {course.instructor.displayName} ·{' '}
           <Star className="w-3.5 h-3.5 inline text-amber-400 fill-amber-400 -mt-0.5" />{' '}
           {course.instructor.ratingAvg.toFixed(1)} ({course.instructor.totalReviews})
@@ -109,7 +109,7 @@ export function CourseDetailClient({ course, userId }: { course: Course; userId:
           <Badge tone="gray">{t('durationHours', { hours: course.durationHours })}</Badge>
         </div>
 
-        <p className="text-sm text-gray-500 mt-4">{course.description}</p>
+        <p className="text-sm text-ink-500 mt-4">{course.description}</p>
 
         {error && (
           <p className="flex items-center gap-1.5 text-sm text-red-600 bg-red-50 rounded-xl px-4 py-2.5 mt-4">
@@ -119,14 +119,14 @@ export function CourseDetailClient({ course, userId }: { course: Course; userId:
 
         <div className="mt-5">
           {myEnrollment ? (
-            <div className="bg-emerald-50 rounded-xl px-4 py-3">
-              <p className="flex items-center gap-2 text-sm font-semibold text-emerald-700">
+            <div className="bg-court-50 rounded-xl px-4 py-3">
+              <p className="flex items-center gap-2 text-sm font-semibold text-court-700">
                 <CheckCircle2 className="w-4 h-4" />{' '}
                 {t('enrolledLabel', { percent: myEnrollment.progressPercent })}
               </p>
-              <div className="h-1.5 bg-emerald-100 rounded-full mt-2 overflow-hidden">
+              <div className="h-1.5 bg-court-100 rounded-full mt-2 overflow-hidden">
                 <div
-                  className="h-full bg-emerald-500"
+                  className="h-full bg-court-500"
                   style={{ width: `${myEnrollment.progressPercent}%` }}
                 />
               </div>
@@ -150,9 +150,9 @@ export function CourseDetailClient({ course, userId }: { course: Course; userId:
       </Card>
 
       <Card className="p-6">
-        <h2 className="font-bold text-gray-900 mb-4">{t('contentTitle')}</h2>
+        <h2 className="font-bold text-ink-900 mb-4">{t('contentTitle')}</h2>
         {sortedLessons.length === 0 ? (
-          <p className="text-sm text-gray-400">{t('noLessons')}</p>
+          <p className="text-sm text-ink-400">{t('noLessons')}</p>
         ) : (
           <div className="space-y-1.5">
             {sortedLessons.map((l, idx) => {
@@ -163,21 +163,21 @@ export function CourseDetailClient({ course, userId }: { course: Course; userId:
                   key={l.id}
                   className={cn(
                     'flex items-center gap-3 px-3 py-2.5 rounded-xl',
-                    unlocked ? 'hover:bg-gray-50' : 'opacity-60'
+                    unlocked ? 'hover:bg-ink-50' : 'opacity-60'
                   )}
                 >
                   {unlocked ? (
-                    <PlayCircle className="w-4 h-4 text-emerald-500 shrink-0" />
+                    <PlayCircle className="w-4 h-4 text-court-500 shrink-0" />
                   ) : (
-                    <Lock className="w-4 h-4 text-gray-300 shrink-0" />
+                    <Lock className="w-4 h-4 text-ink-300 shrink-0" />
                   )}
-                  <span className="text-xs text-gray-400 w-5 shrink-0">{idx + 1}.</span>
-                  <span className="text-sm text-gray-700 flex-1 truncate">{l.title}</span>
+                  <span className="text-xs text-ink-400 w-5 shrink-0">{idx + 1}.</span>
+                  <span className="text-sm text-ink-700 flex-1 truncate">{l.title}</span>
                   {l.isFreePreview && !myEnrollment && (
                     <Badge tone="blue">{t('freePreviewBadge')}</Badge>
                   )}
                   {minutes > 0 && (
-                    <span className="text-xs text-gray-400 shrink-0">
+                    <span className="text-xs text-ink-400 shrink-0">
                       {t('minutesLabel', { minutes })}
                     </span>
                   )}

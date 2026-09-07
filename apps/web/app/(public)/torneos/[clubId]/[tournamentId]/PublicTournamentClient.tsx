@@ -230,8 +230,8 @@ export function PublicTournamentClient({
 
   if (isLoading || !tournament) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-gray-50">
-        <Loader2 className="w-6 h-6 text-emerald-500 animate-spin" />
+      <div className="min-h-screen flex items-center justify-center bg-ink-50">
+        <Loader2 className="w-6 h-6 text-court-500 animate-spin" />
       </div>
     )
   }
@@ -240,11 +240,11 @@ export function PublicTournamentClient({
   const pairs = tournament.participants.filter((p) => !p.partnerId || p.playerId < p.partnerId)
 
   return (
-    <div className="min-h-screen bg-gray-50">
-      <div className="bg-emerald-800 text-white px-5 pt-10 pb-6">
+    <div className="min-h-screen bg-ink-50">
+      <div className="bg-court-800 text-white px-5 pt-10 pb-6">
         <Link
           href={`/torneos/${clubId}`}
-          className="inline-flex items-center gap-1 text-emerald-200 text-sm mb-3 hover:text-white"
+          className="inline-flex items-center gap-1 text-court-200 text-sm mb-3 hover:text-white"
         >
           <ChevronLeft className="w-4 h-4" /> {tournament.club?.name ?? 'Torneos del club'}
         </Link>
@@ -260,7 +260,7 @@ export function PublicTournamentClient({
           )}
         </div>
         <h1 className="text-2xl font-black tracking-tight">{tournament.name}</h1>
-        <p className="text-emerald-200 text-sm mt-1 flex items-center gap-1.5">
+        <p className="text-court-200 text-sm mt-1 flex items-center gap-1.5">
           <MapPin className="w-3.5 h-3.5" /> {tournament.location}
         </p>
       </div>
@@ -272,7 +272,7 @@ export function PublicTournamentClient({
               key={t.key}
               onClick={() => setTab(t.key)}
               className={`flex-1 whitespace-nowrap text-sm font-semibold py-2.5 px-3 rounded-xl transition-colors ${
-                tab === t.key ? 'bg-emerald-600 text-white' : 'text-gray-500 hover:bg-gray-50'
+                tab === t.key ? 'bg-court-600 text-white' : 'text-ink-500 hover:bg-ink-50'
               }`}
             >
               {t.label}
@@ -284,9 +284,7 @@ export function PublicTournamentClient({
           {tab === 'info' && (
             <Card>
               <CardBody className="space-y-3 text-sm">
-                {tournament.description && (
-                  <p className="text-gray-600">{tournament.description}</p>
-                )}
+                {tournament.description && <p className="text-ink-600">{tournament.description}</p>}
                 <InfoRow
                   icon={Calendar}
                   label="Fecha"
@@ -302,9 +300,9 @@ export function PublicTournamentClient({
                     <div className="pl-6 space-y-1">
                       {KNOCKOUT_STAGE_KEYS.filter((k) => tournament.matchFormatOverrides?.[k]).map(
                         (k) => (
-                          <p key={k} className="text-xs text-gray-500">
+                          <p key={k} className="text-xs text-ink-500">
                             {KNOCKOUT_STAGE_LABELS[k]}:{' '}
-                            <span className="font-semibold text-gray-700">
+                            <span className="font-semibold text-ink-700">
                               {MATCH_FORMAT_LABELS[tournament.matchFormatOverrides![k]!]}
                             </span>
                           </p>
@@ -340,7 +338,7 @@ export function PublicTournamentClient({
               />
             ) : !groups || groups.length === 0 ? (
               <div className="flex justify-center py-10">
-                <Loader2 className="w-5 h-5 text-emerald-500 animate-spin" />
+                <Loader2 className="w-5 h-5 text-court-500 animate-spin" />
               </div>
             ) : (
               groups.map((g) => <GroupCard key={g.groupNumber} group={g} />)
@@ -355,7 +353,7 @@ export function PublicTournamentClient({
               />
             ) : !bracket || Object.keys(bracket).length === 0 ? (
               <div className="flex justify-center py-10">
-                <Loader2 className="w-5 h-5 text-emerald-500 animate-spin" />
+                <Loader2 className="w-5 h-5 text-court-500 animate-spin" />
               </div>
             ) : (
               <div className="flex gap-4 overflow-x-auto pb-2">
@@ -363,7 +361,7 @@ export function PublicTournamentClient({
                   .sort(([a], [b]) => Number(a) - Number(b))
                   .map(([round, matches]) => (
                     <div key={round} className="flex-shrink-0 w-64 space-y-2">
-                      <p className="text-xs font-bold text-gray-500 uppercase tracking-wide px-1">
+                      <p className="text-xs font-bold text-ink-500 uppercase tracking-wide px-1">
                         {roundLabel(Number(round), maxRound)}
                       </p>
                       {matches.map((m) => (
@@ -376,21 +374,21 @@ export function PublicTournamentClient({
 
           {tab === 'players' && (
             <Card>
-              <CardBody className="divide-y divide-gray-100">
+              <CardBody className="divide-y divide-ink-100">
                 {pairs.length === 0 ? (
-                  <p className="text-sm text-gray-400 text-center py-6">Sin inscritos todavía</p>
+                  <p className="text-sm text-ink-400 text-center py-6">Sin inscritos todavía</p>
                 ) : (
                   pairs.map((p) => (
                     <div key={p.playerId} className="py-3 flex items-center justify-between">
                       <div>
-                        <p className="text-sm font-semibold text-gray-900">
+                        <p className="text-sm font-semibold text-ink-900">
                           {p.player?.displayName}
                           {p.partnerId && ' / '}
                           {p.partnerId &&
                             tournament.participants.find((pp) => pp.playerId === p.partnerId)
                               ?.player?.displayName}
                         </p>
-                        <p className="text-xs text-gray-400">{p.player?.category}</p>
+                        <p className="text-xs text-ink-400">{p.player?.category}</p>
                       </div>
                       {!p.confirmed && <Badge tone="amber">Pendiente pareja</Badge>}
                     </div>
@@ -416,9 +414,9 @@ function InfoRow({
 }) {
   return (
     <div className="flex items-center gap-2.5">
-      <Icon className="w-4 h-4 text-emerald-600 shrink-0" />
-      <span className="text-gray-400">{label}:</span>
-      <span className="font-semibold text-gray-800">{value}</span>
+      <Icon className="w-4 h-4 text-court-600 shrink-0" />
+      <span className="text-ink-400">{label}:</span>
+      <span className="font-semibold text-ink-800">{value}</span>
     </div>
   )
 }
@@ -435,20 +433,20 @@ function MatchCard({ match }: { match: ApiMatch }) {
           </Badge>
         )}
         <p
-          className={`text-sm ${match.winnerId === match.player1Id ? 'font-bold text-gray-900' : 'text-gray-600'}`}
+          className={`text-sm ${match.winnerId === match.player1Id ? 'font-bold text-ink-900' : 'text-ink-600'}`}
         >
           {pairName(match, 'player1')}
         </p>
         <p
-          className={`text-sm ${match.winnerId === match.player2Id ? 'font-bold text-gray-900' : 'text-gray-600'}`}
+          className={`text-sm ${match.winnerId === match.player2Id ? 'font-bold text-ink-900' : 'text-ink-600'}`}
         >
           {pairName(match, 'player2')}
         </p>
         {done && match.score?.length > 0 && (
-          <p className="text-xs text-emerald-700 font-semibold pt-1">{formatScore(match.score)}</p>
+          <p className="text-xs text-court-700 font-semibold pt-1">{formatScore(match.score)}</p>
         )}
         {(match.courtName || match.scheduledAt) && (
-          <p className="text-[11px] text-gray-400 pt-1">
+          <p className="text-[11px] text-ink-400 pt-1">
             {match.courtName && `📍 ${match.courtName}`}
             {match.courtName && match.scheduledAt && ' · '}
             {match.scheduledAt && `🕐 ${formatMatchDateTime(match.scheduledAt)}`}
@@ -463,11 +461,11 @@ function GroupCard({ group }: { group: GroupData }) {
   return (
     <Card>
       <CardBody className="space-y-3">
-        <p className="text-sm font-bold text-gray-900">Grupo {group.groupNumber}</p>
+        <p className="text-sm font-bold text-ink-900">Grupo {group.groupNumber}</p>
         <div className="overflow-x-auto">
           <table className="w-full text-xs">
             <thead>
-              <tr className="text-gray-400 text-left">
+              <tr className="text-ink-400 text-left">
                 <th className="pb-1.5 font-semibold">Pareja</th>
                 <th className="pb-1.5 font-semibold text-center">Pts</th>
                 <th className="pb-1.5 font-semibold text-center">PJ</th>
@@ -476,16 +474,16 @@ function GroupCard({ group }: { group: GroupData }) {
             </thead>
             <tbody>
               {group.standings.map((s, i) => (
-                <tr key={s.playerId} className="border-t border-gray-100">
+                <tr key={s.playerId} className="border-t border-ink-100">
                   <td className="py-1.5">
-                    <span className={i < 2 ? 'font-semibold text-emerald-700' : 'text-gray-700'}>
+                    <span className={i < 2 ? 'font-semibold text-court-700' : 'text-ink-700'}>
                       {i + 1}. {s.displayName}
                       {s.partnerName ? ` / ${s.partnerName}` : ''}
                     </span>
                   </td>
                   <td className="py-1.5 text-center font-semibold">{s.points}</td>
-                  <td className="py-1.5 text-center text-gray-500">{s.played}</td>
-                  <td className="py-1.5 text-center text-gray-500">
+                  <td className="py-1.5 text-center text-ink-500">{s.played}</td>
+                  <td className="py-1.5 text-center text-ink-500">
                     {s.setsWon}-{s.setsLost}
                   </td>
                 </tr>
@@ -493,15 +491,15 @@ function GroupCard({ group }: { group: GroupData }) {
             </tbody>
           </table>
         </div>
-        <div className="space-y-1.5 pt-1 border-t border-gray-100">
+        <div className="space-y-1.5 pt-1 border-t border-ink-100">
           {group.matches.map((m) => (
             <div key={m.id} className="flex items-start justify-between text-xs py-1 gap-2">
               <div className="min-w-0">
-                <p className="text-gray-600 leading-snug break-words">
+                <p className="text-ink-600 leading-snug break-words">
                   {pairName(m, 'player1')} vs {pairName(m, 'player2')}
                 </p>
                 {(m.courtName || m.scheduledAt) && (
-                  <p className="text-[10px] text-gray-400 truncate">
+                  <p className="text-[10px] text-ink-400 truncate">
                     {m.courtName && `📍 ${m.courtName}`}
                     {m.courtName && m.scheduledAt && ' · '}
                     {m.scheduledAt && `🕐 ${formatMatchDateTime(m.scheduledAt)}`}
@@ -513,11 +511,11 @@ function GroupCard({ group }: { group: GroupData }) {
                   Vivo
                 </Badge>
               ) : m.score?.length > 0 ? (
-                <span className="text-emerald-700 font-semibold shrink-0">
+                <span className="text-court-700 font-semibold shrink-0">
                   {formatScore(m.score)}
                 </span>
               ) : (
-                <span className="text-gray-400 shrink-0">Pendiente</span>
+                <span className="text-ink-400 shrink-0">Pendiente</span>
               )}
             </div>
           ))}

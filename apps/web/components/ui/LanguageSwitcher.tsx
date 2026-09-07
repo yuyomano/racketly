@@ -19,15 +19,13 @@ export function LanguageSwitcher({ className }: { className?: string }) {
   return (
     <div className={className}>
       <label className="sr-only">{t('language')}</label>
-      <div className="flex items-center gap-1 bg-gray-100 rounded-xl p-0.5 text-xs font-semibold">
+      <div className="flex items-center gap-1 bg-ink-100 rounded-xl p-0.5 text-xs font-semibold">
         {LOCALES.map((l) => (
           <button
             key={l}
             onClick={() => setLocale(l)}
             className={`px-2.5 py-1 rounded-lg transition-colors ${
-              l === locale
-                ? 'bg-white text-emerald-700 shadow-sm'
-                : 'text-gray-500 hover:text-gray-700'
+              l === locale ? 'bg-white text-court-700 shadow-sm' : 'text-ink-500 hover:text-ink-700'
             }`}
           >
             {l.toUpperCase()}

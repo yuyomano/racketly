@@ -1,8 +1,8 @@
 import { cn } from '@/lib/utils'
 
 // Primitivos de tabla compartidos — antes cada página reescribía a mano
-// `<table className="w-full">` + `<thead className="text-left text-xs text-gray-400
-// uppercase tracking-wider bg-gray-50">` + `<tbody className="divide-y divide-gray-50">`,
+// `<table className="w-full">` + `<thead className="text-left text-xs text-ink-400
+// uppercase tracking-wider bg-ink-50">` + `<tbody className="divide-y divide-ink-50">`,
 // con pequeñas variaciones. No envuelve en su propio `overflow-x-auto`: quien lo usa
 // decide el contenedor (a veces es el `<Card>` completo, a veces columnas sticky que
 // necesitan control fino del scroll — como en CourtScheduleGrid).
@@ -24,7 +24,7 @@ export function TableHead({
   children,
   ...props
 }: React.HTMLAttributes<HTMLTableSectionElement>) {
-  // text-gray-400 sobre bg-gray-50 daba ~2.2:1 (falla AA). ink-600 sobre ink-50 pasa AA
+  // text-ink-400 sobre bg-ink-50 daba ~2.2:1 (falla AA). ink-600 sobre ink-50 pasa AA
   // manteniendo el mismo peso visual liviano de una cabecera de tabla.
   return (
     <thead

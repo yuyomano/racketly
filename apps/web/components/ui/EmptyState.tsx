@@ -17,7 +17,7 @@ export function EmptyState({
         <Icon className="w-6 h-6 text-ink-400" strokeWidth={1.75} />
       </div>
       <p className="font-semibold text-ink-700 text-sm">{title}</p>
-      {/* text-gray-400 sobre blanco daba ~2.5:1 (falla AA); ink-500 pasa manteniendo el tono secundario */}
+      {/* text-ink-400 sobre blanco daba ~2.5:1 (falla AA); ink-500 pasa manteniendo el tono secundario */}
       {description && <p className="text-sm text-ink-500 mt-1 max-w-xs">{description}</p>}
       {action && <div className="mt-5">{action}</div>}
     </div>

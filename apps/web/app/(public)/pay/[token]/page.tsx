@@ -90,7 +90,7 @@ export default function GuestPaymentPage() {
       <Shell>
         <div className="text-center space-y-4">
           <Loader2 className="w-12 h-12 text-sky-500 mx-auto animate-spin" />
-          <p className="text-gray-500 text-sm">Cargando link de pago…</p>
+          <p className="text-ink-500 text-sm">Cargando link de pago…</p>
         </div>
       </Shell>
     )
@@ -101,8 +101,8 @@ export default function GuestPaymentPage() {
       <Shell>
         <div className="text-center space-y-3">
           <XCircle className="w-14 h-14 text-red-400 mx-auto" />
-          <h2 className="text-xl font-bold text-gray-800">No se pudo cargar el link</h2>
-          <p className="text-gray-500 text-sm">{error}</p>
+          <h2 className="text-xl font-bold text-ink-800">No se pudo cargar el link</h2>
+          <p className="text-ink-500 text-sm">{error}</p>
         </div>
       </Shell>
     )
@@ -114,9 +114,9 @@ export default function GuestPaymentPage() {
     return (
       <Shell>
         <div className="text-center space-y-3">
-          <CheckCircle className="w-14 h-14 text-emerald-500 mx-auto" />
-          <h2 className="text-xl font-bold text-gray-800">¡Pago recibido!</h2>
-          <p className="text-gray-500 text-sm">
+          <CheckCircle className="w-14 h-14 text-court-500 mx-auto" />
+          <h2 className="text-xl font-bold text-ink-800">¡Pago recibido!</h2>
+          <p className="text-ink-500 text-sm">
             Gracias, {detail.playerName}. Tu parte de{' '}
             {formatCurrency(detail.amount, detail.currency)} quedó registrada.
           </p>
@@ -130,8 +130,8 @@ export default function GuestPaymentPage() {
       <Shell>
         <div className="text-center space-y-3">
           <Clock className="w-14 h-14 text-amber-400 mx-auto" />
-          <h2 className="text-xl font-bold text-gray-800">Este link expiró</h2>
-          <p className="text-gray-500 text-sm">Pide al club que te genere uno nuevo.</p>
+          <h2 className="text-xl font-bold text-ink-800">Este link expiró</h2>
+          <p className="text-ink-500 text-sm">Pide al club que te genere uno nuevo.</p>
         </div>
       </Shell>
     )
@@ -141,8 +141,8 @@ export default function GuestPaymentPage() {
     return (
       <Shell>
         <div className="text-center space-y-3">
-          <XCircle className="w-14 h-14 text-gray-400 mx-auto" />
-          <h2 className="text-xl font-bold text-gray-800">Este link ya no está vigente</h2>
+          <XCircle className="w-14 h-14 text-ink-400 mx-auto" />
+          <h2 className="text-xl font-bold text-ink-800">Este link ya no está vigente</h2>
         </div>
       </Shell>
     )
@@ -152,8 +152,8 @@ export default function GuestPaymentPage() {
     <Shell>
       <div className="space-y-5">
         <div className="text-center">
-          <h2 className="text-lg font-bold text-gray-800">¡Hola, {detail.playerName}!</h2>
-          <p className="text-sm text-gray-500 mt-1">Completa tu pago para la reserva:</p>
+          <h2 className="text-lg font-bold text-ink-800">¡Hola, {detail.playerName}!</h2>
+          <p className="text-sm text-ink-500 mt-1">Completa tu pago para la reserva:</p>
         </div>
 
         <div className="bg-sky-50 border border-sky-200 rounded-2xl p-4 text-sm">
@@ -165,8 +165,8 @@ export default function GuestPaymentPage() {
         </div>
 
         <div className="text-center">
-          <p className="text-xs text-gray-400 uppercase tracking-wide">Total a pagar</p>
-          <p className="text-3xl font-black text-gray-900">
+          <p className="text-xs text-ink-400 uppercase tracking-wide">Total a pagar</p>
+          <p className="text-3xl font-black text-ink-900">
             {formatCurrency(detail.amount, detail.currency)}
           </p>
         </div>

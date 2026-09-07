@@ -1,9 +1,10 @@
 // Íconos de deporte — mismo diseño que el dashboard web (raqueta de pádel / pala de pickleball)
 import Svg, { Rect, Circle } from 'react-native-svg'
+import { colors } from '../../theme'
 
 type IconProps = { size?: number; color?: string }
 
-export function PadelIcon({ size = 24, color = '#111827' }: IconProps) {
+export function PadelIcon({ size = 24, color = colors.ink900 }: IconProps) {
   return (
     <Svg viewBox="0 0 24 24" width={size} height={size} fill={color}>
       {/* Cabeza — rectángulo redondeado, como una pala de pádel real */}
@@ -24,7 +25,7 @@ export function PadelIcon({ size = 24, color = '#111827' }: IconProps) {
   )
 }
 
-export function PickleballIcon({ size = 24, color = '#111827' }: IconProps) {
+export function PickleballIcon({ size = 24, color = colors.ink900 }: IconProps) {
   return (
     <Svg viewBox="0 0 24 24" width={size} height={size} fill={color}>
       {/* Cabeza — círculo, como una pala de pickleball real */}

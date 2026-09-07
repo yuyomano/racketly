@@ -78,14 +78,14 @@ export function MyBookingsClient() {
     <div className="space-y-6">
       <Link
         href="/booking"
-        className="flex items-center gap-1.5 text-sm text-gray-400 hover:text-gray-600 transition-colors"
+        className="flex items-center gap-1.5 text-sm text-ink-400 hover:text-ink-600 transition-colors"
       >
         <ArrowLeft className="w-4 h-4" /> {t('backToClubs')}
       </Link>
 
-      <h1 className="text-xl font-black text-gray-900 tracking-tight">{t('title')}</h1>
+      <h1 className="text-xl font-black text-ink-900 tracking-tight">{t('title')}</h1>
 
-      <div className="flex border border-gray-200 rounded-xl overflow-hidden w-fit">
+      <div className="flex border border-ink-200 rounded-xl overflow-hidden w-fit">
         {(
           [
             ['upcoming', t('tabUpcoming')],
@@ -97,7 +97,7 @@ export function MyBookingsClient() {
             onClick={() => setTab(v)}
             className={cn(
               'px-4 py-2 text-sm font-semibold transition-colors',
-              tab === v ? 'bg-emerald-600 text-white' : 'bg-white text-gray-500 hover:bg-gray-50'
+              tab === v ? 'bg-court-600 text-white' : 'bg-white text-ink-500 hover:bg-ink-50'
             )}
           >
             {l}
@@ -106,7 +106,7 @@ export function MyBookingsClient() {
       </div>
 
       {isLoading ? (
-        <div className="flex items-center justify-center py-16 text-gray-400">
+        <div className="flex items-center justify-center py-16 text-ink-400">
           <Loader2 className="w-5 h-5 animate-spin" />
         </div>
       ) : filtered.length === 0 ? (
@@ -118,7 +118,7 @@ export function MyBookingsClient() {
             tab === 'upcoming' ? (
               <Link
                 href="/booking"
-                className="text-sm font-semibold text-white bg-emerald-600 hover:bg-emerald-700 rounded-xl px-5 py-2.5 transition-colors"
+                className="text-sm font-semibold text-white bg-court-600 hover:bg-court-700 rounded-xl px-5 py-2.5 transition-colors"
               >
                 {t('searchClubs')}
               </Link>
@@ -134,14 +134,14 @@ export function MyBookingsClient() {
               <Card key={b.id} className="p-4 flex items-center justify-between gap-4">
                 <div className="min-w-0">
                   <div className="flex items-center gap-2">
-                    <p className="font-bold text-gray-900 truncate">{b.slot.court.club.name}</p>
+                    <p className="font-bold text-ink-900 truncate">{b.slot.court.club.name}</p>
                     <Badge tone={st.tone}>{st.label}</Badge>
                     {!b.isOwnerBooking && <Badge tone="blue">{t('guestBadge')}</Badge>}
                   </div>
-                  <p className="flex items-center gap-1 text-xs text-gray-400 mt-1">
+                  <p className="flex items-center gap-1 text-xs text-ink-400 mt-1">
                     <MapPin className="w-3 h-3" /> {b.slot.court.name} · {b.slot.court.club.city}
                   </p>
-                  <p className="text-xs text-gray-400 mt-0.5">
+                  <p className="text-xs text-ink-400 mt-0.5">
                     {b.slot.date} · {b.slot.startTime.slice(0, 5)}–{b.slot.endTime.slice(0, 5)}
                   </p>
                 </div>

@@ -131,7 +131,7 @@ function LineChart({
   const min = Math.min(...data.map((d) => d.value))
   const range = max - min || 1
   const W = 100 / (data.length - 1)
-  const stroke = color === 'emerald' ? '#059669' : '#d97706'
+  const stroke = color === 'emerald' ? '#1B6B63' /* court-600 */ : '#A87D22' /* trophy-600 */
 
   const points = data.map((d, i) => ({
     x: i * W,

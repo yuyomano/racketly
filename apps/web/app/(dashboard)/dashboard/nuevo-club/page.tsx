@@ -68,7 +68,7 @@ const AMENITIES = [
 function Section({ title, children }: { title: string; children: React.ReactNode }) {
   return (
     <Card className="p-6">
-      <h2 className="text-base font-bold text-gray-800 mb-5 pb-3 border-b border-gray-100">
+      <h2 className="text-base font-bold text-ink-800 mb-5 pb-3 border-b border-ink-100">
         {title}
       </h2>
       <div className="space-y-4">{children}</div>
@@ -89,12 +89,12 @@ function Field({
 }) {
   return (
     <div>
-      <label className="block text-sm font-semibold text-gray-700 mb-1">
+      <label className="block text-sm font-semibold text-ink-700 mb-1">
         {label}
         {required && <span className="text-red-400 ml-0.5">*</span>}
       </label>
       {children}
-      {hint && <p className="text-xs text-gray-400 mt-1">{hint}</p>}
+      {hint && <p className="text-xs text-ink-400 mt-1">{hint}</p>}
     </div>
   )
 }
@@ -232,8 +232,8 @@ export default function NuevoClubPage() {
   return (
     <div className="max-w-2xl mx-auto space-y-6 pb-16">
       <div>
-        <h1 className="text-2xl font-black text-gray-900">{t('title')}</h1>
-        <p className="text-sm text-gray-400 mt-1">{t('subtitle')}</p>
+        <h1 className="text-2xl font-black text-ink-900">{t('title')}</h1>
+        <p className="text-sm text-ink-400 mt-1">{t('subtitle')}</p>
       </div>
 
       <form onSubmit={handleSubmit} className="space-y-6">
@@ -310,7 +310,7 @@ export default function NuevoClubPage() {
             type="button"
             onClick={useMyLocation}
             disabled={locating}
-            className="flex items-center gap-2 text-xs font-semibold text-emerald-600 hover:text-emerald-800 transition-colors disabled:opacity-50"
+            className="flex items-center gap-2 text-xs font-semibold text-court-600 hover:text-court-800 transition-colors disabled:opacity-50"
           >
             {locating ? (
               <Loader2 className="w-3.5 h-3.5 animate-spin" />
@@ -337,8 +337,8 @@ export default function NuevoClubPage() {
                   onClick={() => toggleSport(value)}
                   className={`flex-1 flex items-center justify-center gap-2 py-2.5 rounded-xl text-sm font-bold border-2 transition-all ${
                     form.sports.includes(value)
-                      ? 'border-emerald-500 bg-emerald-50 text-emerald-700'
-                      : 'border-gray-200 text-gray-400 hover:border-gray-300'
+                      ? 'border-court-500 bg-court-50 text-court-700'
+                      : 'border-ink-200 text-ink-400 hover:border-ink-300'
                   }`}
                 >
                   <Icon size={17} />
@@ -398,7 +398,7 @@ export default function NuevoClubPage() {
                 className="uppercase font-mono"
               />
               {selectedCountry && (
-                <span className="text-xs text-gray-400 whitespace-nowrap">
+                <span className="text-xs text-ink-400 whitespace-nowrap">
                   {t('currencyAuto', {
                     flag: selectedCountry.flag,
                     currency: selectedCountry.currency,
@@ -421,8 +421,8 @@ export default function NuevoClubPage() {
                   onClick={() => toggleAmenity(id)}
                   className={`flex items-center gap-2 px-3 py-2 rounded-xl text-sm border-2 transition-all text-left ${
                     active
-                      ? 'border-emerald-500 bg-emerald-50 text-emerald-700 font-semibold'
-                      : 'border-gray-100 text-gray-500 hover:border-gray-200'
+                      ? 'border-court-500 bg-court-50 text-court-700 font-semibold'
+                      : 'border-ink-100 text-ink-500 hover:border-ink-200'
                   }`}
                 >
                   <span className="text-base shrink-0">{icon}</span>
@@ -435,7 +435,7 @@ export default function NuevoClubPage() {
 
         {/* ── Fotos ── */}
         <Section title={t('sectionPhotos')}>
-          <p className="text-xs text-gray-400 -mt-2">{t('photosHint')}</p>
+          <p className="text-xs text-ink-400 -mt-2">{t('photosHint')}</p>
           {form.photos.map((url, i) => (
             <Field
               key={i}
@@ -443,7 +443,7 @@ export default function NuevoClubPage() {
             >
               <div className="flex items-center gap-2">
                 <div className="relative flex-1">
-                  <Camera className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-300" />
+                  <Camera className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-ink-300" />
                   <Input
                     type="url"
                     value={url}
@@ -457,7 +457,7 @@ export default function NuevoClubPage() {
                   <img
                     src={url}
                     alt=""
-                    className="w-10 h-10 rounded-lg object-cover border border-gray-200 shrink-0"
+                    className="w-10 h-10 rounded-lg object-cover border border-ink-200 shrink-0"
                     onError={(e) => {
                       ;(e.target as HTMLImageElement).style.display = 'none'
                     }}
@@ -469,7 +469,7 @@ export default function NuevoClubPage() {
           <button
             type="button"
             onClick={() => setForm((f) => ({ ...f, photos: [...f.photos, ''] }))}
-            className="text-xs text-emerald-600 font-semibold hover:text-emerald-800 transition-colors"
+            className="text-xs text-court-600 font-semibold hover:text-court-800 transition-colors"
           >
             {t('addPhoto')}
           </button>
@@ -480,7 +480,7 @@ export default function NuevoClubPage() {
           <div className="grid grid-cols-1 gap-4">
             <Field label={t('contactEmail')}>
               <div className="relative">
-                <Mail className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-300" />
+                <Mail className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-ink-300" />
                 <Input
                   type="email"
                   value={form.contactEmail}
@@ -493,7 +493,7 @@ export default function NuevoClubPage() {
             <div className="grid grid-cols-2 gap-3">
               <Field label={t('phone')}>
                 <div className="relative">
-                  <Phone className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-300" />
+                  <Phone className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-ink-300" />
                   <Input
                     type="tel"
                     value={form.phone}
@@ -505,7 +505,7 @@ export default function NuevoClubPage() {
               </Field>
               <Field label={t('website')}>
                 <div className="relative">
-                  <Globe className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-300" />
+                  <Globe className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-ink-300" />
                   <Input
                     type="url"
                     value={form.website}

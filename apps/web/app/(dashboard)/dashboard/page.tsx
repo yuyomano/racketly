@@ -28,7 +28,7 @@ function MiniBar({ data, label }: { data: number[]; label: string }) {
   const CHART_HEIGHT = 80 // px, debe coincidir con h-20 del contenedor de barras
   return (
     <div>
-      <p className="text-xs font-medium text-gray-500 mb-4">{label}</p>
+      <p className="text-xs font-medium text-ink-500 mb-4">{label}</p>
       {/* Fila de barras con altura fija: la barra más alta nunca puede exceder este
           contenedor (a diferencia de antes, cuando barra + etiqueta del día compartían
           el mismo h-24 con items-end, y al tocar el máximo se desbordaban hacia arriba,
@@ -37,7 +37,7 @@ function MiniBar({ data, label }: { data: number[]; label: string }) {
         {data.map((v, i) => (
           <div key={i} className="flex-1 group">
             <div
-              className="w-full rounded-t-md bg-emerald-500/80 group-hover:bg-emerald-500 transition-colors"
+              className="w-full rounded-t-md bg-court-500/80 group-hover:bg-court-500 transition-colors"
               style={{ height: Math.max((v / max) * CHART_HEIGHT, 4) }}
             />
           </div>
@@ -45,7 +45,7 @@ function MiniBar({ data, label }: { data: number[]; label: string }) {
       </div>
       <div className="flex gap-2 mt-1.5">
         {data.map((_, i) => (
-          <span key={i} className="flex-1 text-center text-[10px] font-medium text-gray-400">
+          <span key={i} className="flex-1 text-center text-[10px] font-medium text-ink-400">
             {days[i % 7]}
           </span>
         ))}
@@ -62,13 +62,13 @@ function OccupancyBar({ name, pct, sport }: { name: string; pct: number; sport: 
           <span className="mt-px shrink-0">
             {sport === 'padel' ? <PadelIcon size={12} /> : <PickleballIcon size={12} />}
           </span>
-          <span className="text-xs font-medium text-gray-700 leading-snug">{name}</span>
+          <span className="text-xs font-medium text-ink-700 leading-snug">{name}</span>
         </div>
-        <span className="text-xs font-bold text-gray-900 shrink-0">{pct}%</span>
+        <span className="text-xs font-bold text-ink-900 shrink-0">{pct}%</span>
       </div>
-      <div className="h-1.5 bg-gray-100 rounded-full overflow-hidden">
+      <div className="h-1.5 bg-ink-100 rounded-full overflow-hidden">
         <div
-          className={`h-full rounded-full transition-all ${pct >= 80 ? 'bg-emerald-500' : pct >= 50 ? 'bg-amber-400' : 'bg-red-400'}`}
+          className={`h-full rounded-full transition-all ${pct >= 80 ? 'bg-court-500' : pct >= 50 ? 'bg-amber-400' : 'bg-red-400'}`}
           style={{ width: `${pct}%` }}
         />
       </div>
@@ -241,7 +241,7 @@ export default function DashboardPage() {
           />
         </div>
       ) : (
-        <div className="bg-gray-50 border border-gray-100 text-gray-500 text-sm rounded-2xl px-5 py-8 text-center">
+        <div className="bg-ink-50 border border-ink-100 text-ink-500 text-sm rounded-2xl px-5 py-8 text-center">
           {t('selectClubEmpty')}
         </div>
       )}
@@ -271,7 +271,7 @@ export default function DashboardPage() {
                   <OccupancyBar key={c.id} name={c.name} pct={c.pct} sport={c.sport} />
                 ))
               ) : (
-                <p className="text-sm text-gray-400 text-center py-4">{t('noPistasHoy')}</p>
+                <p className="text-sm text-ink-400 text-center py-4">{t('noPistasHoy')}</p>
               )}
             </CardBody>
           </Card>
@@ -281,7 +281,7 @@ export default function DashboardPage() {
               <CardTitle>{t('reservasDeHoy')}</CardTitle>
               <a
                 href="/dashboard/reservas"
-                className="text-xs text-emerald-600 font-semibold hover:underline flex items-center gap-1"
+                className="text-xs text-court-600 font-semibold hover:underline flex items-center gap-1"
               >
                 {t('verTodas')} <ArrowUpRight className="w-3 h-3" />
               </a>
@@ -307,11 +307,11 @@ export default function DashboardPage() {
                         </span>
                         <span className="mt-0.5 shrink-0">🎓</span>
                         <div className="flex-1 min-w-0">
-                          <p className="text-sm font-semibold text-gray-900 break-words">
+                          <p className="text-sm font-semibold text-ink-900 break-words">
                             {t('claseCon', { name: s.professor?.name ?? '' })}
                             {s.court ? ` · ${s.court.name}` : ''}
                           </p>
-                          <p className="text-xs text-gray-500 break-words">{studentNames}</p>
+                          <p className="text-xs text-ink-500 break-words">{studentNames}</p>
                         </div>
                         <Badge tone="violet" className="shrink-0 mt-0.5">
                           {activeStudents.length}/{s.maxStudents}
@@ -319,7 +319,7 @@ export default function DashboardPage() {
                         <a
                           href={`/dashboard/reservas?editClass=${s.id}`}
                           title={t('editarClase')}
-                          className="shrink-0 p-1.5 text-gray-400 hover:text-violet-600 rounded-lg hover:bg-white transition-colors"
+                          className="shrink-0 p-1.5 text-ink-400 hover:text-violet-600 rounded-lg hover:bg-white transition-colors"
                         >
                           <Pencil className="w-3.5 h-3.5" />
                         </a>
@@ -335,9 +335,9 @@ export default function DashboardPage() {
                   return (
                     <div
                       key={b.id}
-                      className="flex items-start gap-4 p-3 rounded-xl bg-gray-50 hover:bg-gray-100 transition-colors"
+                      className="flex items-start gap-4 p-3 rounded-xl bg-ink-50 hover:bg-ink-100 transition-colors"
                     >
-                      <span className="text-sm font-mono font-bold text-gray-700 w-12 shrink-0 mt-0.5">
+                      <span className="text-sm font-mono font-bold text-ink-700 w-12 shrink-0 mt-0.5">
                         {b.slot?.startTime ?? '—'}
                       </span>
                       <span className="mt-0.5 shrink-0">
@@ -348,10 +348,10 @@ export default function DashboardPage() {
                         )}
                       </span>
                       <div className="flex-1 min-w-0">
-                        <p className="text-sm font-semibold text-gray-900 break-words">
+                        <p className="text-sm font-semibold text-ink-900 break-words">
                           {b.slot?.court?.name}
                         </p>
-                        <p className="text-xs text-gray-500 break-words">{names}</p>
+                        <p className="text-xs text-ink-500 break-words">{names}</p>
                       </div>
                       <Badge tone={meta.tone} className="shrink-0 mt-0.5">
                         {bookingStatusLabel(t, b.status)}
@@ -360,7 +360,7 @@ export default function DashboardPage() {
                         <a
                           href={`/dashboard/reservas?edit=${b.id}`}
                           title={t('editarReserva')}
-                          className="shrink-0 p-1.5 text-gray-400 hover:text-emerald-600 rounded-lg hover:bg-white transition-colors"
+                          className="shrink-0 p-1.5 text-ink-400 hover:text-court-600 rounded-lg hover:bg-white transition-colors"
                         >
                           <Pencil className="w-3.5 h-3.5" />
                         </a>
@@ -369,7 +369,7 @@ export default function DashboardPage() {
                   )
                 })
               ) : (
-                <p className="text-sm text-gray-400 text-center py-6">{t('noReservasHoy')}</p>
+                <p className="text-sm text-ink-400 text-center py-6">{t('noReservasHoy')}</p>
               )}
             </CardBody>
           </Card>
@@ -387,23 +387,23 @@ export default function DashboardPage() {
           <CardBody>
             <div className="grid grid-cols-3 gap-6 text-center">
               <div>
-                <p className="text-2xl font-black text-emerald-600">{stats.confirmedBookings}</p>
-                <p className="text-xs text-gray-500 mt-1">{t('reservasConfirmadas')}</p>
+                <p className="text-2xl font-black text-court-600">{stats.confirmedBookings}</p>
+                <p className="text-xs text-ink-500 mt-1">{t('reservasConfirmadas')}</p>
               </div>
               <div>
                 <p className="text-2xl font-black text-violet-600">
                   {formatCurrency(stats.totalRevenue, currency)}
                 </p>
                 {currency !== 'USD' && (
-                  <p className="text-xs text-gray-400 mt-0.5">
+                  <p className="text-xs text-ink-400 mt-0.5">
                     ≈ {formatCurrency(toUSD(stats.totalRevenue, currency), 'USD')} USD
                   </p>
                 )}
-                <p className="text-xs text-gray-500 mt-1">{t('ingresosGenerados')}</p>
+                <p className="text-xs text-ink-500 mt-1">{t('ingresosGenerados')}</p>
               </div>
               <div>
                 <p className="text-2xl font-black text-amber-600">{stats.cancelledBookings}</p>
-                <p className="text-xs text-gray-500 mt-1">{t('reservasCanceladas')}</p>
+                <p className="text-xs text-ink-500 mt-1">{t('reservasCanceladas')}</p>
               </div>
             </div>
           </CardBody>

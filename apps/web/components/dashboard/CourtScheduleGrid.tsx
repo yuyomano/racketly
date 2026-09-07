@@ -83,7 +83,7 @@ function StatusLegend() {
     { key: 'cancelled', label: bookingStatusLabel(t, 'cancelled') },
   ]
   return (
-    <div className="flex flex-wrap items-center gap-3 px-4 py-2 border-b border-gray-100 bg-gray-50/50 text-[0.6875rem] text-gray-500">
+    <div className="flex flex-wrap items-center gap-3 px-4 py-2 border-b border-ink-100 bg-ink-50/50 text-[0.6875rem] text-ink-500">
       {entries.map((e) => (
         <div key={e.key} className="flex items-center gap-1.5">
           <span
@@ -109,14 +109,14 @@ function GridSkeleton({ columns }: { columns: number }) {
       <table className="border-collapse table-fixed w-full">
         <tbody>
           {Array.from({ length: 5 }).map((_, i) => (
-            <tr key={i} className="border-t border-gray-100">
+            <tr key={i} className="border-t border-ink-100">
               <td className="px-3 py-2" style={{ width: '9.375rem' }}>
-                <div className="h-4 w-24 bg-gray-200 rounded mb-1.5" />
-                <div className="h-3 w-14 bg-gray-100 rounded-full" />
+                <div className="h-4 w-24 bg-ink-200 rounded mb-1.5" />
+                <div className="h-3 w-14 bg-ink-100 rounded-full" />
               </td>
               {Array.from({ length: Math.min(columns, 12) }).map((_, j) => (
-                <td key={j} className="border-l border-gray-100 px-1 py-2">
-                  <div className="h-10 bg-gray-100 rounded" />
+                <td key={j} className="border-l border-ink-100 px-1 py-2">
+                  <div className="h-10 bg-ink-100 rounded" />
                 </td>
               ))}
             </tr>
@@ -230,11 +230,9 @@ export function CourtScheduleGrid({
 
   return (
     <Card className="overflow-hidden">
-      <div className="p-4 border-b border-gray-100 flex flex-wrap items-end gap-3">
+      <div className="p-4 border-b border-ink-100 flex flex-wrap items-end gap-3">
         <div>
-          <label className="block text-xs font-semibold text-gray-500 mb-1">
-            {t('grid.fecha')}
-          </label>
+          <label className="block text-xs font-semibold text-ink-500 mb-1">{t('grid.fecha')}</label>
           <Input
             type="date"
             value={gridDate}
@@ -243,9 +241,7 @@ export function CourtScheduleGrid({
           />
         </div>
         <div>
-          <label className="block text-xs font-semibold text-gray-500 mb-1">
-            {t('grid.desde')}
-          </label>
+          <label className="block text-xs font-semibold text-ink-500 mb-1">{t('grid.desde')}</label>
           <Input
             type="time"
             step={1800}
@@ -255,9 +251,7 @@ export function CourtScheduleGrid({
           />
         </div>
         <div>
-          <label className="block text-xs font-semibold text-gray-500 mb-1">
-            {t('grid.hasta')}
-          </label>
+          <label className="block text-xs font-semibold text-ink-500 mb-1">{t('grid.hasta')}</label>
           <Input
             type="time"
             step={1800}
@@ -267,10 +261,10 @@ export function CourtScheduleGrid({
           />
         </div>
         <div className="ml-auto flex items-center gap-3">
-          {loading && !showSkeleton && <RefreshCw className="w-4 h-4 text-gray-400 animate-spin" />}
+          {loading && !showSkeleton && <RefreshCw className="w-4 h-4 text-ink-400 animate-spin" />}
           <button
             onClick={onNewBooking}
-            className="flex items-center gap-2 bg-emerald-600 hover:bg-emerald-700 text-white text-sm font-semibold px-4 py-2 rounded-xl transition-colors"
+            className="flex items-center gap-2 bg-court-600 hover:bg-court-700 text-white text-sm font-semibold px-4 py-2 rounded-xl transition-colors"
           >
             <Plus className="w-4 h-4" />
             {t('grid.nuevaReserva')}
@@ -304,13 +298,10 @@ export function CourtScheduleGrid({
               ))}
             </colgroup>
             <thead>
-              <tr className="text-left text-xs text-gray-400 uppercase tracking-wider bg-gray-50">
-                <th className="px-3 py-2 sticky left-0 bg-gray-50 z-10">{t('grid.pista')}</th>
+              <tr className="text-left text-xs text-ink-400 uppercase tracking-wider bg-ink-50">
+                <th className="px-3 py-2 sticky left-0 bg-ink-50 z-10">{t('grid.pista')}</th>
                 {columns.map((m) => (
-                  <th
-                    key={m}
-                    className="px-1 py-2 text-center font-medium border-l border-gray-100"
-                  >
+                  <th key={m} className="px-1 py-2 text-center font-medium border-l border-ink-100">
                     {fmtMin(m)}
                   </th>
                 ))}
@@ -318,9 +309,9 @@ export function CourtScheduleGrid({
             </thead>
             <tbody>
               {rows.map(({ court, cells }) => (
-                <tr key={court.id} className="border-t border-gray-100">
-                  <td className="px-3 py-2 sticky left-0 bg-white z-10 border-r border-gray-100">
-                    <p className="text-sm font-semibold text-gray-800 truncate">{court.name}</p>
+                <tr key={court.id} className="border-t border-ink-100">
+                  <td className="px-3 py-2 sticky left-0 bg-white z-10 border-r border-ink-100">
+                    <p className="text-sm font-semibold text-ink-800 truncate">{court.name}</p>
                     <Badge tone={court.sport === 'padel' ? 'emerald' : 'amber'}>
                       {court.sport === 'padel' ? t('grid.padel') : t('grid.pickleball')}
                     </Badge>
@@ -328,7 +319,7 @@ export function CourtScheduleGrid({
                   {cells.map((cell, i) => {
                     if (cell.kind === 'skip') return null
                     if (cell.kind === 'empty') {
-                      return <td key={i} className="border-l border-gray-100 bg-white h-14" />
+                      return <td key={i} className="border-l border-ink-100 bg-white h-14" />
                     }
                     if (cell.kind === 'class') {
                       const s = cell.classSlot
@@ -339,7 +330,7 @@ export function CourtScheduleGrid({
                         <td
                           key={i}
                           colSpan={cell.span}
-                          className="border-l border-gray-100 p-0 align-top"
+                          className="border-l border-ink-100 p-0 align-top"
                         >
                           <div
                             className="h-14 px-2 py-1 border text-[0.6875rem] leading-tight overflow-hidden bg-violet-50 hover:bg-violet-100 text-violet-800 border-violet-200 cursor-pointer transition-colors"
@@ -368,7 +359,7 @@ export function CourtScheduleGrid({
                       <td
                         key={i}
                         colSpan={cell.span}
-                        className="border-l border-gray-100 p-0 align-top"
+                        className="border-l border-ink-100 p-0 align-top"
                       >
                         <div
                           className={`h-14 px-2 py-1 border text-[0.6875rem] leading-tight overflow-hidden ${meta.gridClass} ${isActive ? 'cursor-pointer' : ''}`}

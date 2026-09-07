@@ -167,7 +167,7 @@ export function RootNavigator() {
           flex: 1,
           justifyContent: 'center',
           alignItems: 'center',
-          backgroundColor: '#042b22',
+          backgroundColor: colors.court900,
         }}
       >
         <ActivityIndicator size="large" color={colors.court500} />

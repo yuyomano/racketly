@@ -78,15 +78,15 @@ export function MyTournamentsClient({ userId }: { userId: string }) {
     <div className="space-y-6">
       <Link
         href="/tournaments"
-        className="flex items-center gap-1.5 text-sm text-gray-400 hover:text-gray-600 transition-colors"
+        className="flex items-center gap-1.5 text-sm text-ink-400 hover:text-ink-600 transition-colors"
       >
         <ArrowLeft className="w-4 h-4" /> {t('backLink')}
       </Link>
 
-      <h1 className="text-xl font-black text-gray-900 tracking-tight">{t('title')}</h1>
+      <h1 className="text-xl font-black text-ink-900 tracking-tight">{t('title')}</h1>
 
       {isLoading ? (
-        <div className="flex items-center justify-center py-16 text-gray-400">
+        <div className="flex items-center justify-center py-16 text-ink-400">
           <Loader2 className="w-5 h-5 animate-spin" />
         </div>
       ) : !tournaments || tournaments.length === 0 ? (
@@ -97,7 +97,7 @@ export function MyTournamentsClient({ userId }: { userId: string }) {
           action={
             <Link
               href="/tournaments"
-              className="text-sm font-semibold text-white bg-emerald-600 hover:bg-emerald-700 rounded-xl px-5 py-2.5 transition-colors"
+              className="text-sm font-semibold text-white bg-court-600 hover:bg-court-700 rounded-xl px-5 py-2.5 transition-colors"
             >
               {t('searchButton')}
             </Link>
@@ -110,13 +110,13 @@ export function MyTournamentsClient({ userId }: { userId: string }) {
             const canWithdraw = tour.status === 'open' || tour.status === 'draft'
             return (
               <Link key={tour.id} href={`/tournaments/${tour.tournamentId}`}>
-                <Card className="p-4 flex items-center justify-between gap-4 hover:border-emerald-200 transition-colors">
+                <Card className="p-4 flex items-center justify-between gap-4 hover:border-court-200 transition-colors">
                   <div className="min-w-0">
                     <div className="flex items-center gap-2">
-                      <p className="font-bold text-gray-900 truncate">{tour.tournamentName}</p>
+                      <p className="font-bold text-ink-900 truncate">{tour.tournamentName}</p>
                       <Badge tone={st.tone}>{st.label}</Badge>
                     </div>
-                    <p className="text-xs text-gray-400 mt-1">
+                    <p className="text-xs text-ink-400 mt-1">
                       {tour.clubName ?? tour.location} · {tour.category} ·{' '}
                       {new Date(tour.startDate).toLocaleDateString(locale, {
                         day: 'numeric',
@@ -124,7 +124,7 @@ export function MyTournamentsClient({ userId }: { userId: string }) {
                       })}
                     </p>
                     {tour.partnerName && (
-                      <p className="text-xs text-gray-400 mt-0.5">
+                      <p className="text-xs text-ink-400 mt-0.5">
                         {t('partnerLabel', { name: tour.partnerName })}
                       </p>
                     )}

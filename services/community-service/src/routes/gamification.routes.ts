@@ -2,6 +2,7 @@ import { Router, Request, Response, NextFunction } from 'express'
 import { PrismaClient } from '@prisma/client'
 import { xpToLevel, xpForNextLevel } from '@racketly/utils'
 import { requireAuth } from '../middleware/auth.middleware'
+import { AppError } from '../middleware/error.middleware'
 import { validate } from '../validators/community.validators'
 import { z } from 'zod'
 
@@ -10,8 +11,7 @@ const prisma = new PrismaClient()
 
 const awardXpSchema = z.object({
   body: z.object({
-    amount: z.number().int().min(1).max(500),
-    reason: z.string().min(1).max(100),
+    missionId: z.string().cuid(),
   }),
 })
 
@@ -51,37 +51,70 @@ router.get('/:userId/progress', async (req: Request, res: Response, next: NextFu
 })
 
 // POST /api/gamification/:userId/award-xp
-// ponytail: solo exige que el caller esté autenticado y acota el monto — no valida
-// todavía que `reason` corresponda a una acción real completada (partido, misión...),
-// así que un usuario logueado podría auto-otorgarse XP repetidamente hasta el tope por
-// llamada. Nada llama hoy este endpoint desde otro servicio; cuando tournament-service
-// o booking-service empiecen a otorgar XP automáticamente, mover la validación de la
-// acción a ese caller (o a un check server-side aquí) antes de exponerlo de verdad.
+// El caller ya no manda un `amount`/`reason` libres — eso permitía auto-otorgarse XP
+// repetidamente. El monto ahora sale de Mission.xpReward (una acción real y verificable
+// del catálogo, ver prisma/seed.ts) y queda registrado en UserMission para no poder
+// completarla dos veces. Solo el propio dueño del perfil puede completar sus misiones.
+// ponytail: las misiones recurrentes (isRecurring) solo se pueden completar una vez —
+// UserMission guarda un único completedAt, no un historial por ciclo. Falta un mecanismo
+// de reset/intervalo para permitir volver a completarlas; nada lo necesita todavía.
 router.post(
   '/:userId/award-xp',
   requireAuth,
   validate(awardXpSchema),
   async (req: Request, res: Response, next: NextFunction) => {
     try {
-      const { amount, reason } = req.body
-      const profile = await prisma.playerProfile.update({
-        where: { userId: req.params.userId },
-        data: { xpPoints: { increment: amount } },
-      })
-      const newLevel = xpToLevel(profile.xpPoints)
-      const leveledUp = newLevel > profile.level
-
-      if (leveledUp) {
-        await prisma.playerProfile.update({
-          where: { userId: req.params.userId },
-          data: { level: newLevel },
-        })
+      if (req.userId !== req.params.userId) {
+        throw new AppError('No podés otorgar XP a otro usuario', 403)
       }
+      const { missionId } = req.body
 
-      return res.json({
-        success: true,
-        data: { newXp: profile.xpPoints, newLevel, leveledUp, reason },
+      const result = await prisma.$transaction(async (tx) => {
+        const mission = await tx.mission.findUnique({ where: { id: missionId } })
+        if (!mission) throw new AppError('Misión no encontrada', 404)
+
+        const now = new Date()
+        if (mission.startDate && mission.startDate > now)
+          throw new AppError('La misión todavía no empezó', 400)
+        if (mission.endDate && mission.endDate < now)
+          throw new AppError('La misión ya terminó', 400)
+
+        const existing = await tx.userMission.findUnique({
+          where: { userId_missionId: { userId: req.params.userId, missionId } },
+        })
+        if (existing?.completedAt) throw new AppError('Misión ya completada', 409)
+
+        await tx.userMission.upsert({
+          where: { userId_missionId: { userId: req.params.userId, missionId } },
+          create: { userId: req.params.userId, missionId, progress: 1, completedAt: now },
+          update: { completedAt: now },
+        })
+
+        let profile = await tx.playerProfile.update({
+          where: { userId: req.params.userId },
+          data: { xpPoints: { increment: mission.xpReward } },
+        })
+        const newLevel = xpToLevel(profile.xpPoints)
+        const leveledUp = newLevel > profile.level
+        if (leveledUp) {
+          profile = await tx.playerProfile.update({
+            where: { userId: req.params.userId },
+            data: { level: newLevel },
+          })
+        }
+
+        if (mission.badgeId) {
+          await tx.userBadge.upsert({
+            where: { userId_badgeId: { userId: req.params.userId, badgeId: mission.badgeId } },
+            create: { userId: req.params.userId, badgeId: mission.badgeId },
+            update: {},
+          })
+        }
+
+        return { newXp: profile.xpPoints, newLevel, leveledUp, mission: mission.title }
       })
+
+      return res.json({ success: true, data: result })
     } catch (err) {
       return next(err)
     }

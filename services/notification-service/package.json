@@ -17,11 +17,11 @@
     "express": "^4.21.0",
     "cors": "^2.8.5",
     "helmet": "^8.0.0",
-    "bullmq": "^5.0.0",
+    "bullmq": "^6.3.4",
     "@sendgrid/mail": "^8.1.0",
-    "twilio": "^5.0.0",
+    "twilio": "^6.1.0",
     "redis": "^4.7.0",
-    "dotenv": "^16.4.0",
+    "dotenv": "^17.4.2",
     "morgan": "^1.10.0"
   },
   "devDependencies": {
@@ -32,6 +32,6 @@
     "@types/morgan": "^1.9.9",
     "vitest": "^2.1.9",
     "supertest": "^7.0.0",
-    "@types/supertest": "^6.0.2"
+    "@types/supertest": "^7.2.1"
   }
 }

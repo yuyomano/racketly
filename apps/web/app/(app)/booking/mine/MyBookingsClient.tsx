@@ -67,7 +67,7 @@ export function MyBookingsClient() {
   })
 
   const now = Date.now()
-  const isPast = (b: Booking) => new Date(`${b.slot.date}T${b.slot.startTime}`).getTime() < now
+  const isPast = (b: Booking) => new Date(`${b.slot.date}T${b.slot.endTime}`).getTime() < now
   const filtered = (bookings ?? []).filter((b) =>
     tab === 'upcoming'
       ? !isPast(b) && b.status !== 'cancelled'

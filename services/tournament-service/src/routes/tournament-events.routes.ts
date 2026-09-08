@@ -1,4 +1,7 @@
-import { Router, Request, Response, NextFunction } from 'express'
+import { Router, Request as ExpressRequest, Response, NextFunction } from 'express'
+// Express 5: ParamsDictionary ahora tipa valores como string | string[] (soporte para rutas
+// con params repetidos, p.ej. `:id+`), que este repo no usa. Angostamos params a string.
+type Request = ExpressRequest<Record<string, string>>
 import { PrismaClient } from '@prisma/client'
 import { AppError } from '../middleware/error.middleware'
 import { requireAuth } from '../middleware/auth.middleware'

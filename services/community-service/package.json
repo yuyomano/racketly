@@ -14,7 +14,7 @@
     "@racketly/shared-types": "*",
     "@racketly/utils": "*",
     "@prisma/client": "*",
-    "express": "^4.21.0",
+    "express": "^5.2.1",
     "cors": "^2.8.5",
     "helmet": "^8.0.0",
     "multer": "^2.3.0",
@@ -27,7 +27,7 @@
   "devDependencies": {
     "typescript": "*",
     "ts-node-dev": "^2.0.0",
-    "@types/express": "^4.17.21",
+    "@types/express": "^5.0.6",
     "@types/multer": "^2.2.0",
     "@types/morgan": "^1.9.9",
     "vitest": "^5.0.0",

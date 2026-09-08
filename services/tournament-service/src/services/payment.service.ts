@@ -13,7 +13,7 @@ let _stripe: Stripe | null = null
 function getStripe(): Stripe {
   if (DEV_MODE) throw new Error('STRIPE_NOT_CONFIGURED')
   if (!_stripe)
-    _stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, { apiVersion: '2025-02-24.acacia' })
+    _stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, { apiVersion: '2026-08-26.dahlia' })
   return _stripe
 }
 

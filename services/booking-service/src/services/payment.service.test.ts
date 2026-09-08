@@ -8,19 +8,25 @@ describe('payment.service (DEV_MODE, sin STRIPE_SECRET_KEY)', () => {
     delete process.env.STRIPE_SECRET_KEY
   })
 
-  it('createStripePaymentIntent devuelve un clientSecret simulado sin llamar a Stripe', async () => {
-    const { createStripePaymentIntent } = await import('./payment.service')
-    const result = await createStripePaymentIntent({
-      amount: 5000,
-      currency: 'DOP',
-      bookingId: 'booking-1',
-      userId: 'user-1',
-      description: 'test',
-    })
-    expect(result.devMode).toBe(true)
-    expect(result.clientSecret).toContain('booking-1')
-    expect(result.paymentIntentId).toBe('dev_pi_booking-1')
-  })
+  it(
+    'createStripePaymentIntent devuelve un clientSecret simulado sin llamar a Stripe',
+    async () => {
+      const { createStripePaymentIntent } = await import('./payment.service')
+      const result = await createStripePaymentIntent({
+        amount: 5000,
+        currency: 'DOP',
+        bookingId: 'booking-1',
+        userId: 'user-1',
+        description: 'test',
+      })
+      expect(result.devMode).toBe(true)
+      expect(result.clientSecret).toContain('booking-1')
+      expect(result.paymentIntentId).toBe('dev_pi_booking-1')
+    },
+    // ponytail: el require('stripe') en frío tarda varios segundos con el SDK v22
+    // (mucho más grande que v16); vi.resetModules() fuerza recargarlo aquí.
+    15000
+  )
 
   it('refundStripePayment simula el reembolso en dev mode', async () => {
     const { refundStripePayment } = await import('./payment.service')

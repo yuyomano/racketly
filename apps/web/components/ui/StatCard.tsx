@@ -55,7 +55,7 @@ export function StatCard({
         className={cn(
           'font-display font-score font-black text-ink-900 mt-1.5 tracking-tight',
           valueSizeClass,
-          isLong ? 'leading-tight break-words' : 'leading-none truncate'
+          isLong ? 'leading-tight wrap-break-word' : 'leading-none truncate'
         )}
       >
         {value}

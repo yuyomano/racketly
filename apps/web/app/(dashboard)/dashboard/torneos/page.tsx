@@ -1751,11 +1751,11 @@ function MatchScoreModal({
           </div>
 
           <div className="grid grid-cols-[1fr_12px_1fr_20px] gap-2 mb-1.5 items-start">
-            <span className="text-xs font-semibold text-ink-500 leading-tight break-words">
+            <span className="text-xs font-semibold text-ink-500 leading-tight wrap-break-word">
               {p1Name}
             </span>
             <span />
-            <span className="text-xs font-semibold text-ink-500 leading-tight break-words">
+            <span className="text-xs font-semibold text-ink-500 leading-tight wrap-break-word">
               {p2Name}
             </span>
             <span />
@@ -1852,7 +1852,7 @@ function MatchPlayerRow({
         {isEmpty ? '?' : name.slice(0, 2).toUpperCase()}
       </div>
       <span
-        className={`flex-1 min-w-0 text-xs leading-tight break-words ${
+        className={`flex-1 min-w-0 text-xs leading-tight wrap-break-word ${
           isEmpty ? 'text-ink-300 italic' : isWinner ? 'font-bold text-court-700' : 'text-ink-700'
         }`}
         title={displayName}
@@ -2854,7 +2854,7 @@ function AdminGroupCard({
             className="border border-ink-100 rounded-xl px-3 py-2 flex items-start justify-between gap-2"
           >
             <div className="min-w-0">
-              <p className="text-xs font-medium text-ink-700 leading-snug break-words">
+              <p className="text-xs font-medium text-ink-700 leading-snug wrap-break-word">
                 {(m.player1?.displayName ?? '?') +
                   (m.player1PartnerName ? ` / ${m.player1PartnerName}` : '')}
                 {' vs '}
@@ -3632,7 +3632,7 @@ function TournamentCard({
 
             <div className="min-w-0 flex-1">
               <div className="flex items-center gap-2 flex-wrap mb-1">
-                <h3 className="font-bold text-ink-900 text-base break-words">{t.name}</h3>
+                <h3 className="font-bold text-ink-900 text-base wrap-break-word">{t.name}</h3>
                 <Badge tone={STATUS_TONE[t.status] ?? 'gray'} dot>
                   {statusLabel}
                 </Badge>
@@ -3668,7 +3668,7 @@ function TournamentCard({
                 </Badge>
                 {t.eventId && (
                   <Badge tone="amber" className="max-w-full">
-                    <span className="break-words inline-flex items-center gap-1">
+                    <span className="wrap-break-word inline-flex items-center gap-1">
                       <Calendar className="w-3 h-3 shrink-0" />{' '}
                       {events.find((ev) => ev.id === t.eventId)?.name ?? tc('eventFallback')}
                     </span>
@@ -3858,7 +3858,7 @@ function TournamentCard({
                         </div>
                         <div className="flex-1 min-w-0">
                           <div className="flex items-center gap-2 flex-wrap">
-                            <span className="text-sm font-semibold text-ink-800 break-words">
+                            <span className="text-sm font-semibold text-ink-800 wrap-break-word">
                               {name}
                             </span>
                             {p.player?.category && <Badge tone="violet">{p.player.category}</Badge>}

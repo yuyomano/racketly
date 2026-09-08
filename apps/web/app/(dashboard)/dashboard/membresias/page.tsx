@@ -418,7 +418,7 @@ export default function MembresiasPage() {
                       onClick={() => setDetailPlayerId(group.playerUserId)}
                       className="min-w-0 text-left flex-1 group"
                     >
-                      <p className="text-sm font-semibold text-ink-800 break-words group-hover:underline">
+                      <p className="text-sm font-semibold text-ink-800 wrap-break-word group-hover:underline">
                         {group.playerName}
                       </p>
                       <p className="text-xs text-ink-400 truncate">
@@ -673,7 +673,7 @@ export default function MembresiasPage() {
                             className="py-2.5 flex items-center justify-between gap-3"
                           >
                             <div className="min-w-0">
-                              <p className="text-sm font-semibold text-ink-800 break-words">
+                              <p className="text-sm font-semibold text-ink-800 wrap-break-word">
                                 {m.userName}
                               </p>
                               <p className="text-xs text-ink-400 truncate">
@@ -716,7 +716,7 @@ export default function MembresiasPage() {
                   return (
                     <div key={m.id} className="py-2.5 flex items-center justify-between gap-3">
                       <div className="min-w-0">
-                        <p className="text-sm font-semibold text-ink-800 break-words flex items-center gap-1.5">
+                        <p className="text-sm font-semibold text-ink-800 wrap-break-word flex items-center gap-1.5">
                           {m.userName}
                           {m.isCourtesy && (
                             <span
@@ -918,7 +918,7 @@ function AddMemberModal({
 
       {selected ? (
         <div className="flex items-center justify-between bg-court-50 border border-court-200 rounded-xl px-3 py-2.5 mb-3">
-          <p className="text-sm font-semibold text-court-800 break-words">{selected.name}</p>
+          <p className="text-sm font-semibold text-court-800 wrap-break-word">{selected.name}</p>
           <button onClick={() => setSelected(null)} className="text-court-600 hover:text-court-800">
             <X className="w-4 h-4" />
           </button>
@@ -948,8 +948,8 @@ function AddMemberModal({
                   }}
                   className="w-full text-left px-3 py-2 hover:bg-ink-50"
                 >
-                  <p className="text-sm font-medium text-ink-800 break-words">{u.name}</p>
-                  <p className="text-xs text-ink-400 break-words">{u.email}</p>
+                  <p className="text-sm font-medium text-ink-800 wrap-break-word">{u.name}</p>
+                  <p className="text-xs text-ink-400 wrap-break-word">{u.email}</p>
                 </button>
               ))}
             </div>

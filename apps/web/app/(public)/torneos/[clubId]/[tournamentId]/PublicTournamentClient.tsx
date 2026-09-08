@@ -360,7 +360,7 @@ export function PublicTournamentClient({
                 {Object.entries(bracket)
                   .sort(([a], [b]) => Number(a) - Number(b))
                   .map(([round, matches]) => (
-                    <div key={round} className="flex-shrink-0 w-64 space-y-2">
+                    <div key={round} className="shrink-0 w-64 space-y-2">
                       <p className="text-xs font-bold text-ink-500 uppercase tracking-wide px-1">
                         {roundLabel(Number(round), maxRound)}
                       </p>
@@ -495,7 +495,7 @@ function GroupCard({ group }: { group: GroupData }) {
           {group.matches.map((m) => (
             <div key={m.id} className="flex items-start justify-between text-xs py-1 gap-2">
               <div className="min-w-0">
-                <p className="text-ink-600 leading-snug break-words">
+                <p className="text-ink-600 leading-snug wrap-break-word">
                   {pairName(m, 'player1')} vs {pairName(m, 'player2')}
                 </p>
                 {(m.courtName || m.scheduledAt) && (

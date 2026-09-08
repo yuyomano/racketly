@@ -307,11 +307,11 @@ export default function DashboardPage() {
                         </span>
                         <span className="mt-0.5 shrink-0">🎓</span>
                         <div className="flex-1 min-w-0">
-                          <p className="text-sm font-semibold text-ink-900 break-words">
+                          <p className="text-sm font-semibold text-ink-900 wrap-break-word">
                             {t('claseCon', { name: s.professor?.name ?? '' })}
                             {s.court ? ` · ${s.court.name}` : ''}
                           </p>
-                          <p className="text-xs text-ink-500 break-words">{studentNames}</p>
+                          <p className="text-xs text-ink-500 wrap-break-word">{studentNames}</p>
                         </div>
                         <Badge tone="violet" className="shrink-0 mt-0.5">
                           {activeStudents.length}/{s.maxStudents}
@@ -348,10 +348,10 @@ export default function DashboardPage() {
                         )}
                       </span>
                       <div className="flex-1 min-w-0">
-                        <p className="text-sm font-semibold text-ink-900 break-words">
+                        <p className="text-sm font-semibold text-ink-900 wrap-break-word">
                           {b.slot?.court?.name}
                         </p>
-                        <p className="text-xs text-ink-500 break-words">{names}</p>
+                        <p className="text-xs text-ink-500 wrap-break-word">{names}</p>
                       </div>
                       <Badge tone={meta.tone} className="shrink-0 mt-0.5">
                         {bookingStatusLabel(t, b.status)}

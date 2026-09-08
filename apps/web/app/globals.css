@@ -1,6 +1,114 @@
-@tailwind base;
-@tailwind components;
-@tailwind utilities;
+@import 'tailwindcss';
+
+@theme {
+  --color-border: hsl(var(--border));
+  --color-background: hsl(var(--background));
+  --color-foreground: hsl(var(--foreground));
+
+  --color-court-50: #eaf5f3;
+  --color-court-100: #d2e9e5;
+  --color-court-200: #a6d3cb;
+  --color-court-300: #79bcb0;
+  --color-court-400: #4ca495;
+  --color-court-500: #2a8a7b;
+  --color-court-600: #1b6b63;
+  --color-court-700: #155450;
+  --color-court-800: #103f3c;
+  --color-court-900: #0b2b29;
+  --color-court: #1b6b63;
+
+  --color-primary-50: #eaf5f3;
+  --color-primary-100: #d2e9e5;
+  --color-primary-200: #a6d3cb;
+  --color-primary-300: #79bcb0;
+  --color-primary-400: #4ca495;
+  --color-primary-500: #2a8a7b;
+  --color-primary-600: #1b6b63;
+  --color-primary-700: #155450;
+  --color-primary-800: #103f3c;
+  --color-primary-900: #0b2b29;
+  --color-primary: #1b6b63;
+
+  --color-ink-50: #eef1f0;
+  --color-ink-100: #d8dedb;
+  --color-ink-200: #b3bfb9;
+  --color-ink-300: #8a9c93;
+  --color-ink-400: #62786d;
+  --color-ink-500: #445a50;
+  --color-ink-600: #2e4038;
+  --color-ink-700: #1f2e28;
+  --color-ink-800: #172520;
+  --color-ink-900: #10201c;
+  --color-ink: #10201c;
+
+  --color-ball-50: #f7fbe8;
+  --color-ball-100: #ecf6c4;
+  --color-ball-300: #deee8a;
+  --color-ball-400: #d4e962;
+  --color-ball-500: #c9e63f;
+  --color-ball-600: #a9c42c;
+  --color-ball-700: #839a20;
+  --color-ball: #c9e63f;
+
+  --color-trophy-50: #fbf3e1;
+  --color-trophy-100: #f3e1b4;
+  --color-trophy-400: #d9ae4e;
+  --color-trophy-500: #c99a2e;
+  --color-trophy-600: #a87d22;
+  --color-trophy-700: #86621a;
+  --color-trophy: #c99a2e;
+
+  --color-referee-50: #fbeae9;
+  --color-referee-100: #f3c7c4;
+  --color-referee-400: #d66159;
+  --color-referee-500: #c23b33;
+  --color-referee-600: #a22f28;
+  --color-referee-700: #7e241f;
+  --color-referee: #c23b33;
+
+  --radius-lg: 0.75rem;
+  --radius-xl: 1rem;
+  --radius-2xl: 1.25rem;
+
+  --font-sans: var(--font-body), system-ui, sans-serif;
+  --font-display: var(--font-display), system-ui, sans-serif;
+}
+
+/*
+  The default border color has changed to `currentcolor` in Tailwind CSS v4,
+  so we've added these compatibility styles to make sure everything still
+  looks the same as it did with Tailwind CSS v3.
+
+  If we ever want to remove these styles, we need to add an explicit border
+  color utility to any element that depends on these defaults.
+*/
+@layer base {
+  *,
+  ::after,
+  ::before,
+  ::backdrop,
+  ::file-selector-button {
+    border-color: var(--color-gray-200, currentcolor);
+  }
+}
+
+@utility sport-padel {
+  @apply bg-court-500 text-white;
+}
+
+@utility sport-pickleball {
+  @apply bg-trophy-500 text-white;
+}
+
+@utility category-badge {
+  @apply inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium;
+}
+
+@utility font-score {
+  /* Números de marcador/estadística — el ancho fijo evita que los dígitos "salten"
+     cuando un marcador o KPI se actualiza en vivo. */
+  font-variant-numeric: tabular-nums;
+}
 
 /* Sistema "Marcador" — ver tailwind.config.ts para el razonamiento de cada tono.
    Estas variables son el mismo valor que court/ink/ball en HSL, para que shadcn-style
@@ -33,15 +141,6 @@
     background-color: hsl(var(--background));
     color: hsl(var(--foreground));
   }
-}
-
-@layer utilities {
-  .sport-padel { @apply bg-court-500 text-white; }
-  .sport-pickleball { @apply bg-trophy-500 text-white; }
-  .category-badge { @apply inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium; }
-  /* Números de marcador/estadística — el ancho fijo evita que los dígitos "salten"
-     cuando un marcador o KPI se actualiza en vivo. */
-  .font-score { font-variant-numeric: tabular-nums; }
 }
 
 @keyframes toast-in {

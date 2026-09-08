@@ -898,7 +898,7 @@ function MaintenanceModal({ court, onClose }: { court: Court; onClose: () => voi
                       timeZone: 'UTC',
                     })}
                   </p>
-                  <p className="text-xs text-ink-500 mt-0.5 break-words">{b.description}</p>
+                  <p className="text-xs text-ink-500 mt-0.5 wrap-break-word">{b.description}</p>
                 </div>
                 <button
                   onClick={() => handleDelete(b.id)}

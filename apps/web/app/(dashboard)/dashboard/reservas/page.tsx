@@ -1595,7 +1595,7 @@ export default function ReservasPage() {
                             {Array.isArray(b.players) && b.players.length > 0 ? (
                               b.players.map((p, i) => (
                                 <div key={p.userId || i} className="flex items-start gap-1.5">
-                                  <span className="text-xs text-ink-700 leading-snug break-words flex-1">
+                                  <span className="text-xs text-ink-700 leading-snug wrap-break-word flex-1">
                                     {p.name}
                                     {(p as any).isOwner && (
                                       <span className="ml-1 text-ink-400">
@@ -2032,7 +2032,7 @@ export default function ReservasPage() {
                       <div className="w-7 h-7 rounded-full bg-ink-400 flex items-center justify-center text-white font-bold text-xs shrink-0">
                         {p.name.charAt(0)}
                       </div>
-                      <span className="text-sm font-medium text-ink-800 flex-1 break-words leading-snug">
+                      <span className="text-sm font-medium text-ink-800 flex-1 wrap-break-word leading-snug">
                         {p.name}
                       </span>
                       <button
@@ -2184,7 +2184,7 @@ export default function ReservasPage() {
                       <div className="w-7 h-7 rounded-full bg-trophy-500 flex items-center justify-center text-white font-bold text-xs shrink-0">
                         {g.name.charAt(0)}
                       </div>
-                      <span className="text-sm font-medium text-ink-800 flex-1 break-words leading-snug">
+                      <span className="text-sm font-medium text-ink-800 flex-1 wrap-break-word leading-snug">
                         {g.name}{' '}
                         <span className="text-xs text-trophy-600 font-normal">
                           ({t('createModal.invitado')})
@@ -2795,7 +2795,7 @@ export default function ReservasPage() {
                             {p.name.charAt(0)}
                           </div>
                           <div className="flex-1 min-w-0">
-                            <p className="text-sm font-medium text-ink-800 leading-snug break-words">
+                            <p className="text-sm font-medium text-ink-800 leading-snug wrap-break-word">
                               {p.name}
                               {isGuest && (
                                 <span className="ml-1.5 text-xs text-trophy-600 font-normal">
@@ -3057,13 +3057,13 @@ function ClassListRow({
       </Td>
       <Td className="max-w-[260px]">
         <div className="flex flex-col gap-1">
-          <span className="text-xs text-ink-700 leading-snug break-words inline-flex items-center gap-1">
+          <span className="text-xs text-ink-700 leading-snug wrap-break-word inline-flex items-center gap-1">
             <GraduationCap className="w-3.5 h-3.5 shrink-0" /> {slot.professor.name}{' '}
             <span className="text-ink-400">{t('classListRow.profesorLabel')}</span>
           </span>
           {studentNames.length > 0 ? (
             studentNames.map((n, i) => (
-              <span key={i} className="text-xs text-ink-700 leading-snug break-words">
+              <span key={i} className="text-xs text-ink-700 leading-snug wrap-break-word">
                 {n}
               </span>
             ))
@@ -3362,7 +3362,7 @@ function ClassEditModal({
             )}
             {selectedStudent ? (
               <div className="flex items-center justify-between bg-court-50 border border-court-200 rounded-lg px-2.5 py-2">
-                <p className="text-sm font-semibold text-court-800 break-words">
+                <p className="text-sm font-semibold text-court-800 wrap-break-word">
                   {selectedStudent.name}
                 </p>
                 <button
@@ -3394,8 +3394,8 @@ function ClassEditModal({
                         }}
                         className="w-full text-left px-3 py-2 hover:bg-ink-50"
                       >
-                        <p className="text-sm font-medium text-ink-800 break-words">{u.name}</p>
-                        <p className="text-xs text-ink-400 break-words">{u.email}</p>
+                        <p className="text-sm font-medium text-ink-800 wrap-break-word">{u.name}</p>
+                        <p className="text-xs text-ink-400 wrap-break-word">{u.email}</p>
                       </button>
                     ))}
                   </div>
@@ -3454,7 +3454,7 @@ function ClassEditModal({
             {activeBookings.map((b) => (
               <div key={b.id} className="py-2 flex items-center justify-between gap-3 flex-wrap">
                 <div className="min-w-0">
-                  <p className="text-sm font-semibold text-ink-800 break-words">{b.studentName}</p>
+                  <p className="text-sm font-semibold text-ink-800 wrap-break-word">{b.studentName}</p>
                   <p className="text-xs text-ink-400">
                     {formatCurrency(b.amountOwed, slot.currency)}
                   </p>

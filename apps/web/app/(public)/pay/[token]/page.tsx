@@ -317,7 +317,7 @@ function PaymentElementForm({
 
 function Shell({ children }: { children: React.ReactNode }) {
   return (
-    <main className="min-h-screen bg-gradient-to-br from-sky-900 via-sky-800 to-sky-950 flex items-center justify-center p-4">
+    <main className="min-h-screen bg-linear-to-br from-sky-900 via-sky-800 to-sky-950 flex items-center justify-center p-4">
       <div className="bg-white rounded-3xl shadow-2xl p-10 w-full max-w-md">
         <div className="flex items-center gap-3 mb-8">
           <div className="w-10 h-10 rounded-xl bg-sky-500 flex items-center justify-center text-lg">

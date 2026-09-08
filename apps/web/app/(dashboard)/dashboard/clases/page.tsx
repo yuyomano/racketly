@@ -315,7 +315,7 @@ export default function ClasesPage() {
                 >
                   <div className="min-w-0">
                     <div className="flex items-center gap-1.5 flex-wrap">
-                      <p className="text-sm font-semibold text-ink-800 break-words">{p.name}</p>
+                      <p className="text-sm font-semibold text-ink-800 wrap-break-word">{p.name}</p>
                       <Badge tone={p.isExternal ? 'violet' : 'emerald'}>
                         {p.isExternal ? t('badgeExternal') : t('badgeClub')}
                       </Badge>
@@ -498,7 +498,7 @@ function SlotCard({
           <div className="flex items-start gap-3 min-w-0">
             {/* Bloque de fecha/hora — lo primero que el ojo capta al escanear la lista,
                 en vez de tener que leer el párrafo completo para saber cuándo es. */}
-            <div className="shrink-0 text-center bg-ink-50 border border-ink-100 rounded-xl px-3 py-1.5 w-[4.25rem]">
+            <div className="shrink-0 text-center bg-ink-50 border border-ink-100 rounded-xl px-3 py-1.5 w-17">
               <p className="text-[0.625rem] font-bold text-ink-400 uppercase tracking-wide truncate">
                 {dateObj.toLocaleDateString(locale, { weekday: 'short' })}
               </p>
@@ -569,7 +569,7 @@ function SlotCard({
             {activeBookings.map((b) => (
               <div key={b.id} className="py-2 flex items-center justify-between gap-3 flex-wrap">
                 <div className="min-w-0">
-                  <p className="text-sm font-semibold text-ink-800 break-words">{b.studentName}</p>
+                  <p className="text-sm font-semibold text-ink-800 wrap-break-word">{b.studentName}</p>
                   <p className="text-xs text-ink-400">
                     {formatCurrency(b.amountOwed, slot.currency)}
                   </p>
@@ -775,7 +775,7 @@ function ProfessorModal({
             </label>
             {selectedPlayer ? (
               <div className="flex items-center justify-between bg-court-50 border border-court-200 rounded-xl px-3 py-2.5">
-                <p className="text-sm font-semibold text-court-800 break-words">
+                <p className="text-sm font-semibold text-court-800 wrap-break-word">
                   {selectedPlayer.name}
                 </p>
                 <button
@@ -805,8 +805,8 @@ function ProfessorModal({
                         }}
                         className="w-full text-left px-3 py-2 hover:bg-ink-50"
                       >
-                        <p className="text-sm font-medium text-ink-800 break-words">{u.name}</p>
-                        <p className="text-xs text-ink-400 break-words">{u.email}</p>
+                        <p className="text-sm font-medium text-ink-800 wrap-break-word">{u.name}</p>
+                        <p className="text-xs text-ink-400 wrap-break-word">{u.email}</p>
                       </button>
                     ))}
                   </div>
@@ -1177,7 +1177,7 @@ function AddStudentModal({
 
       {selected ? (
         <div className="flex items-center justify-between bg-court-50 border border-court-200 rounded-xl px-3 py-2.5 mb-3">
-          <p className="text-sm font-semibold text-court-800 break-words">{selected.name}</p>
+          <p className="text-sm font-semibold text-court-800 wrap-break-word">{selected.name}</p>
           <button onClick={() => setSelected(null)} className="text-court-600 hover:text-court-800">
             <X className="w-4 h-4" />
           </button>
@@ -1205,8 +1205,8 @@ function AddStudentModal({
                   }}
                   className="w-full text-left px-3 py-2 hover:bg-ink-50"
                 >
-                  <p className="text-sm font-medium text-ink-800 break-words">{u.name}</p>
-                  <p className="text-xs text-ink-400 break-words">{u.email}</p>
+                  <p className="text-sm font-medium text-ink-800 wrap-break-word">{u.name}</p>
+                  <p className="text-xs text-ink-400 wrap-break-word">{u.email}</p>
                 </button>
               ))}
             </div>

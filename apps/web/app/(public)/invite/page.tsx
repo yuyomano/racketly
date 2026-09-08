@@ -103,7 +103,7 @@ function AcceptInviteContent() {
 
 export default function InvitePage() {
   return (
-    <main className="min-h-screen bg-gradient-to-br from-court-900 via-court-800 to-court-900 flex items-center justify-center p-4">
+    <main className="min-h-screen bg-linear-to-br from-court-900 via-court-800 to-court-900 flex items-center justify-center p-4">
       <div className="bg-white rounded-3xl shadow-2xl p-10 w-full max-w-md">
         <div className="flex items-center gap-3 mb-8">
           <div className="w-10 h-10 rounded-xl bg-court-500 flex items-center justify-center text-lg">

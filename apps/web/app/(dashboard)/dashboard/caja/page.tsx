@@ -387,7 +387,7 @@ export default function CajaPage() {
                       onClick={() => setDetailPlayerId(group.groupKey)}
                       className="min-w-0 text-left flex-1 group"
                     >
-                      <p className="text-sm font-semibold text-ink-800 break-words group-hover:underline">
+                      <p className="text-sm font-semibold text-ink-800 wrap-break-word group-hover:underline">
                         {group.playerName}
                         {group.isGuest && (
                           <span className="ml-1.5 text-[10px] font-medium text-trophy-600 align-middle">

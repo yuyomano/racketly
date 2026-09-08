@@ -651,7 +651,7 @@ function ConfirmDialog({
         <Button variant="secondary" onClick={onCancel} className="flex-1">
           {t('cancel')}
         </Button>
-        <Button onClick={onConfirm} className="flex-1 !bg-referee-600 hover:!bg-referee-700">
+        <Button onClick={onConfirm} className="flex-1 bg-referee-600! hover:bg-referee-700!">
           {t('confirm')}
         </Button>
       </div>

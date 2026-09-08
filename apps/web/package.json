@@ -32,7 +32,7 @@
     "socket.io": "^4.8.3",
     "socket.io-client": "^4.8.3",
     "tailwind-merge": "^3.6.0",
-    "zod": "^3.23.0",
+    "zod": "^4.5.4",
     "zustand": "^5.0.0"
   },
   "devDependencies": {

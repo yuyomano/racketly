@@ -1,5 +1,5 @@
 import { Request, Response, NextFunction } from 'express'
-import { AnyZodObject, z, ZodError } from 'zod'
+import { z, ZodError } from 'zod'
 
 export const updateProgressSchema = z.object({
   body: z.object({
@@ -9,7 +9,7 @@ export const updateProgressSchema = z.object({
 })
 
 // Mismo patrón que auth-service — parsea body/query/params y devuelve 400 con detalle por campo.
-export function validate(schema: AnyZodObject) {
+export function validate(schema: z.ZodType) {
   return async (req: Request, res: Response, next: NextFunction) => {
     try {
       await schema.parseAsync({ body: req.body, query: req.query, params: req.params })
@@ -19,7 +19,7 @@ export function validate(schema: AnyZodObject) {
         return res.status(400).json({
           success: false,
           error: 'Datos inválidos',
-          details: err.errors.map((e) => ({ field: e.path.join('.'), message: e.message })),
+          details: err.issues.map((e) => ({ field: e.path.join('.'), message: e.message })),
         })
       }
       return next(err)

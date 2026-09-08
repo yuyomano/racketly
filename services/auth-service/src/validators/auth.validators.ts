@@ -42,9 +42,9 @@ export const updateProfileSchema = z.object({
 
 // Middleware de validación genérico
 import { Request, Response, NextFunction } from 'express'
-import { AnyZodObject, ZodError } from 'zod'
+import { ZodError } from 'zod'
 
-export function validate(schema: AnyZodObject) {
+export function validate(schema: z.ZodType) {
   return async (req: Request, res: Response, next: NextFunction) => {
     try {
       await schema.parseAsync({ body: req.body, query: req.query, params: req.params })
@@ -54,7 +54,7 @@ export function validate(schema: AnyZodObject) {
         return res.status(400).json({
           success: false,
           error: 'Datos inválidos',
-          details: err.errors.map((e) => ({ field: e.path.join('.'), message: e.message })),
+          details: err.issues.map((e) => ({ field: e.path.join('.'), message: e.message })),
         })
       }
       return next(err)

@@ -25,6 +25,7 @@ import {
   restoreCoveredCredits,
   cancelBookingAndIssueCredit,
   settleRemovedPlayers,
+  settleRemovedGuests,
 } from '../services/cancellation.service'
 import {
   toMinutes,
@@ -1003,6 +1004,14 @@ router.delete('/:id/players/:playerId', async (req: Request, res: Response, next
     // Restaura cualquier crédito que este jugador haya usado para cubrir su parte —
     // si no, quedaría marcado 'used' para siempre aunque ya no participe en la reserva.
     await restoreCoveredCredits([removedPlayer])
+    // Si es un invitado sin cuenta que ya pagó, se reembolsa/revierte siempre — no depende
+    // del flag `issueCredit` de abajo, que solo aplica a jugadores con cuenta (crédito, a
+    // criterio del club).
+    await settleRemovedGuests([removedPlayer], {
+      clubId: booking.slot.court.clubId,
+      currency: booking.currency,
+      bookingId: booking.id,
+    })
 
     let credit = null
     const paidOutOfPocket =

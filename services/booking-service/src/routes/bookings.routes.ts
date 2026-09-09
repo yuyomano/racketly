@@ -8,6 +8,7 @@ import QRCode from 'qrcode'
 import { v4 as uuidv4 } from 'uuid'
 import { randomUUID } from 'crypto'
 import { AppError } from '../middleware/error.middleware'
+import { assertClubAdmin } from '../middleware/club-auth.middleware'
 import { isSlotAvailable } from '../services/slot.service'
 import {
   createStripePaymentIntent,
@@ -23,13 +24,14 @@ import { applyMatchElo } from '../services/match-elo.service'
 import {
   restoreCoveredCredits,
   cancelBookingAndIssueCredit,
+  settleRemovedPlayers,
 } from '../services/cancellation.service'
 import {
   toMinutes,
   hasConflictingClass,
   hasConflictingMaintenance,
 } from '../services/schedule-conflict.service'
-import { determineWinner } from '@racketly/utils'
+import { determineWinner, zonedTimeToUtc } from '@racketly/utils'
 import type { SetScore } from '@racketly/shared-types'
 
 const router = Router()
@@ -169,14 +171,6 @@ router.post('/', async (req: Request, res: Response, next: NextFunction) => {
   const paymentMethod = resolvePaymentMethod(req.body.paymentMethod)
 
   try {
-    // Mismo patrón que el resto de este archivo (DELETE /:id, etc.): si el gateway mandó
-    // x-user-id, debe coincidir con el `userId` de la reserva — si no, cualquiera podía crear
-    // reservas (con cobros asociados) a nombre de otra persona con solo mandar su id en el body.
-    const requestingUserId = req.headers['x-user-id'] as string | undefined
-    if (requestingUserId && userId !== requestingUserId) {
-      throw new AppError('No puedes crear una reserva a nombre de otro usuario', 403)
-    }
-
     // Verificar disponibilidad
     const available = await isSlotAvailable(slotId)
     if (!available) throw new AppError('Esta cancha ya no está disponible', 409)
@@ -185,6 +179,19 @@ router.post('/', async (req: Request, res: Response, next: NextFunction) => {
       where: { id: slotId },
       include: { court: true },
     })
+
+    // Self-o-admin (mismo patrón que POST /:id/book en classes.routes.ts): el propio
+    // jugador reservando para sí mismo, o el dashboard del club reservando a nombre de un
+    // socio que llegó y se lo pidió — nunca un tercero sin más, que es lo que este chequeo
+    // evita (si no, cualquiera podía crear reservas con cobros asociados a nombre de otra
+    // persona con solo mandar su id en el body). Se valida contra el club real de la
+    // cancha (slot.court.clubId), no contra el `clubId` que mande el body — si no,
+    // alcanzaría con omitirlo (o mandar uno ajeno) para saltarse el chequeo.
+    const requestingUserId = req.headers['x-user-id'] as string | undefined
+    if (requestingUserId && userId !== requestingUserId) {
+      if (!slot) throw new AppError('Slot no encontrado', 404)
+      await assertClubAdmin(requestingUserId, slot.court.clubId)
+    }
     if (!slot) throw new AppError('Slot no encontrado', 404)
 
     const blockExpired = slot.blockedExpiresAt && new Date() > slot.blockedExpiresAt
@@ -555,8 +562,14 @@ router.delete('/:id', async (req: Request, res: Response, next: NextFunction) =>
       include: { court: { include: { club: true } } },
     })
 
-    const slotDateTime = new Date(`${slot?.date}T${slot?.startTime}:00`)
-    const hoursUntil = (slotDateTime.getTime() - Date.now()) / (1000 * 60 * 60)
+    // Hora de pared del slot interpretada en la zona horaria del club — no la del
+    // proceso Node, que puede correr en cualquier TZ del servidor (ver zonedTimeToUtc).
+    const slotUtcMs = zonedTimeToUtc(
+      slot?.date ?? '',
+      slot?.startTime ?? '',
+      slot?.court.club.timezone || 'UTC'
+    )
+    const hoursUntil = (slotUtcMs - Date.now()) / (1000 * 60 * 60)
     const policy = slot?.court.club.cancellationPolicy || 'flexible'
 
     let refundAmount = 0
@@ -721,6 +734,26 @@ router.patch('/:id/players', async (req: Request, res: Response, next: NextFunct
     const allSettled = mergedPlayers.every(
       (p: any) => p.paymentStatus === 'paid' || p.paymentStatus === 'courtesy'
     )
+
+    // Jugadores que salían de la reserva (no vienen en el array recibido): si pagaron de
+    // verdad, no se pierde ese dinero — jugador con cuenta → crédito; invitado que pagó con
+    // su tarjeta por guest-link → reembolso Stripe; cualquier otro cobro ya hecho → se
+    // revierte el ingreso en caja (settleRemovedPlayers). El jugador nuevo que entra en su
+    // lugar ya queda 'pending' (arriba) — el admin lo cobra después con /players/:id/pay o el
+    // invitado paga solo por guest-link.
+    const stillRequested = (e: any) =>
+      players.some((p: any) =>
+        p.userId ? p.userId === e.userId : p.guestId && p.guestId === e.guestId
+      )
+    const removedPlayers = existingPlayers.filter((e: any) => !stillRequested(e))
+    if (removedPlayers.length > 0) {
+      await settleRemovedPlayers(removedPlayers, {
+        clubId: slotWithCourt.court.clubId,
+        currency: booking.currency,
+        bookingId: booking.id,
+        reason: 'Cambio de jugador',
+      })
+    }
 
     const updated = await prisma.booking.update({
       where: { id: req.params.id },

@@ -393,7 +393,7 @@ router.get('/:id', async (req: Request, res: Response, next: NextFunction) => {
   try {
     const club = await prisma.club.findUnique({
       where: { id: req.params.id },
-      include: { courts: { where: { isActive: true } } },
+      include: { courts: { where: { isActive: true }, orderBy: { name: 'asc' } } },
     })
     if (!club) throw new AppError('Club no encontrado', 404)
     return res.json({ success: true, data: club })

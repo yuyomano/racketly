@@ -1594,7 +1594,7 @@ export default function ReservasPage() {
                           <div className="flex flex-col gap-1">
                             {Array.isArray(b.players) && b.players.length > 0 ? (
                               b.players.map((p, i) => (
-                                <div key={p.userId || i} className="flex items-start gap-1.5">
+                                <div key={`${p.userId || p.guestId || 'p'}-${i}`} className="flex items-start gap-1.5">
                                   <span className="text-xs text-ink-700 leading-snug wrap-break-word flex-1">
                                     {p.name}
                                     {(p as any).isOwner && (
@@ -2785,7 +2785,7 @@ export default function ReservasPage() {
                     const shownLink = isGuest ? guestLinks[p.guestId!] : undefined
                     return (
                       <div
-                        key={playerId || i}
+                        key={`${playerId || 'p'}-${i}`}
                         className={`border rounded-xl px-4 py-2.5 ${isGuest ? 'bg-trophy-50/60 border-trophy-100' : 'bg-ink-50 border-ink-200'}`}
                       >
                         <div className="flex items-start gap-3">

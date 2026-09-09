@@ -18,11 +18,11 @@ export const BOOKING_STATUS: Record<string, { tone: BadgeTone; gridClass: string
   },
   completed: {
     tone: 'gray',
-    gridClass: 'bg-gray-100 text-gray-500',
+    gridClass: 'bg-slate-100 text-slate-500 border-slate-300',
   },
   cancelled: {
     tone: 'red',
-    gridClass: 'bg-gray-50 text-gray-300 line-through',
+    gridClass: 'bg-rose-50 text-rose-400 border-rose-200 line-through',
   },
 }
 

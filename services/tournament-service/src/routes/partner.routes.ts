@@ -3,11 +3,12 @@ import { Router, Request as ExpressRequest, Response, NextFunction } from 'expre
 // con params repetidos, p.ej. `:id+`), que este repo no usa. Angostamos params a string.
 type Request = ExpressRequest<Record<string, string>>
 import { PrismaClient } from '@prisma/client'
+import { createPgAdapter } from '@racketly/utils/prisma-adapter'
 import { AppError } from '../middleware/error.middleware'
 import { requireAuth } from '../middleware/auth.middleware'
 
 const router = Router()
-const prisma = new PrismaClient()
+const prisma = new PrismaClient({ adapter: createPgAdapter() })
 
 // POST /api/match-requests — publicar solicitud de pareja
 router.post('/', requireAuth, async (req: Request, res: Response, next: NextFunction) => {

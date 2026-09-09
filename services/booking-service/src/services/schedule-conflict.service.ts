@@ -1,6 +1,7 @@
 import { PrismaClient } from '@prisma/client'
+import { createPgAdapter } from '@racketly/utils/prisma-adapter'
 
-const prisma = new PrismaClient()
+const prisma = new PrismaClient({ adapter: createPgAdapter() })
 
 export function toMinutes(hhmm: string): number {
   const [h, m] = hhmm.split(':').map(Number)

@@ -1,6 +1,7 @@
 import { PrismaClient } from '@prisma/client'
+import { createPgAdapter } from '@racketly/utils/prisma-adapter'
 
-const prisma = new PrismaClient()
+const prisma = new PrismaClient({ adapter: createPgAdapter() })
 const NOTIFICATION_SERVICE_URL = process.env.NOTIFICATION_SERVICE_URL || 'http://localhost:3006'
 
 // fetch con timeout vía Promise.race — se evita `AbortSignal.timeout()` porque su tipo choca

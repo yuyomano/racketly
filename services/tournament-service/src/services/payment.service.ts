@@ -1,5 +1,6 @@
 import Stripe from 'stripe'
 import { PrismaClient } from '@prisma/client'
+import { createPgAdapter } from '@racketly/utils/prisma-adapter'
 
 // Copia local del helper de pago de booking-service — cada microservicio tiene su propio
 // PrismaClient/proceso, pero ambos apuntan a la misma base de datos (mismo prisma/schema.prisma
@@ -7,7 +8,7 @@ import { PrismaClient } from '@prisma/client'
 // y aparece en Caja sin que booking-service tenga que involucrarse.
 
 const DEV_MODE = !process.env.STRIPE_SECRET_KEY
-const prisma = new PrismaClient()
+const prisma = new PrismaClient({ adapter: createPgAdapter() })
 
 let _stripe: Stripe | null = null
 function getStripe(): Stripe {

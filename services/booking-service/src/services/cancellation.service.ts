@@ -1,8 +1,9 @@
 import { PrismaClient } from '@prisma/client'
+import { createPgAdapter } from '@racketly/utils/prisma-adapter'
 import { AppError } from '../middleware/error.middleware'
 import { notifyPlayer } from './notification.service'
 
-const prisma = new PrismaClient()
+const prisma = new PrismaClient({ adapter: createPgAdapter() })
 
 // Al cancelar una reserva, restaura el crédito de cualquier jugador que haya sido cubierto
 // automáticamente con crédito (coveredBy: 'credit') — las sesiones de membresía no requieren

@@ -2,6 +2,7 @@ import 'dotenv/config'
 import { describe, it, expect, beforeAll, afterAll } from 'vitest'
 import { QueueEvents } from 'bullmq'
 import { PrismaClient } from '@prisma/client'
+import { createPgAdapter } from '@racketly/utils/prisma-adapter'
 import { smartAlertQueue, redisConnection } from './index'
 
 // El worker de smart-alerts corre en este mismo proceso (se registra al importar './index')
@@ -9,7 +10,7 @@ import { smartAlertQueue, redisConnection } from './index'
 // encola directo en la cola para poder esperar (job.waitUntilFinished) el job puntual que
 // nos importa en vez de un conteo agregado, que se pisa con jobs de otros archivos de test
 // corriendo en paralelo contra la misma cola real.
-const prisma = new PrismaClient()
+const prisma = new PrismaClient({ adapter: createPgAdapter() })
 const queueEvents = new QueueEvents('smart-alerts', { connection: redisConnection })
 
 async function runSmartAlert(type: string, userId: string, payload: unknown) {

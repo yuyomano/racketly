@@ -1,7 +1,8 @@
 import { PrismaClient } from '@prisma/client'
+import { createPgAdapter } from '@racketly/utils/prisma-adapter'
 import { calculateElo, eloToCategory } from '@racketly/utils'
 
-const prisma = new PrismaClient()
+const prisma = new PrismaClient({ adapter: createPgAdapter() })
 
 // Aplica el ELO de un partido ya confirmado (por el rival o por aceptación tácita del cron).
 // Compara el promedio de ELO de cada pareja/equipo — igual que Playtomic, el resultado solo

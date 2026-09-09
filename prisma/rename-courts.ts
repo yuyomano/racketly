@@ -1,5 +1,6 @@
 import { PrismaClient } from '@prisma/client'
-const prisma = new PrismaClient()
+import { createPgAdapter } from '@racketly/utils/prisma-adapter'
+const prisma = new PrismaClient({ adapter: createPgAdapter() })
 
 const renames: Record<string, string> = {
   'Cancha 1 — Cristal VIP': 'Pista 1 — Cristal VIP',

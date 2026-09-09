@@ -1,12 +1,13 @@
 import { Request as ExpressRequest, Response, NextFunction } from 'express'
 import { PrismaClient } from '@prisma/client'
+import { createPgAdapter } from '@racketly/utils/prisma-adapter'
 import { AppError } from './error.middleware'
 
 // Express 5: ParamsDictionary ahora tipa valores como string | string[] (soporte para rutas
 // con params repetidos, p.ej. `:id+`), que este repo no usa. Angostamos params a string.
 type Request = ExpressRequest<Record<string, string>>
 
-const prisma = new PrismaClient()
+const prisma = new PrismaClient({ adapter: createPgAdapter() })
 
 declare global {
   namespace Express {

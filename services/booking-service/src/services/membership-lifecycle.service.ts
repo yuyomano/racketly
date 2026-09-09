@@ -1,6 +1,7 @@
 import { PrismaClient } from '@prisma/client'
+import { createPgAdapter } from '@racketly/utils/prisma-adapter'
 
-const prisma = new PrismaClient()
+const prisma = new PrismaClient({ adapter: createPgAdapter() })
 
 // Las membresías canceladas por el socio se quedan en status='active' (con todos sus
 // beneficios) mientras cancelAtPeriodEnd=true, hasta que se cumple nextBillingDate — el

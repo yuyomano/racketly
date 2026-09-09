@@ -2,10 +2,11 @@ import 'dotenv/config'
 import { describe, it, expect, beforeAll, afterAll } from 'vitest'
 import request from 'supertest'
 import { PrismaClient } from '@prisma/client'
+import { createPgAdapter } from '@racketly/utils/prisma-adapter'
 import { v4 as uuidv4 } from 'uuid'
 import app from '../index'
 
-const prisma = new PrismaClient()
+const prisma = new PrismaClient({ adapter: createPgAdapter() })
 
 describe('/api/slots — assertClubAdmin al bloquear/desbloquear', () => {
   let ownerId: string

@@ -3,6 +3,7 @@ import { Router, Request as ExpressRequest, Response, NextFunction } from 'expre
 // con params repetidos, p.ej. `:id+`), que este repo no usa. Angostamos params a string.
 type Request = ExpressRequest<Record<string, string>>
 import { PrismaClient } from '@prisma/client'
+import { createPgAdapter } from '@racketly/utils/prisma-adapter'
 import { AppError } from '../middleware/error.middleware'
 import {
   createStripePaymentIntent,
@@ -15,7 +16,7 @@ import { recordPayment } from './bookings.routes'
 // reserva desde un link, sin necesitar cuenta. El token del link ES la credencial —
 // se valida contra GuestPaymentLink, no contra ningún x-user-id.
 const router = Router()
-const prisma = new PrismaClient()
+const prisma = new PrismaClient({ adapter: createPgAdapter() })
 
 async function loadLink(token: string) {
   const link = await prisma.guestPaymentLink.findUnique({

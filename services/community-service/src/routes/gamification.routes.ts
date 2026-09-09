@@ -3,6 +3,7 @@ import { Router, Request as ExpressRequest, Response, NextFunction } from 'expre
 // con params repetidos, p.ej. `:id+`), que este repo no usa. Angostamos params a string.
 type Request = ExpressRequest<Record<string, string>>
 import { PrismaClient } from '@prisma/client'
+import { createPgAdapter } from '@racketly/utils/prisma-adapter'
 import { xpToLevel, xpForNextLevel } from '@racketly/utils'
 import { requireAuth } from '../middleware/auth.middleware'
 import { AppError } from '../middleware/error.middleware'
@@ -10,7 +11,7 @@ import { validate } from '../validators/community.validators'
 import { z } from 'zod'
 
 const router = Router()
-const prisma = new PrismaClient()
+const prisma = new PrismaClient({ adapter: createPgAdapter() })
 
 const awardXpSchema = z.object({
   body: z.object({

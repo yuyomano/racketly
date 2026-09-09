@@ -1,8 +1,9 @@
 import { Router, Request, Response, NextFunction } from 'express'
 import { PrismaClient } from '@prisma/client'
+import { createPgAdapter } from '@racketly/utils/prisma-adapter'
 
 const router = Router()
-const prisma = new PrismaClient()
+const prisma = new PrismaClient({ adapter: createPgAdapter() })
 
 // GET /api/users/search?q=texto&limit=10
 // Busca usuarios por nombre o email para agregar a una reserva

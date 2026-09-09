@@ -5,11 +5,12 @@ import cors from 'cors'
 import { Queue, Worker } from 'bullmq'
 import sgMail from '@sendgrid/mail'
 import { PrismaClient } from '@prisma/client'
+import { createPgAdapter } from '@racketly/utils/prisma-adapter'
 import { distanceKm } from '@racketly/utils'
 import { initSentry, Sentry } from '@racketly/utils/observability'
 import { errorHandler } from './middleware/error.middleware'
 
-const prisma = new PrismaClient()
+const prisma = new PrismaClient({ adapter: createPgAdapter() })
 
 initSentry({ serviceName: 'notification-service' })
 

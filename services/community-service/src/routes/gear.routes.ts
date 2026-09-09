@@ -1,10 +1,11 @@
 import { Router, Request, Response, NextFunction } from 'express'
 import { PrismaClient } from '@prisma/client'
+import { createPgAdapter } from '@racketly/utils/prisma-adapter'
 import { requireAuth } from '../middleware/auth.middleware'
 import { createGearReviewSchema, validate } from '../validators/community.validators'
 
 const router = Router()
-const prisma = new PrismaClient()
+const prisma = new PrismaClient({ adapter: createPgAdapter() })
 
 // GET /api/gear — reseñas de palas/paletas
 router.get('/', async (req: Request, res: Response, next: NextFunction) => {

@@ -3,6 +3,7 @@ import { Router, Request as ExpressRequest, Response, NextFunction } from 'expre
 // con params repetidos, p.ej. `:id+`), que este repo no usa. Angostamos params a string.
 type Request = ExpressRequest<Record<string, string>>
 import { PrismaClient } from '@prisma/client'
+import { createPgAdapter } from '@racketly/utils/prisma-adapter'
 import { AppError } from '../middleware/error.middleware'
 import { assertClubAdmin } from '../middleware/club-auth.middleware'
 import {
@@ -17,7 +18,7 @@ import {
 } from '../services/schedule-conflict.service'
 
 const router = Router()
-const prisma = new PrismaClient()
+const prisma = new PrismaClient({ adapter: createPgAdapter() })
 
 const slotInclude = {
   professor: true,

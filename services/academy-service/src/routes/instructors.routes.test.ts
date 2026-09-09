@@ -2,12 +2,13 @@ import 'dotenv/config'
 import { describe, it, expect, beforeAll, afterAll } from 'vitest'
 import request from 'supertest'
 import { PrismaClient } from '@prisma/client'
+import { createPgAdapter } from '@racketly/utils/prisma-adapter'
 import { app } from '../index'
 
 // Integración real contra Postgres (mismo criterio que token.service.test.ts en
 // auth-service) — el fix acá es justamente la lógica de sobrecupo/doble-reserva
 // contra la tabla real, así que mockear Prisma escondería el bug que se corrigió.
-const prisma = new PrismaClient()
+const prisma = new PrismaClient({ adapter: createPgAdapter() })
 
 describe('POST /api/instructors/sessions/:id/book', () => {
   let instructorUserId: string

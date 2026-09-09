@@ -1,5 +1,6 @@
 import { PrismaClient } from '@prisma/client'
-const prisma = new PrismaClient()
+import { createPgAdapter } from '@racketly/utils/prisma-adapter'
+const prisma = new PrismaClient({ adapter: createPgAdapter() })
 
 async function main() {
   const clubs = await prisma.club.findMany({

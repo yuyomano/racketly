@@ -1,7 +1,8 @@
 import { PrismaClient } from '@prisma/client'
+import { createPgAdapter } from '@racketly/utils/prisma-adapter'
 import { notifyPlayer } from './notification.service'
 
-const prisma = new PrismaClient()
+const prisma = new PrismaClient({ adapter: createPgAdapter() })
 
 // Mismo cutoff real que releaseExpiredSlots (slot.service.ts) — no se toca, solo se usa
 // para calcular la ventana de aviso previo, configurable por club.

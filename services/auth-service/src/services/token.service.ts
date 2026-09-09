@@ -1,6 +1,7 @@
 import jwt from 'jsonwebtoken'
 import { createHash, randomUUID } from 'crypto'
 import { PrismaClient } from '@prisma/client'
+import { createPgAdapter } from '@racketly/utils/prisma-adapter'
 
 if (!process.env.JWT_SECRET || !process.env.JWT_REFRESH_SECRET) {
   throw new Error(
@@ -14,7 +15,7 @@ const ACCESS_TOKEN_EXPIRY = '15m'
 const REFRESH_TOKEN_EXPIRY = '30d'
 const REFRESH_TOKEN_TTL_MS = 30 * 24 * 60 * 60 * 1000
 
-const prisma = new PrismaClient()
+const prisma = new PrismaClient({ adapter: createPgAdapter() })
 
 export interface TokenPayload {
   userId: string

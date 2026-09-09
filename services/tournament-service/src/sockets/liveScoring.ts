@@ -1,11 +1,12 @@
 import { Server, Socket } from 'socket.io'
 import { PrismaClient } from '@prisma/client'
+import { createPgAdapter } from '@racketly/utils/prisma-adapter'
 import { calculateElo, eloToCategory } from '@racketly/utils'
 import { determineWinner } from '@racketly/utils'
 import type { SetScore } from '@racketly/shared-types'
 import { propagateKnockoutWinner } from '../routes/tournaments.routes'
 
-const prisma = new PrismaClient()
+const prisma = new PrismaClient({ adapter: createPgAdapter() })
 
 /**
  * Live Scoring via Socket.IO

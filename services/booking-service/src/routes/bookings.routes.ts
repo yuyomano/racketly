@@ -3,6 +3,7 @@ import { Router, Request as ExpressRequest, Response, NextFunction } from 'expre
 // con params repetidos, p.ej. `:id+`), que este repo no usa. Angostamos params a string.
 type Request = ExpressRequest<Record<string, string>>
 import { PrismaClient } from '@prisma/client'
+import { createPgAdapter } from '@racketly/utils/prisma-adapter'
 import QRCode from 'qrcode'
 import { v4 as uuidv4 } from 'uuid'
 import { randomUUID } from 'crypto'
@@ -32,7 +33,7 @@ import { determineWinner } from '@racketly/utils'
 import type { SetScore } from '@racketly/shared-types'
 
 const router = Router()
-const prisma = new PrismaClient()
+const prisma = new PrismaClient({ adapter: createPgAdapter() })
 
 // Registra un cobro real en el libro de caja (Payment), separado del bookkeeping de
 // amountPaid/paymentStatus en Booking. `paidAt` es SIEMPRE el momento del cobro — no la

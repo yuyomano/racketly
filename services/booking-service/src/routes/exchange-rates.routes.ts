@@ -1,11 +1,12 @@
 import { Router, Request, Response, NextFunction } from 'express'
 import { PrismaClient } from '@prisma/client'
+import { createPgAdapter } from '@racketly/utils/prisma-adapter'
 import { AppError } from '../middleware/error.middleware'
 import { requireAuth } from '../middleware/club-auth.middleware'
 import { syncCurrencies, getTrackedCurrencies } from '../services/exchange-rate-sync.service'
 
 const router = Router()
-const prisma = new PrismaClient()
+const prisma = new PrismaClient({ adapter: createPgAdapter() })
 
 // GET /api/exchange-rates
 router.get('/', async (_req: Request, res: Response, next: NextFunction) => {

@@ -5,9 +5,11 @@ generator client {
   provider = "prisma-client-js"
 }
 
+// Prisma 7: la connection URL ya no vive aquí — Migrate la toma de
+// prisma.config.ts (raíz del repo) y PrismaClient recibe un driver adapter
+// explícito en cada instanciación (ver packages/utils/src/prisma-adapter.ts).
 datasource db {
   provider = "postgresql"
-  url      = env("DATABASE_URL")
 }
 
 // ═══════════════════════════════════════════════════════════════════════════════

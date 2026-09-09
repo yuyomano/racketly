@@ -1,6 +1,7 @@
 import { PrismaClient } from '@prisma/client'
+import { createPgAdapter } from '@racketly/utils/prisma-adapter'
 
-const prisma = new PrismaClient()
+const prisma = new PrismaClient({ adapter: createPgAdapter() })
 
 // Registra un cobro real en el libro de caja (Payment), separado del bookkeeping propio
 // de cada dominio (Booking.amountPaid, ClassBooking.amountPaid, etc). `paidAt` es SIEMPRE

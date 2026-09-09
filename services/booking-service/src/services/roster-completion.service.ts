@@ -1,7 +1,8 @@
 import { PrismaClient } from '@prisma/client'
+import { createPgAdapter } from '@racketly/utils/prisma-adapter'
 import { cancelBookingAndIssueCredit } from './cancellation.service'
 
-const prisma = new PrismaClient()
+const prisma = new PrismaClient({ adapter: createPgAdapter() })
 
 const ROSTER_DEADLINE_HOURS = 24
 

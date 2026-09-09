@@ -7,6 +7,7 @@ import axios from 'axios'
 import jwt from 'jsonwebtoken'
 import rateLimit from 'express-rate-limit'
 import { PrismaClient } from '@prisma/client'
+import { createPgAdapter } from '@racketly/utils/prisma-adapter'
 import {
   generateTokenPair,
   verifyAndRotateRefreshToken,
@@ -19,7 +20,7 @@ import { INITIAL_ELO } from '@racketly/utils'
 import { encryptPII, decryptPII } from '@racketly/utils/pii-crypto'
 
 const router = Router()
-const prisma = new PrismaClient()
+const prisma = new PrismaClient({ adapter: createPgAdapter() })
 
 // Límite más estricto que el global del servicio, solo para las rutas más sensibles
 // a fuerza bruta / credential stuffing.

@@ -1,5 +1,6 @@
 import 'dotenv/config'
 import { PrismaClient } from '@prisma/client'
+import { createPgAdapter } from '@racketly/utils/prisma-adapter'
 import {
   generateAccessToken,
   generateTokenPair,
@@ -12,7 +13,7 @@ import {
 // levanta un Postgres dedicado) — token.service crea su propio PrismaClient a
 // nivel de módulo, así que mockear Prisma acá sería más frágil que usar la DB real
 // para la propiedad de seguridad que importa probar: rotación + detección de reuso.
-const prisma = new PrismaClient()
+const prisma = new PrismaClient({ adapter: createPgAdapter() })
 
 describe('token.service', () => {
   let userId: string

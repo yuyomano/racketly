@@ -1,10 +1,11 @@
 import { Router, Request, Response } from 'express'
 import { PrismaClient } from '@prisma/client'
+import { createPgAdapter } from '@racketly/utils/prisma-adapter'
 import QRCode from 'qrcode'
 import { constructStripeEvent } from '../services/payment.service'
 
 const router = Router()
-const prisma = new PrismaClient()
+const prisma = new PrismaClient({ adapter: createPgAdapter() })
 
 // POST /api/webhooks/stripe — red de seguridad de integridad de pagos: confirma la
 // reserva aunque el cliente nunca haya llamado a /bookings/:id/confirm (app cerrada,

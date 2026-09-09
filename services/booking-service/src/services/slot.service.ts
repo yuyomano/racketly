@@ -1,7 +1,8 @@
 import { PrismaClient } from '@prisma/client'
+import { createPgAdapter } from '@racketly/utils/prisma-adapter'
 import { restoreCoveredCredits } from './cancellation.service'
 
-const prisma = new PrismaClient()
+const prisma = new PrismaClient({ adapter: createPgAdapter() })
 
 /**
  * Libera slots con reservas en estado PENDING por más de 15 minutos

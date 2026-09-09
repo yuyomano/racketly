@@ -322,6 +322,50 @@ router.get('/', async (req: Request, res: Response, next: NextFunction) => {
       }
     }
 
+    // Favoritos del jugador: se marcan en los que ya están en `result` y, sin búsqueda
+    // explícita, se suman los que queden fuera (mismo criterio que recentBookings arriba) —
+    // un club favorito debe salir por defecto aunque esté lejos.
+    if (userId) {
+      const favorites = await prisma.clubFavorite.findMany({
+        where: { userId: userId as string },
+        select: { clubId: true },
+      })
+      const favoriteIds = new Set(favorites.map((f) => f.clubId))
+
+      if (favoriteIds.size > 0) {
+        result = result.map((c) => (favoriteIds.has(c.id) ? { ...c, isFavorite: true } : c))
+
+        if (!term) {
+          const missingFavIds = [...favoriteIds].filter((id) => !result.some((c) => c.id === id))
+          if (missingFavIds.length > 0) {
+            const favClubs = await prisma.club.findMany({
+              where: { id: { in: missingFavIds }, isActive: true },
+              include: { courts: { where: { isActive: true }, select: { id: true, sport: true } } },
+            })
+            const favWithDistance =
+              lat && lng
+                ? favClubs.map((club) => ({
+                    ...club,
+                    distanceKm: distanceKm(
+                      parseFloat(lat as string),
+                      parseFloat(lng as string),
+                      club.latitude,
+                      club.longitude
+                    ),
+                    isFavorite: true,
+                  }))
+                : favClubs.map((club) => ({ ...club, isFavorite: true }))
+            result = [...result, ...favWithDistance]
+          }
+        }
+      }
+
+      // Favoritos primero; dentro de cada grupo se preserva el orden ya calculado (distancia o el de la query).
+      result = [...result].sort(
+        (a, b) => (b.isFavorite ? 1 : 0) - (a.isFavorite ? 1 : 0)
+      )
+    }
+
     return res.json({
       success: true,
       data: result,
@@ -397,6 +441,39 @@ router.get('/:id', async (req: Request, res: Response, next: NextFunction) => {
     })
     if (!club) throw new AppError('Club no encontrado', 404)
     return res.json({ success: true, data: club })
+  } catch (err) {
+    return next(err)
+  }
+})
+
+// POST /api/clubs/:id/favorite — Marcar un club como favorito (idempotente)
+router.post('/:id/favorite', async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const userId = (req.body?.userId || req.headers['x-user-id']) as string | undefined
+    if (!userId) throw new AppError('userId requerido', 400)
+
+    const club = await prisma.club.findUnique({ where: { id: req.params.id } })
+    if (!club) throw new AppError('Club no encontrado', 404)
+
+    await prisma.clubFavorite.upsert({
+      where: { userId_clubId: { userId, clubId: req.params.id } },
+      update: {},
+      create: { userId, clubId: req.params.id },
+    })
+    return res.json({ success: true, data: { isFavorite: true } })
+  } catch (err) {
+    return next(err)
+  }
+})
+
+// DELETE /api/clubs/:id/favorite — Quitar un club de favoritos (idempotente)
+router.delete('/:id/favorite', async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const userId = (req.body?.userId || req.headers['x-user-id']) as string | undefined
+    if (!userId) throw new AppError('userId requerido', 400)
+
+    await prisma.clubFavorite.deleteMany({ where: { userId, clubId: req.params.id } })
+    return res.json({ success: true, data: { isFavorite: false } })
   } catch (err) {
     return next(err)
   }

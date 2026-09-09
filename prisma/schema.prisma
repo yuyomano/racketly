@@ -215,6 +215,7 @@ model User {
   instructorProfile         InstructorProfile?
   clubOwned                 Club[]
   clubAdmins                ClubAdmin[]
+  favoriteClubs             ClubFavorite[]
   bookings                  Booking[]
   posts                     Post[]
   comments                  Comment[]
@@ -346,6 +347,7 @@ model Club {
 
   owner            User                    @relation(fields: [ownerId], references: [id])
   admins           ClubAdmin[]
+  favoritedBy      ClubFavorite[]
   invitations      ClubInvitation[]
   courts           Court[]
   tournaments      Tournament[]
@@ -404,6 +406,23 @@ model ClubAdmin {
 
   @@unique([userId, clubId])
   @@map("club_admins")
+}
+
+// Clubs marcados como favoritos por un jugador — se usan para que el listado por defecto
+// (sin búsqueda) siempre incluya, además de los cercanos por geo, los clubs favoritos del
+// usuario aunque queden fuera del radio.
+model ClubFavorite {
+  id        String   @id @default(cuid())
+  userId    String
+  clubId    String
+  createdAt DateTime @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  club Club @relation(fields: [clubId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, clubId])
+  @@index([clubId])
+  @@map("club_favorites")
 }
 
 model ClubInvitation {

@@ -13,7 +13,9 @@
       "emptyTitle": "No clubs found",
       "emptyDescription": "Try a different name, city, or sport.",
       "recentlyBooked": "You've played here",
-      "courtsCount": "{count, plural, one {# court} other {# courts}}"
+      "courtsCount": "{count, plural, one {# court} other {# courts}}",
+      "favorite": "Add to favorites",
+      "unfavorite": "Remove from favorites"
     },
     "clubDetail": {
       "backToClubs": "Back to clubs",

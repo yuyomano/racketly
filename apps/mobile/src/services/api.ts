@@ -71,6 +71,8 @@ export const clubsApi = {
   getById: (id: string) => api.get(`/api/clubs/${id}`),
   getAvailability: (id: string, date: string) =>
     api.get(`/api/clubs/${id}/availability`, { params: { date } }),
+  addFavorite: (id: string) => api.post(`/api/clubs/${id}/favorite`),
+  removeFavorite: (id: string) => api.delete(`/api/clubs/${id}/favorite`),
 }
 
 export const bookingsApi = {

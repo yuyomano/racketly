@@ -3,8 +3,8 @@
 import { useState } from 'react'
 import Link from 'next/link'
 import { useTranslations } from 'next-intl'
-import { useQuery } from '@tanstack/react-query'
-import { Search, MapPin, CalendarClock, Loader2 } from 'lucide-react'
+import { useQuery, useQueryClient, useMutation } from '@tanstack/react-query'
+import { Search, MapPin, CalendarClock, Loader2, Heart } from 'lucide-react'
 import { Card } from '@/components/ui/Card'
 import { Badge } from '@/components/ui/Badge'
 import { EmptyState } from '@/components/ui/EmptyState'
@@ -19,6 +19,7 @@ type Club = {
   sports: string[]
   courts: { id: string; sport: string }[]
   recentlyBooked?: boolean
+  isFavorite?: boolean
 }
 
 async function fetchClubs(
@@ -36,18 +37,38 @@ async function fetchClubs(
   return data.data ?? []
 }
 
+async function toggleFavorite(clubId: string, isFavorite: boolean) {
+  const res = await fetch(`/api/clubs/${clubId}/favorite`, { method: isFavorite ? 'DELETE' : 'POST' })
+  if (!res.ok) throw new Error('No se pudo actualizar el favorito')
+}
+
 export function ClubSearchClient({ userId }: { userId: string }) {
   const t = useTranslations('Booking.search')
   const [search, setSearch] = useState('')
   const [sport, setSport] = useState<'all' | 'padel' | 'pickleball'>('all')
+  const queryClient = useQueryClient()
 
+  const queryKey = ['clubs', { search, sport, userId }]
   const {
     data: clubs,
     isLoading,
     error,
   } = useQuery({
-    queryKey: ['clubs', { search, sport, userId }],
+    queryKey,
     queryFn: () => fetchClubs(search, sport, userId, t('fetchError')),
+  })
+
+  const favoriteMutation = useMutation({
+    mutationFn: ({ clubId, isFavorite }: { clubId: string; isFavorite: boolean }) =>
+      toggleFavorite(clubId, isFavorite),
+    // Optimista: el corazón responde al toque, sin esperar la vuelta del server.
+    onMutate: async ({ clubId, isFavorite }) => {
+      queryClient.setQueryData<Club[]>(queryKey, (prev) =>
+        prev?.map((c) => (c.id === clubId ? { ...c, isFavorite: !isFavorite } : c))
+      )
+    },
+    onError: () => queryClient.invalidateQueries({ queryKey }),
+    onSettled: () => queryClient.invalidateQueries({ queryKey }),
   })
 
   const sportOptions = [
@@ -109,9 +130,26 @@ export function ClubSearchClient({ userId }: { userId: string }) {
       ) : (
         <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-4">
           {clubs.map((club) => (
-            <Link key={club.id} href={`/booking/${club.id}`}>
+            <Link key={club.id} href={`/booking/${club.id}`} className="relative block">
+              <button
+                type="button"
+                aria-label={club.isFavorite ? t('unfavorite') : t('favorite')}
+                onClick={(e) => {
+                  e.preventDefault()
+                  e.stopPropagation()
+                  favoriteMutation.mutate({ clubId: club.id, isFavorite: !!club.isFavorite })
+                }}
+                className="absolute top-3 right-3 z-10 p-1.5 rounded-full bg-white/90 shadow-sm hover:bg-white transition-colors"
+              >
+                <Heart
+                  className={cn(
+                    'w-4 h-4',
+                    club.isFavorite ? 'fill-red-500 text-red-500' : 'text-ink-300'
+                  )}
+                />
+              </button>
               <Card className="p-5 h-full hover:border-court-200 hover:shadow-md transition-all cursor-pointer">
-                <div className="flex items-start justify-between gap-2">
+                <div className="flex items-start justify-between gap-2 pr-6">
                   <h3 className="font-bold text-ink-900 leading-snug">{club.name}</h3>
                   {club.recentlyBooked && <Badge tone="emerald">{t('recentlyBooked')}</Badge>}
                 </div>

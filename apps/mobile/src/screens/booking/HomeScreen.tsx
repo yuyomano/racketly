@@ -8,7 +8,7 @@ import {
   StyleSheet,
 } from 'react-native'
 import { Text } from '../../components/ui/Text'
-import { useQuery } from '@tanstack/react-query'
+import { useQuery, useQueryClient, useMutation } from '@tanstack/react-query'
 import * as Location from 'expo-location'
 import { Ionicons } from '@expo/vector-icons'
 import { clubsApi } from '../../services/api'
@@ -37,8 +37,11 @@ export function HomeScreen({ navigation }: { navigation: any }) {
     })()
   }, [])
 
+  const queryClient = useQueryClient()
+  const queryKey = ['clubs', { search, sport, userId: user?.id, ...location }]
+
   const { data, isLoading, refetch } = useQuery({
-    queryKey: ['clubs', { search, sport, userId: user?.id, ...location }],
+    queryKey,
     queryFn: () =>
       clubsApi.search({
         search: search || undefined,
@@ -49,6 +52,19 @@ export function HomeScreen({ navigation }: { navigation: any }) {
         userId: user?.id,
       }),
     select: (res) => res.data.data as ClubProfile[],
+  })
+
+  const favoriteMutation = useMutation({
+    mutationFn: ({ clubId, isFavorite }: { clubId: string; isFavorite: boolean }) =>
+      isFavorite ? clubsApi.removeFavorite(clubId) : clubsApi.addFavorite(clubId),
+    // Optimista: el corazón responde al toque, sin esperar la vuelta del server.
+    onMutate: async ({ clubId, isFavorite }) => {
+      queryClient.setQueryData<ClubProfile[]>(queryKey, (prev) =>
+        prev?.map((c) => (c.id === clubId ? { ...c, isFavorite: !isFavorite } : c))
+      )
+    },
+    onError: () => queryClient.invalidateQueries({ queryKey }),
+    onSettled: () => queryClient.invalidateQueries({ queryKey }),
   })
 
   return (
@@ -135,6 +151,18 @@ export function HomeScreen({ navigation }: { navigation: any }) {
               activeOpacity={0.85}
               onPress={() => navigation.navigate('ClubDetail', { clubId: item.id })}
             >
+              <TouchableOpacity
+                style={styles.favoriteBtn}
+                onPress={() =>
+                  favoriteMutation.mutate({ clubId: item.id, isFavorite: !!(item as any).isFavorite })
+                }
+              >
+                <Ionicons
+                  name={(item as any).isFavorite ? 'heart' : 'heart-outline'}
+                  size={18}
+                  color={(item as any).isFavorite ? colors.referee500 : colors.ink300}
+                />
+              </TouchableOpacity>
               <View style={styles.clubCardContent}>
                 <View style={styles.clubInfo}>
                   <Text style={styles.clubName}>{item.name}</Text>
@@ -259,6 +287,13 @@ const styles = StyleSheet.create({
     borderRadius: radius.lg,
     borderWidth: 1,
     borderColor: colors.ink100,
+  },
+  favoriteBtn: {
+    position: 'absolute',
+    top: spacing.sm,
+    right: spacing.sm,
+    zIndex: 1,
+    padding: spacing.xs,
   },
   clubCardContent: { flexDirection: 'row', justifyContent: 'space-between', padding: spacing.lg },
   clubInfo: { flex: 1 },

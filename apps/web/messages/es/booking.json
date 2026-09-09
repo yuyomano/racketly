@@ -13,7 +13,9 @@
       "emptyTitle": "No encontramos clubes",
       "emptyDescription": "Prueba con otro nombre, ciudad o deporte.",
       "recentlyBooked": "Jugaste aquí",
-      "courtsCount": "{count, plural, one {# pista} other {# pistas}}"
+      "courtsCount": "{count, plural, one {# pista} other {# pistas}}",
+      "favorite": "Marcar como favorito",
+      "unfavorite": "Quitar de favoritos"
     },
     "clubDetail": {
       "backToClubs": "Volver a clubes",

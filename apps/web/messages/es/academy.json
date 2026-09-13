@@ -49,7 +49,9 @@
       "contentTitle": "Contenido",
       "noLessons": "Este curso todavía no tiene lecciones publicadas.",
       "freePreviewBadge": "Vista previa",
-      "minutesLabel": "{minutes} min"
+      "minutesLabel": "{minutes} min",
+      "lessonLocked": "Inscríbete en el curso para desbloquear esta lección",
+      "videoUnavailable": "El video de esta lección todavía no está disponible"
     },
     "mine": {
       "backLink": "Volver a Academia",

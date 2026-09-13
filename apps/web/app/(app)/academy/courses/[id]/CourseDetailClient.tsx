@@ -4,19 +4,23 @@ import { useState } from 'react'
 import Link from 'next/link'
 import { useTranslations } from 'next-intl'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
+import MuxPlayer from '@mux/mux-player-react'
 import { ArrowLeft, Star, PlayCircle, Lock, Loader2, AlertCircle, CheckCircle2 } from 'lucide-react'
 import { Card } from '@/components/ui/Card'
 import { Badge } from '@/components/ui/Badge'
 import { Button } from '@/components/ui/Button'
+import { Modal } from '@/components/ui/Modal'
 import { useToast } from '@/components/ui/Toast'
 import { cn } from '@/lib/utils'
 
 type Lesson = {
   id: string
   title: string
+  description: string | null
   orderIndex: number
   videoDurationSeconds: number
   isFreePreview: boolean
+  muxPlaybackId: string | null
 }
 type Course = {
   id: string
@@ -84,6 +88,35 @@ export function CourseDetailClient({ course, userId }: { course: Course; userId:
   })
 
   const sortedLessons = [...course.lessons].sort((a, b) => a.orderIndex - b.orderIndex)
+  const [activeLesson, setActiveLesson] = useState<Lesson | null>(null)
+
+  const progressMutation = useMutation({
+    mutationFn: async (lesson: Lesson) => {
+      if (!myEnrollment) return
+      const idx = sortedLessons.findIndex((l) => l.id === lesson.id)
+      const percent = Math.max(
+        myEnrollment.progressPercent,
+        Math.round(((idx + 1) / sortedLessons.length) * 100)
+      )
+      const res = await fetch(`/api/courses/enrollments/${myEnrollment.id}/progress`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ progressPercent: percent, lastLessonId: lesson.id }),
+      })
+      if (!res.ok) throw new Error((await res.json()).error)
+      return res.json()
+    },
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['courses', 'mine', userId] }),
+  })
+
+  function openLesson(lesson: Lesson, unlocked: boolean) {
+    if (!unlocked) {
+      toast.info(t('lessonLocked'))
+      return
+    }
+    setActiveLesson(lesson)
+    if (myEnrollment) progressMutation.mutate(lesson)
+  }
 
   return (
     <div className="space-y-6 max-w-3xl mx-auto">
@@ -159,11 +192,13 @@ export function CourseDetailClient({ course, userId }: { course: Course; userId:
               const unlocked = !!myEnrollment || l.isFreePreview
               const minutes = Math.round(l.videoDurationSeconds / 60)
               return (
-                <div
+                <button
                   key={l.id}
+                  type="button"
+                  onClick={() => openLesson(l, unlocked)}
                   className={cn(
-                    'flex items-center gap-3 px-3 py-2.5 rounded-xl',
-                    unlocked ? 'hover:bg-ink-50' : 'opacity-60'
+                    'flex items-center gap-3 px-3 py-2.5 rounded-xl w-full text-left',
+                    unlocked ? 'hover:bg-ink-50 cursor-pointer' : 'opacity-60 cursor-not-allowed'
                   )}
                 >
                   {unlocked ? (
@@ -181,12 +216,35 @@ export function CourseDetailClient({ course, userId }: { course: Course; userId:
                       {t('minutesLabel', { minutes })}
                     </span>
                   )}
-                </div>
+                </button>
               )
             })}
           </div>
         )}
       </Card>
+
+      <Modal
+        open={!!activeLesson}
+        onClose={() => setActiveLesson(null)}
+        title={activeLesson?.title}
+        maxWidth="2xl"
+      >
+        {activeLesson?.muxPlaybackId ? (
+          <MuxPlayer
+            playbackId={activeLesson.muxPlaybackId}
+            metadata={{ video_title: activeLesson.title }}
+            streamType="on-demand"
+            className="w-full rounded-xl overflow-hidden"
+          />
+        ) : (
+          <p className="text-sm text-ink-400 bg-ink-50 rounded-xl px-4 py-6 text-center">
+            {t('videoUnavailable')}
+          </p>
+        )}
+        {activeLesson?.description && (
+          <p className="text-sm text-ink-500 mt-4">{activeLesson.description}</p>
+        )}
+      </Modal>
     </div>
   )
 }

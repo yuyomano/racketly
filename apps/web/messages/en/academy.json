@@ -49,7 +49,9 @@
       "contentTitle": "Content",
       "noLessons": "This course doesn't have any published lessons yet.",
       "freePreviewBadge": "Free preview",
-      "minutesLabel": "{minutes} min"
+      "minutesLabel": "{minutes} min",
+      "lessonLocked": "Enroll in the course to unlock this lesson",
+      "videoUnavailable": "This lesson's video isn't available yet"
     },
     "mine": {
       "backLink": "Back to Academy",

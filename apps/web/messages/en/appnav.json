@@ -2,6 +2,9 @@
   "AppNav": {
     "booking": "Book",
     "tournaments": "Tournaments",
+    "rankings": "Rankings",
+    "findPartner": "Find a Partner",
+    "gear": "Gear",
     "academy": "Academy",
     "community": "Community",
     "profile": "Profile",

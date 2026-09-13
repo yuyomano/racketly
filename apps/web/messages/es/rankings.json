@@ -1,0 +1,16 @@
+{
+  "Rankings": {
+    "title": "Ranking",
+    "subtitle": "Clasificación ELO de jugadores",
+    "sportPadel": "Pádel",
+    "sportPickleball": "Pickleball",
+    "columnPlayer": "Jugador",
+    "columnCategory": "Categoría",
+    "columnLocation": "Ubicación",
+    "columnElo": "ELO",
+    "youTag": "(Tú)",
+    "loadError": "Error al cargar el ranking",
+    "emptyTitle": "Sin jugadores en este ranking",
+    "emptyDescription": "Todavía no hay suficientes partidos registrados para este deporte."
+  }
+}

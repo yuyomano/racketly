@@ -2,10 +2,28 @@
 
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
-import { CalendarDays, Trophy, GraduationCap, Users2, UserCircle } from 'lucide-react'
+import {
+  CalendarDays,
+  Trophy,
+  GraduationCap,
+  Users2,
+  UserCircle,
+  Medal,
+  Handshake,
+  ShoppingBag,
+} from 'lucide-react'
 import { cn } from '@/lib/utils'
 
-const ICONS = { CalendarDays, Trophy, GraduationCap, Users2, UserCircle } as const
+const ICONS = {
+  CalendarDays,
+  Trophy,
+  GraduationCap,
+  Users2,
+  UserCircle,
+  Medal,
+  Handshake,
+  ShoppingBag,
+} as const
 export type AppNavIconKey = keyof typeof ICONS
 
 export function AppNavLink({

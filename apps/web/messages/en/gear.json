@@ -1,0 +1,26 @@
+{
+  "Gear": {
+    "title": "Gear",
+    "subtitle": "Community reviews of paddles and rackets",
+    "createButton": "Post review",
+    "sportAll": "All",
+    "sportPadel": "Padel",
+    "sportPickleball": "Pickleball",
+    "sportBoth": "Both",
+    "loadError": "Failed to load reviews",
+    "emptyTitle": "No reviews yet",
+    "emptyDescription": "Be the first to share your opinion about a paddle or racket.",
+    "verifiedBadge": "Verified purchase",
+    "anonymous": "Player",
+    "createModalTitle": "Post a gear review",
+    "fieldBrand": "Brand",
+    "fieldModel": "Model",
+    "fieldSport": "Sport",
+    "fieldRating": "Rating",
+    "fieldReviewText": "Your review",
+    "cancel": "Cancel",
+    "publishButton": "Post",
+    "errorCreate": "Could not post the review",
+    "createSuccess": "Review posted"
+  }
+}

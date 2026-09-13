@@ -1,0 +1,16 @@
+{
+  "Rankings": {
+    "title": "Rankings",
+    "subtitle": "Player ELO rankings",
+    "sportPadel": "Padel",
+    "sportPickleball": "Pickleball",
+    "columnPlayer": "Player",
+    "columnCategory": "Category",
+    "columnLocation": "Location",
+    "columnElo": "ELO",
+    "youTag": "(You)",
+    "loadError": "Failed to load rankings",
+    "emptyTitle": "No players in this ranking",
+    "emptyDescription": "Not enough matches have been recorded for this sport yet."
+  }
+}

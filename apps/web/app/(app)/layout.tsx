@@ -9,6 +9,9 @@ import { AppNavLink, type AppNavIconKey } from './AppNavLink'
 const NAV_KEYS: { href: string; key: string; icon: AppNavIconKey }[] = [
   { href: '/booking', key: 'booking', icon: 'CalendarDays' },
   { href: '/tournaments', key: 'tournaments', icon: 'Trophy' },
+  { href: '/rankings', key: 'rankings', icon: 'Medal' },
+  { href: '/find-a-partner', key: 'findPartner', icon: 'Handshake' },
+  { href: '/gear', key: 'gear', icon: 'ShoppingBag' },
   { href: '/academy', key: 'academy', icon: 'GraduationCap' },
   { href: '/community', key: 'community', icon: 'Users2' },
   { href: '/profile', key: 'profile', icon: 'UserCircle' },

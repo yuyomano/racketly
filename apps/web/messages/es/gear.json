@@ -1,0 +1,26 @@
+{
+  "Gear": {
+    "title": "Equipo",
+    "subtitle": "Reseñas de palas y paletas de la comunidad",
+    "createButton": "Publicar reseña",
+    "sportAll": "Todos",
+    "sportPadel": "Pádel",
+    "sportPickleball": "Pickleball",
+    "sportBoth": "Ambos",
+    "loadError": "Error al cargar las reseñas",
+    "emptyTitle": "No hay reseñas todavía",
+    "emptyDescription": "Sé el primero en compartir tu opinión sobre una pala o paleta.",
+    "verifiedBadge": "Compra verificada",
+    "anonymous": "Jugador",
+    "createModalTitle": "Publicar reseña de equipo",
+    "fieldBrand": "Marca",
+    "fieldModel": "Modelo",
+    "fieldSport": "Deporte",
+    "fieldRating": "Calificación",
+    "fieldReviewText": "Tu reseña",
+    "cancel": "Cancelar",
+    "publishButton": "Publicar",
+    "errorCreate": "No se pudo publicar la reseña",
+    "createSuccess": "Reseña publicada"
+  }
+}

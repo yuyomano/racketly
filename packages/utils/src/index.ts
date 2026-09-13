@@ -432,7 +432,7 @@ export function normalizeSetScore(s: unknown): { p1: number; p2: number } {
 }
 
 // Offset (ms) de una zona horaria IANA en un instante dado, respecto a UTC.
-function tzOffsetMs(instantMs: number, timeZone: string): number {
+export function tzOffsetMs(instantMs: number, timeZone: string): number {
   const dtf = new Intl.DateTimeFormat('en-US', {
     timeZone,
     hourCycle: 'h23',

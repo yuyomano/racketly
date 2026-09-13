@@ -139,6 +139,16 @@ router.patch('/:id', async (req: Request, res: Response, next: NextFunction) => 
     if (notes !== undefined) data.notes = notes
     if (status !== undefined) data.status = status
 
+    // Si cambia el cupo máximo y no se está tocando `status` explícitamente, recalcular
+    // open/full — si no, un slot marcado 'full' al llenarse queda atascado en ese estado
+    // aunque luego se le suban los cupos (o viceversa, si se bajan por debajo del actual).
+    if (maxStudents !== undefined && status === undefined && existing.status !== 'cancelled') {
+      const activeCount = await prisma.classBooking.count({
+        where: { classSlotId: existing.id, status: 'active' },
+      })
+      data.status = activeCount >= maxStudents ? 'full' : 'open'
+    }
+
     // Solo revalidar el horario si de verdad cambió algo que afecte cuándo/dónde ocurre la
     // clase, y solo si sigue teniendo pista asignada (sin pista no hay con qué chocar).
     const finalCourtId = courtId !== undefined ? courtId || null : existing.courtId
@@ -161,10 +171,38 @@ router.patch('/:id', async (req: Request, res: Response, next: NextFunction) => 
       }
     }
 
-    const slot = await prisma.classSlot.update({
-      where: { id: req.params.id },
-      data,
-      include: slotInclude,
+    // Al cancelar la clase entera (decisión del club, no del alumno) se reembolsa
+    // con crédito a todos los alumnos que ya pagaron — a diferencia de que un alumno
+    // cancele su propio cupo (ver DELETE /bookings/:id), aquí no aplica la ventana de
+    // 24h porque el alumno no tuvo responsabilidad en la cancelación.
+    const slot = await prisma.$transaction(async (tx) => {
+      if (status === 'cancelled') {
+        const paidBookings = await tx.classBooking.findMany({
+          where: { classSlotId: existing.id, status: 'active', amountPaid: { gt: 0 } },
+        })
+        for (const booking of paidBookings) {
+          await tx.userCredit.create({
+            data: {
+              userId: booking.studentUserId,
+              clubId: existing.clubId,
+              amount: booking.amountPaid,
+              currency: existing.currency,
+              reason: 'Clase cancelada por el club',
+              status: 'available',
+            },
+          })
+        }
+        await tx.classBooking.updateMany({
+          where: { classSlotId: existing.id, status: 'active' },
+          data: { status: 'cancelled' },
+        })
+      }
+
+      return tx.classSlot.update({
+        where: { id: req.params.id },
+        data,
+        include: slotInclude,
+      })
     })
     return res.json({ success: true, data: slot })
   } catch (err) {

@@ -2312,6 +2312,12 @@ export default function ReservasPage() {
                   .filter((p) => extraPlayersPay[p.id])
                   .map((p) => p.name.split(' ')[0]),
               ].filter(Boolean) as string[]
+              const courtesyNames = [
+                !isMemberIncluded && mainPlayerCourtesy ? selectedUser.name.split(' ')[0] : null,
+                ...extraPlayers
+                  .filter((p) => extraPlayersCourtesy[p.id])
+                  .map((p) => p.name.split(' ')[0]),
+              ].filter(Boolean) as string[]
               const methodLabel =
                 createPaymentMethod === 'cash'
                   ? t('createModal.metodoEfectivo')
@@ -2364,24 +2370,44 @@ export default function ReservasPage() {
                       {!isMemberIncluded && (
                         <>
                           {' · '}
-                          {payingNow.length > 0
-                            ? t('createModal.pagaAhora', {
-                                names: payingNow.join(', '),
-                                count: payingNow.length,
-                                method: methodLabel,
-                              })
-                            : t('createModal.todosPaganApp')}
+                          {[
+                            payingNow.length > 0
+                              ? t('createModal.pagaAhora', {
+                                  names: payingNow.join(', '),
+                                  count: payingNow.length,
+                                  method: methodLabel,
+                                })
+                              : null,
+                            courtesyNames.length > 0
+                              ? t('createModal.tieneCortesia', {
+                                  names: courtesyNames.join(', '),
+                                  count: courtesyNames.length,
+                                })
+                              : null,
+                          ]
+                            .filter(Boolean)
+                            .join(' · ') || t('createModal.todosPaganApp')}
                         </>
                       )}
                       {isMemberIncluded && extraPlayers.length > 0 && (
                         <span className="block mt-0.5">
-                          {payingNow.length > 0
-                            ? t('createModal.extrasPagan', {
-                                names: payingNow.join(', '),
-                                count: payingNow.length,
-                                method: methodLabel,
-                              })
-                            : t('createModal.extrasPaganApp')}
+                          {[
+                            payingNow.length > 0
+                              ? t('createModal.extrasPagan', {
+                                  names: payingNow.join(', '),
+                                  count: payingNow.length,
+                                  method: methodLabel,
+                                })
+                              : null,
+                            courtesyNames.length > 0
+                              ? t('createModal.tieneCortesia', {
+                                  names: courtesyNames.join(', '),
+                                  count: courtesyNames.length,
+                                })
+                              : null,
+                          ]
+                            .filter(Boolean)
+                            .join(' · ') || t('createModal.extrasPaganApp')}
                         </span>
                       )}
                     </p>

@@ -10,6 +10,7 @@ import { distanceKm } from '@racketly/utils'
 import { decryptPII } from '@racketly/utils/pii-crypto'
 import { generateSlotsForClub, resyncFutureSlotsForClub } from '../services/slot.service'
 import { ensureCurrencyTracked } from '../services/exchange-rate-sync.service'
+import { toMinutes } from '../services/schedule-conflict.service'
 
 const router = Router()
 const prisma = new PrismaClient({ adapter: createPgAdapter() })
@@ -831,6 +832,7 @@ router.get(
           const key = p.userId ?? p.guestId
           if (!key) continue
           if (p.paymentStatus !== 'pending' && p.paymentStatus !== 'failed') continue
+          if (!p.amountOwed) continue // nada que cobrar, no es un problema real de pago
           raw.push({
             key,
             userId: p.userId ?? null,
@@ -961,13 +963,30 @@ router.get('/:id/availability', async (req: Request, res: Response, next: NextFu
       orderBy: [{ courtId: 'asc' }, { startTime: 'asc' }],
     })
 
+    const dayStart = new Date(`${date}T00:00:00.000Z`)
+    const dayEnd = new Date(`${date}T23:59:59.999Z`)
+    const maintenanceBlocks = await prisma.maintenanceBlock.findMany({
+      where: {
+        courtId: { in: [...new Set(slots.map((s) => s.courtId))] },
+        startAt: { lte: dayEnd },
+        endAt: { gte: dayStart },
+      },
+      select: { courtId: true, startAt: true, endAt: true, description: true },
+    })
+
     const now = new Date()
     const result = slots.map((slot) => {
       const blockExpired = slot.blockedExpiresAt && now > slot.blockedExpiresAt
-      const isBlocked = slot.isBlocked && !blockExpired
+      const slotStart = new Date(dayStart.getTime() + toMinutes(slot.startTime) * 60000)
+      const slotEnd = new Date(dayStart.getTime() + toMinutes(slot.endTime) * 60000)
+      const maintenance = maintenanceBlocks.find(
+        (b) => b.courtId === slot.courtId && slotStart < b.endAt && b.startAt < slotEnd
+      )
+      const isBlocked = (slot.isBlocked && !blockExpired) || !!maintenance
       return {
         ...slot,
         isBlocked,
+        blockedReason: slot.isBlocked ? slot.blockedReason : (maintenance?.description ?? null),
         isAvailable: slot.bookings.length === 0 && !isBlocked,
         bookings: undefined,
       }

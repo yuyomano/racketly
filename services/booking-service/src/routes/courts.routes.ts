@@ -6,6 +6,7 @@ import { PrismaClient } from '@prisma/client'
 import { createPgAdapter } from '@racketly/utils/prisma-adapter'
 import { generateSlotsFromCourtConfig } from '../services/slot.service'
 import { toMinutes, hasConflictingMaintenance } from '../services/schedule-conflict.service'
+import { tzOffsetMs } from '@racketly/utils'
 import { AppError } from '../middleware/error.middleware'
 import { assertClubAdmin } from '../middleware/club-auth.middleware'
 
@@ -138,8 +139,20 @@ router.post('/:id/generate-slots', async (req: Request, res: Response, next: Nex
 // GET /api/courts/:id/maintenance — bloqueos vigentes o futuros de la pista
 router.get('/:id/maintenance', async (req: Request, res: Response, next: NextFunction) => {
   try {
+    const court = await prisma.court.findUnique({
+      where: { id: req.params.id },
+      select: { club: { select: { timezone: true } } },
+    })
+    if (!court) throw new AppError('Pista no encontrada', 404)
+
+    // startAt/endAt se guardan como hora de pared del club re-etiquetada como UTC (ver
+    // POST de abajo), no como instante UTC real — por eso "ahora" hay que pasarlo por el
+    // mismo re-etiquetado antes de comparar, o un bloqueo vigente parecería ya vencido.
+    const nowMs = Date.now()
+    const literalNow = new Date(nowMs + tzOffsetMs(nowMs, court.club.timezone || 'UTC'))
+
     const blocks = await prisma.maintenanceBlock.findMany({
-      where: { courtId: req.params.id, endAt: { gte: new Date() } },
+      where: { courtId: req.params.id, endAt: { gte: literalNow } },
       orderBy: { startAt: 'asc' },
     })
     return res.json({ success: true, data: blocks })

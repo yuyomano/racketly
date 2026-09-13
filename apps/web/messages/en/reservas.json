@@ -126,6 +126,7 @@
       "jugadoresCount": "{count, plural, one {# player} other {# players}}",
       "cubiertoPorMembresia": "· 🎫 {name} covered by membership",
       "pagaAhora": "{names} {count, plural, one {pays} other {pay}} {method} now",
+      "tieneCortesia": "{names} {count, plural, one {has} other {have}} a courtesy",
       "todosPaganApp": "Everyone pays through the app",
       "extrasPagan": "{names} {count, plural, one {pays} other {pay}} {method}",
       "extrasPaganApp": "Extras pay through the app",

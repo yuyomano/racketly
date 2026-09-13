@@ -80,6 +80,7 @@ export default function ClasesPage() {
   const t = useTranslations('Clases')
   const [clubId, setClubId] = useState<string | null>(null)
   const [clubName, setClubName] = useState('')
+  const [clubCurrency, setClubCurrency] = useState('COP')
   const [professors, setProfessors] = useState<Professor[]>([])
   const [slots, setSlots] = useState<ClassSlot[]>([])
   const [courts, setCourts] = useState<CourtOption[]>([])
@@ -122,12 +123,14 @@ export default function ClasesPage() {
   useEffect(() => {
     const stored = localStorage.getItem('racketly_active_club') || ''
     let cId = stored,
-      cName = ''
+      cName = '',
+      cCurrency = 'COP'
     try {
       const p = JSON.parse(stored)
       if (p?.id) {
         cId = p.id
         cName = p.name ?? ''
+        cCurrency = p.currency ?? 'COP'
       }
     } catch {
       /* plain string */
@@ -135,6 +138,7 @@ export default function ClasesPage() {
     if (cId) {
       setClubId(cId)
       setClubName(cName)
+      setClubCurrency(cCurrency)
       loadAll(cId)
     } else {
       setLoading(false)
@@ -144,6 +148,7 @@ export default function ClasesPage() {
       const club = (e as CustomEvent).detail
       setClubId(club.id)
       setClubName(club.name ?? '')
+      setClubCurrency(club.currency ?? 'COP')
       loadAll(club.id)
     }
     window.addEventListener('club-changed', onClubChange)
@@ -275,7 +280,7 @@ export default function ClasesPage() {
           label={t('statPendingRevenue')}
           value={formatCurrency(
             pendingRevenue,
-            upcomingSlots[0]?.currency ?? professors[0]?.currency ?? 'DOP'
+            upcomingSlots[0]?.currency ?? professors[0]?.currency ?? clubCurrency
           )}
         />
       </div>
@@ -415,6 +420,7 @@ export default function ClasesPage() {
       {(showProfModal || editingProf) && clubId && (
         <ProfessorModal
           clubId={clubId}
+          clubCurrency={clubCurrency}
           professor={editingProf ?? undefined}
           onClose={() => {
             setShowProfModal(false)
@@ -432,6 +438,7 @@ export default function ClasesPage() {
       {(showSlotModal || editingSlot) && clubId && (
         <SlotModal
           clubId={clubId}
+          clubCurrency={clubCurrency}
           professors={activeProfessors}
           courts={courts}
           slot={editingSlot ?? undefined}
@@ -635,11 +642,13 @@ function SlotCard({
 // "externo" (invitado sin cuenta) admite nombre libre.
 function ProfessorModal({
   clubId,
+  clubCurrency,
   professor,
   onClose,
   onSaved,
 }: {
   clubId: string
+  clubCurrency: string
   professor?: Professor
   onClose: () => void
   onSaved: (p: Professor) => void
@@ -652,7 +661,7 @@ function ProfessorModal({
     sport: professor?.sport ?? 'padel',
     isExternal: professor?.isExternal ?? false,
     hourlyRate: professor?.hourlyRate ?? 0,
-    currency: professor?.currency ?? 'DOP',
+    currency: professor?.currency ?? clubCurrency,
   })
   const [selectedPlayer, setSelectedPlayer] = useState<{ id: string; name: string } | null>(
     professor?.userId ? { id: professor.userId, name: professor.name } : null
@@ -710,7 +719,7 @@ function ProfessorModal({
           sport: form.sport,
           isExternal: form.isExternal,
           hourlyRate: Number(form.hourlyRate),
-          currency: form.currency.trim() || 'DOP',
+          currency: form.currency.trim() || clubCurrency,
         }),
       })
       const data = await res.json()
@@ -874,6 +883,7 @@ function ProfessorModal({
 
 function SlotModal({
   clubId,
+  clubCurrency,
   professors,
   courts,
   slot,
@@ -881,6 +891,7 @@ function SlotModal({
   onSaved,
 }: {
   clubId: string
+  clubCurrency: string
   professors: Professor[]
   courts: CourtOption[]
   slot?: ClassSlot
@@ -897,7 +908,7 @@ function SlotModal({
     durationMinutes: slot?.durationMinutes ?? 60,
     maxStudents: slot?.maxStudents ?? 1,
     price: slot?.price ?? firstProf?.hourlyRate ?? 0,
-    currency: slot?.currency ?? firstProf?.currency ?? 'DOP',
+    currency: slot?.currency ?? firstProf?.currency ?? clubCurrency,
     notes: slot?.notes ?? '',
   })
   const [saving, setSaving] = useState(false)
@@ -931,7 +942,7 @@ function SlotModal({
           durationMinutes: Number(form.durationMinutes),
           maxStudents: Number(form.maxStudents),
           price: Number(form.price),
-          currency: form.currency.trim() || 'DOP',
+          currency: form.currency.trim() || clubCurrency,
           notes: form.notes.trim() || null,
         }),
       })

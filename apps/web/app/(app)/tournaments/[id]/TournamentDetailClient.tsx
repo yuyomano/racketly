@@ -302,7 +302,10 @@ export function TournamentDetailClient({
 
           {myParticipation &&
             myParticipation.paymentStatus === 'pending' &&
-            tournament.entryFee > 0 && (
+            tournament.entryFee > 0 &&
+            (myParticipation.amountOwed ?? tournament.entryFee) -
+              (myParticipation.amountPaid ?? 0) >
+              0 && (
               <TournamentEntryPayment
                 tournamentId={tournament.id}
                 participantId={myParticipation.id}

@@ -50,7 +50,7 @@ export default async function RootLayout({ children }: { children: React.ReactNo
 
   return (
     <html lang={locale} suppressHydrationWarning className={`${display.variable} ${body.variable}`}>
-      <body className={body.className}>
+      <body className={body.className} suppressHydrationWarning>
         <NextIntlClientProvider messages={messages}>
           <Providers>{children}</Providers>
         </NextIntlClientProvider>

@@ -93,7 +93,14 @@ export function toUSD(amount: number, currency: string): number {
 // componente dentro del árbol de next-intl debería pasar el locale activo (useLocale())
 // para que la fecha respete el idioma que el usuario eligió en el selector ES/EN.
 export function formatDate(date: string | Date, locale = 'es') {
-  return new Date(date).toLocaleDateString(locale, {
+  // Un string "YYYY-MM-DD" (fecha de slot/reserva, sin hora) lo interpreta `new Date()`
+  // como medianoche UTC — en timezones detrás de UTC (Bogotá, etc.) eso cae en el día
+  // anterior al formatear en hora local. Se parsea como fecha local para evitar el corrimiento.
+  const d =
+    typeof date === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(date)
+      ? new Date(`${date}T00:00:00`)
+      : new Date(date)
+  return d.toLocaleDateString(locale, {
     day: 'numeric',
     month: 'short',
     year: 'numeric',

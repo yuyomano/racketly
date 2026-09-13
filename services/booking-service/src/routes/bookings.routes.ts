@@ -275,7 +275,7 @@ router.post('/', async (req: Request, res: Response, next: NextFunction) => {
       extraPlayers.map(async (p: any) => {
         const coverage = p.courtesy
           ? {
-              amountOwed: pricePerPlayer,
+              amountOwed: 0,
               amountPaid: 0,
               paymentStatus: 'courtesy' as const,
               coveredBy: null,
@@ -325,7 +325,7 @@ router.post('/', async (req: Request, res: Response, next: NextFunction) => {
       resolvedPricingType === 'membership_extra'
     const ownerCoverage = ownerCourtesy
       ? {
-          amountOwed: pricePerPlayer,
+          amountOwed: 0,
           amountPaid: 0,
           paymentStatus: 'courtesy' as const,
           coveredBy: null,
@@ -862,6 +862,7 @@ router.patch(
 
       players[idx] = {
         ...players[idx],
+        amountOwed: 0,
         amountPaid: 0,
         paymentStatus: 'courtesy',
         courtesyReason: reason.trim(),

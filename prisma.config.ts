@@ -1,3 +1,4 @@
+import 'dotenv/config'
 import { defineConfig, env } from 'prisma/config'
 
 // Prisma 7 movió la connection URL fuera de schema.prisma. Este archivo solo

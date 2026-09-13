@@ -16,7 +16,13 @@ import {
   findWorkloadEligibleStart,
   type MatchFormatOverrides,
 } from '@racketly/utils'
-import { sanitizeSchedulingWindows, windowsToMs, nextPlayable } from '../lib/scheduling-windows'
+import {
+  sanitizeSchedulingWindows,
+  windowsToMs,
+  nextPlayable,
+  defaultOpenTimeForDate,
+} from '../lib/scheduling-windows'
+import { zonedTimeToUtc } from '@racketly/utils'
 
 const router = Router()
 const prisma = new PrismaClient({ adapter: createPgAdapter() })
@@ -168,11 +174,15 @@ router.get('/:id/matches', async (req: Request, res: Response, next: NextFunctio
     })
     if (!event) throw new AppError('Evento no encontrado', 404)
 
+    // Los torneos cancelados no deben aparecer en la agenda del evento — sus
+    // partidos ya no van a jugarse aunque hayan quedado con courtId/scheduledAt.
+    const activeTournaments = event.tournaments.filter((t) => t.status !== 'cancelled')
+
     const tournamentCtx = new Map<
       string,
       { baseFormat: string; overrides: MatchFormatOverrides | null; maxKnockoutRound: number }
     >()
-    for (const t of event.tournaments) {
+    for (const t of activeTournaments) {
       const maxRoundAgg = await prisma.match.aggregate({
         where: { tournamentId: t.id, stage: 'knockout' },
         _max: { round: true },
@@ -185,7 +195,7 @@ router.get('/:id/matches', async (req: Request, res: Response, next: NextFunctio
     }
 
     const matches = await prisma.match.findMany({
-      where: { tournamentId: { in: event.tournaments.map((t) => t.id) } },
+      where: { tournamentId: { in: activeTournaments.map((t) => t.id) } },
       orderBy: [{ scheduledAt: 'asc' }],
       include: {
         player1: { select: { displayName: true } },
@@ -194,7 +204,7 @@ router.get('/:id/matches', async (req: Request, res: Response, next: NextFunctio
     })
 
     // Nombre de pareja por jugador — solo torneos de tipo "pairs" tienen partnerId.
-    const pairsTournamentIds = event.tournaments.filter((t) => t.type === 'pairs').map((t) => t.id)
+    const pairsTournamentIds = activeTournaments.filter((t) => t.type === 'pairs').map((t) => t.id)
     const participants = pairsTournamentIds.length
       ? await prisma.tournamentParticipant.findMany({
           where: { tournamentId: { in: pairsTournamentIds } },
@@ -217,7 +227,7 @@ router.get('/:id/matches', async (req: Request, res: Response, next: NextFunctio
         })
       : []
     const courtNameById = new Map(courts.map((c) => [c.id, c.name]))
-    const tournamentById = new Map(event.tournaments.map((t) => [t.id, t]))
+    const tournamentById = new Map(activeTournaments.map((t) => [t.id, t]))
 
     const data = matches.map((m) => {
       const ctx = tournamentCtx.get(m.tournamentId!)!
@@ -297,10 +307,11 @@ router.post(
       if (!event) throw new AppError('Evento no encontrado', 404)
       if (event.organizerId !== req.userId)
         throw new AppError('Solo el organizador puede agendar este evento', 403)
-      if (event.tournaments.length === 0)
+      const activeTournaments = event.tournaments.filter((t) => t.status !== 'cancelled')
+      if (activeTournaments.length === 0)
         throw new AppError('El evento no tiene torneos asociados', 400)
 
-      const sports = new Set(event.tournaments.map((t) => t.sport))
+      const sports = new Set(activeTournaments.map((t) => t.sport))
       const resolvedSport = sport || (sports.size === 1 ? [...sports][0] : null)
       if (!resolvedSport) {
         throw new AppError(
@@ -309,13 +320,29 @@ router.post(
         )
       }
 
-      let courts: { id: string }[]
+      const courtSelect = {
+        id: true,
+        openTimeWeekday: true,
+        closeTimeWeekday: true,
+        openTimeWeekend: true,
+        closeTimeWeekend: true,
+      } as const
+      let courts: {
+        id: string
+        openTimeWeekday: string
+        closeTimeWeekday: string
+        openTimeWeekend: string
+        closeTimeWeekend: string
+      }[]
       if (Array.isArray(courtIds) && courtIds.length > 0) {
-        courts = courtIds.map((id: string) => ({ id }))
+        courts = await prisma.court.findMany({
+          where: { id: { in: courtIds }, clubId: event.clubId },
+          select: courtSelect,
+        })
       } else {
         courts = await prisma.court.findMany({
           where: { clubId: event.clubId, sport: resolvedSport, isActive: true },
-          select: { id: true },
+          select: courtSelect,
         })
       }
       if (courts.length === 0) throw new AppError('No hay pistas disponibles para asignar', 400)
@@ -324,7 +351,16 @@ router.post(
       const windows = event.schedulingWindows
         ? windowsToMs(sanitizeSchedulingWindows(event.schedulingWindows) ?? [], event.club.timezone)
         : null
-      const rawStart = new Date(startAt ?? event.startDate).getTime()
+      let rawStart: number
+      if (startAt) {
+        rawStart = new Date(startAt).getTime()
+      } else {
+        const baseDate = new Date(event.startDate)
+        const openTime = defaultOpenTimeForDate(baseDate, courts)
+        rawStart = openTime
+          ? zonedTimeToUtc(baseDate.toISOString().split('T')[0], openTime, event.club.timezone)
+          : baseDate.getTime()
+      }
       const startCursor = windows ? nextPlayable(rawStart, windows) : rawStart
       if (windows && startCursor === Infinity) {
         throw new AppError('startAt cae después de todas las franjas horarias del evento', 400)
@@ -341,7 +377,7 @@ router.post(
           maxKnockoutRound: number
         }
       >()
-      for (const t of event.tournaments) {
+      for (const t of activeTournaments) {
         const maxRoundAgg = await prisma.match.aggregate({
           where: { tournamentId: t.id, stage: 'knockout' },
           _max: { round: true },
@@ -377,7 +413,7 @@ router.post(
 
       const pending = await prisma.match.findMany({
         where: {
-          tournamentId: { in: event.tournaments.map((t) => t.id) },
+          tournamentId: { in: activeTournaments.map((t) => t.id) },
           scheduledAt: null,
           status: 'scheduled',
           round: { not: null },
@@ -400,7 +436,7 @@ router.post(
       // los partidos que ya tenían horario antes de esta corrida. Ver
       // docs/scheduling-workload-limits.md.
       const tracker = new PairWorkloadTracker()
-      const eventTournamentIds = event.tournaments.map((t) => t.id)
+      const eventTournamentIds = activeTournaments.map((t) => t.id)
       const alreadyScheduled = await prisma.match.findMany({
         where: {
           tournamentId: { in: eventTournamentIds },
@@ -536,7 +572,7 @@ router.post(
         )
       )
 
-      const byTournament = event.tournaments.map((t) => {
+      const byTournament = activeTournaments.map((t) => {
         const tMatches = updates.filter(
           (u) => pending.find((p) => p.id === u.id)?.tournamentId === t.id
         )

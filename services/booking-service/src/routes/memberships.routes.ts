@@ -608,6 +608,7 @@ router.get(
         for (const p of players) {
           if (!p.userId || !memberIds.has(p.userId)) continue
           if (p.paymentStatus !== 'pending' && p.paymentStatus !== 'failed') continue
+          if (!p.amountOwed) continue // nada que cobrar, no es un problema real de pago
           const u = userById.get(p.userId)
           const fullName =
             u && (u.firstName || u.lastName)

@@ -174,6 +174,7 @@ export default function MembresiasPage() {
   const locale = useLocale()
   const [clubId, setClubId] = useState<string | null>(null)
   const [clubName, setClubName] = useState('')
+  const [clubCurrency, setClubCurrency] = useState('COP')
   const [plans, setPlans] = useState<Plan[]>([])
   const [members, setMembers] = useState<Membership[]>([])
   const [analytics, setAnalytics] = useState<Analytics | null>(null)
@@ -272,12 +273,14 @@ export default function MembresiasPage() {
   useEffect(() => {
     const stored = localStorage.getItem('racketly_active_club') || ''
     let cId = stored,
-      cName = ''
+      cName = '',
+      cCurrency = 'COP'
     try {
       const p = JSON.parse(stored)
       if (p?.id) {
         cId = p.id
         cName = p.name ?? ''
+        cCurrency = p.currency ?? 'COP'
       }
     } catch {
       /* plain string */
@@ -285,6 +288,7 @@ export default function MembresiasPage() {
     if (cId) {
       setClubId(cId)
       setClubName(cName)
+      setClubCurrency(cCurrency)
       loadAll(cId)
     } else {
       setLoading(false)
@@ -294,6 +298,7 @@ export default function MembresiasPage() {
       const club = (e as CustomEvent).detail
       setClubId(club.id)
       setClubName(club.name ?? '')
+      setClubCurrency(club.currency ?? 'COP')
       loadAll(club.id)
     }
     window.addEventListener('club-changed', onClubChange)
@@ -783,6 +788,7 @@ export default function MembresiasPage() {
       {showCreate && clubId && (
         <PlanModal
           clubId={clubId}
+          clubCurrency={clubCurrency}
           onClose={() => setShowCreate(false)}
           onSaved={(p) => {
             setPlans([...plans, p].sort((a, b) => a.price - b.price))
@@ -793,6 +799,7 @@ export default function MembresiasPage() {
       {editingPlan && clubId && (
         <PlanModal
           clubId={clubId}
+          clubCurrency={clubCurrency}
           plan={editingPlan}
           onClose={() => setEditingPlan(null)}
           onSaved={(p) => {
@@ -1177,11 +1184,13 @@ function PaymentIssueGroupModal({
 
 function PlanModal({
   clubId,
+  clubCurrency,
   plan,
   onClose,
   onSaved,
 }: {
   clubId: string
+  clubCurrency: string
   plan?: Plan
   onClose: () => void
   onSaved: (p: Plan) => void
@@ -1191,7 +1200,7 @@ function PlanModal({
     name: plan?.name ?? '',
     description: plan?.description ?? '',
     price: plan?.price ?? 0,
-    currency: plan?.currency ?? 'DOP',
+    currency: plan?.currency ?? clubCurrency,
     sessionsPerDay: plan?.sessionsPerDay ?? 1,
     priceExtraSession: plan?.priceExtraSession ?? 0,
   })
@@ -1220,7 +1229,7 @@ function PlanModal({
           name: form.name.trim(),
           description: form.description.trim() || null,
           price: Number(form.price),
-          currency: form.currency.trim() || 'DOP',
+          currency: form.currency.trim() || clubCurrency,
           sessionsPerDay: Number(form.sessionsPerDay),
           priceExtraSession: Number(form.priceExtraSession),
         }),

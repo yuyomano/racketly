@@ -44,3 +44,23 @@ export function nextPlayable(t: number, windows: { start: number; end: number }[
   }
   return Infinity
 }
+
+// Hora de apertura a usar como ancla por defecto cuando el auto-agendador no
+// recibe `startAt` ni franjas horarias explícitas — sin esto, el punto de
+// partida era la fecha de inicio del torneo/evento a las 00:00, agendando
+// partidos a medianoche. Usa la hora de apertura MÁS TARDÍA entre las pistas
+// elegidas, para no abrir antes de que alguna de ellas esté disponible.
+export function defaultOpenTimeForDate(
+  date: Date,
+  courts: {
+    openTimeWeekday: string
+    closeTimeWeekday: string
+    openTimeWeekend: string
+    closeTimeWeekend: string
+  }[]
+): string | null {
+  if (courts.length === 0) return null
+  const isWeekend = date.getDay() === 0 || date.getDay() === 6 // 0=Dom, 6=Sáb
+  const opens = courts.map((c) => (isWeekend ? c.openTimeWeekend : c.openTimeWeekday))
+  return opens.reduce((latest, t) => (t > latest ? t : latest))
+}

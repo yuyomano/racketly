@@ -18,21 +18,44 @@ function decodeExpiryMs(token: string): number | null {
   }
 }
 
+// El refresh token se rota (single-use) en el backend, así que si varios requests en
+// paralelo ven el access token por vencer, todos menos el primero fallarían el refresh
+// (token ya rotado) y seguirían con el access token viejo/vencido → 401 espurio.
+// Se deduplica con una cache en memoria del proceso: mismo refreshToken → misma promesa.
+// ponytail: cache por proceso, no por-cluster — con múltiples réplicas del server el
+// fix completo sería un grace period de reuso en verifyAndRotateRefreshToken (backend).
+const inFlightRefresh = new Map<
+  string,
+  Promise<{ accessToken: string; refreshToken: string } | null>
+>()
+
 async function tryRefresh(
   refreshToken: string
 ): Promise<{ accessToken: string; refreshToken: string } | null> {
+  const cached = inFlightRefresh.get(refreshToken)
+  if (cached) return cached
+
+  const promise = (async () => {
+    try {
+      const res = await fetch(`${GATEWAY}/api/auth/refresh`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ refreshToken }),
+      })
+      if (!res.ok) return null
+      const data = await res.json()
+      if (!data?.data?.accessToken || !data?.data?.refreshToken) return null
+      return { accessToken: data.data.accessToken, refreshToken: data.data.refreshToken }
+    } catch {
+      return null
+    }
+  })()
+
+  inFlightRefresh.set(refreshToken, promise)
   try {
-    const res = await fetch(`${GATEWAY}/api/auth/refresh`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ refreshToken }),
-    })
-    if (!res.ok) return null
-    const data = await res.json()
-    if (!data?.data?.accessToken || !data?.data?.refreshToken) return null
-    return { accessToken: data.data.accessToken, refreshToken: data.data.refreshToken }
-  } catch {
-    return null
+    return await promise
+  } finally {
+    inFlightRefresh.delete(refreshToken)
   }
 }
 

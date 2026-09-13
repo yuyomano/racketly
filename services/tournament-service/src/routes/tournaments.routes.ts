@@ -20,6 +20,8 @@ import {
   findWorkloadEligibleStart,
 } from '@racketly/utils'
 import { computeGroupStandings, type GroupStanding } from '../lib/group-standings'
+import { defaultOpenTimeForDate } from '../lib/scheduling-windows'
+import { zonedTimeToUtc } from '@racketly/utils'
 import {
   createStripePaymentIntent,
   retrieveStripePaymentIntent,
@@ -578,34 +580,35 @@ async function generateRoundRobinMatches(tournamentId: string, playerIds: string
   await prisma.match.createMany({ data: creates })
 }
 
-async function generateMatchesForTournament(tournamentId: string, format: string, type: string) {
-  await prisma.match.deleteMany({ where: { tournamentId } })
-
+async function getConfirmedPlayerIds(tournamentId: string, type: string): Promise<string[]> {
   const participants = await prisma.tournamentParticipant.findMany({
     where: { tournamentId },
     select: { playerId: true, partnerId: true },
     orderBy: { registeredAt: 'asc' },
   })
 
-  let playerIds: string[]
-  if (type === 'pairs') {
-    // Solo parejas confirmadas (ambos jugadores inscritos) entran al cuadro.
-    // Un solo entrante por pareja para evitar que ambos compañeros aparezcan por separado.
-    const playerIdSet = new Set(participants.map((p) => p.playerId))
-    const seen = new Set<string>()
-    playerIds = []
-    for (const p of participants) {
-      const confirmed = !!p.partnerId && playerIdSet.has(p.partnerId)
-      if (!confirmed) continue
-      if (seen.has(p.playerId) || seen.has(p.partnerId!)) continue
-      seen.add(p.playerId)
-      seen.add(p.partnerId!)
-      playerIds.push(p.playerId)
-    }
-  } else {
-    playerIds = participants.map((p) => p.playerId)
-  }
+  if (type !== 'pairs') return participants.map((p) => p.playerId)
 
+  // Solo parejas confirmadas (ambos jugadores inscritos) entran al cuadro.
+  // Un solo entrante por pareja para evitar que ambos compañeros aparezcan por separado.
+  const playerIdSet = new Set(participants.map((p) => p.playerId))
+  const seen = new Set<string>()
+  const playerIds: string[] = []
+  for (const p of participants) {
+    const confirmed = !!p.partnerId && playerIdSet.has(p.partnerId)
+    if (!confirmed) continue
+    if (seen.has(p.playerId) || seen.has(p.partnerId!)) continue
+    seen.add(p.playerId)
+    seen.add(p.partnerId!)
+    playerIds.push(p.playerId)
+  }
+  return playerIds
+}
+
+async function generateMatchesForTournament(tournamentId: string, format: string, type: string) {
+  await prisma.match.deleteMany({ where: { tournamentId } })
+
+  const playerIds = await getConfirmedPlayerIds(tournamentId, type)
   if (playerIds.length < 2) return
 
   if (format === 'round_robin' || format === 'swiss') {
@@ -630,7 +633,13 @@ router.patch(
       const valid = ['draft', 'open', 'in_progress', 'completed', 'cancelled']
       if (!valid.includes(status)) throw new AppError('Estado inválido', 400)
 
-      await assertOrganizer(req.params.id, req.userId)
+      const organizerTournament = await assertOrganizer(req.params.id, req.userId)
+
+      if (status === 'in_progress') {
+        const playerIds = await getConfirmedPlayerIds(req.params.id, organizerTournament.type)
+        if (playerIds.length < 2)
+          throw new AppError('No hay suficientes parejas confirmadas para iniciar el torneo', 400)
+      }
 
       const tournament = await prisma.tournament.update({
         where: { id: req.params.id },
@@ -1363,6 +1372,8 @@ router.post(
     try {
       const { startAt, courtIds, breakMinutes = 10, restMinutes: restOverride } = req.body
       const tournament = await assertOrganizer(req.params.id, req.userId)
+      if (tournament.status === 'cancelled')
+        throw new AppError('No se puede agendar un torneo cancelado', 400)
 
       // La modalidad (y por tanto la duración) puede variar por ronda eliminatoria —
       // grupos usan siempre la modalidad general; octavos/cuartos/semifinal/final caen
@@ -1396,13 +1407,32 @@ router.post(
       // ya agendado y como referencia en la respuesta — cada partido usa su propia duración.
       const baseDurationMs = matchFormatDurationMinutes(tournament.matchFormat) * 60000
 
-      let courts: { id: string }[]
+      const courtSelect = {
+        id: true,
+        openTimeWeekday: true,
+        closeTimeWeekday: true,
+        openTimeWeekend: true,
+        closeTimeWeekend: true,
+      } as const
+      let courts: {
+        id: string
+        openTimeWeekday: string
+        closeTimeWeekday: string
+        openTimeWeekend: string
+        closeTimeWeekend: string
+      }[]
       if (Array.isArray(courtIds) && courtIds.length > 0) {
-        courts = courtIds.map((id: string) => ({ id }))
+        courts = await prisma.court.findMany({
+          where: {
+            id: { in: courtIds },
+            ...(tournament.clubId ? { clubId: tournament.clubId } : {}),
+          },
+          select: courtSelect,
+        })
       } else if (tournament.clubId) {
         courts = await prisma.court.findMany({
           where: { clubId: tournament.clubId, sport: tournament.sport, isActive: true },
-          select: { id: true },
+          select: courtSelect,
         })
       } else {
         courts = []
@@ -1431,13 +1461,33 @@ router.post(
         where: { tournamentId: req.params.id, scheduledAt: { not: null } },
         orderBy: { scheduledAt: 'desc' },
       })
+      let defaultStart: number
+      if (startAt) {
+        defaultStart = new Date(startAt).getTime()
+      } else {
+        const baseDate = new Date(tournament.startDate)
+        const openTime = defaultOpenTimeForDate(baseDate, courts)
+        if (openTime && tournament.clubId) {
+          const club = await prisma.club.findUnique({
+            where: { id: tournament.clubId },
+            select: { timezone: true },
+          })
+          defaultStart = zonedTimeToUtc(
+            baseDate.toISOString().split('T')[0],
+            openTime,
+            club?.timezone ?? 'UTC'
+          )
+        } else {
+          defaultStart = baseDate.getTime()
+        }
+      }
       const startCursor = latestScheduled?.scheduledAt
         ? new Date(
             latestScheduled.scheduledAt.getTime() +
               durationMsForMatch(latestScheduled) +
               Math.max(breakMs, restMs)
           )
-        : new Date(startAt ?? tournament.startDate)
+        : new Date(defaultStart)
 
       const courtFreeAt = new Map<string, number>(courts.map((c) => [c.id, startCursor.getTime()]))
       const playerFreeAt = new Map<string, number>()

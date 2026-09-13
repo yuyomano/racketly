@@ -66,9 +66,10 @@ function toMin(t: string) {
 function fmtMin(m: number) {
   return `${String(Math.floor(m / 60)).padStart(2, '0')}:${String(m % 60).padStart(2, '0')}`
 }
-function effectiveAmountPaid(b: BookingRow): number {
+// Precio a mostrar en la celda: total adeudado (no solo lo cobrado), igual que la vista Lista
+function displayAmount(b: BookingRow): number {
   const hasOwed = b.players.some((p) => p.amountOwed != null)
-  if (hasOwed) return b.players.reduce((s, p) => s + (p.amountPaid ?? 0), 0)
+  if (hasOwed) return b.players.reduce((s, p) => s + (p.amountOwed ?? 0), 0)
   return b.amountPaid ?? 0
 }
 
@@ -387,7 +388,7 @@ export function CourtScheduleGrid({
                             )}
                           </div>
                           <p className="opacity-70 truncate">
-                            {formatCurrency(effectiveAmountPaid(b), b.currency)}
+                            {formatCurrency(displayAmount(b), b.currency)}
                             {!isActive && ` · ${bookingStatusLabel(t, b.status)}`}
                           </p>
                         </div>

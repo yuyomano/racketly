@@ -71,7 +71,7 @@ function Sidebar({
   return (
     <aside
       className="hidden peer-checked:flex lg:flex flex-col overflow-y-auto
-        w-64 min-h-screen bg-ink-900 fixed top-0 left-0 z-40"
+        w-64 h-screen bg-ink-900 fixed top-0 left-0 z-40"
     >
       {/* Logo */}
       <div className="px-6 py-6">

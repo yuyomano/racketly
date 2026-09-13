@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react'
 import { useTranslations, useLocale } from 'next-intl'
-import { formatCurrency, pctTrend } from '@/lib/utils'
+import { formatCurrency, pctTrend, toUSD } from '@/lib/utils'
 import { Card } from '@/components/ui/Card'
 import { StatCard } from '@/components/ui/StatCard'
 import { Wallet, Gauge, CalendarDays, XCircle, Building2 } from 'lucide-react'
@@ -307,15 +307,20 @@ export default function EstadisticasPage() {
         const avg = (arr: number[]) =>
           arr.length > 0 ? Math.round(arr.reduce((s, v) => s + v, 0) / arr.length) : 0
 
+        // Clubes con distinta moneda no se pueden sumar en crudo — se convierte todo a USD
         const agg: StatsData = {
-          currency: valid[0].currency,
+          currency: 'USD',
           period,
           confirmedBookings: valid.reduce((s, v) => s + v.confirmedBookings, 0),
-          totalRevenue: valid.reduce((s, v) => s + v.totalRevenue, 0),
+          totalRevenue: valid.reduce((s, v) => s + toUSD(v.totalRevenue, v.currency), 0),
           cancelledBookings: valid.reduce((s, v) => s + v.cancelledBookings, 0),
           pendingBookings: valid.reduce((s, v) => s + v.pendingBookings, 0),
           totalBookings: valid.reduce((s, v) => s + v.totalBookings, 0),
-          byDay: mergeByDay(valid.map((v) => v.byDay)),
+          byDay: mergeByDay(
+            valid.map((v) =>
+              v.byDay.map((d) => ({ ...d, revenue: toUSD(d.revenue, v.currency) }))
+            )
+          ),
           courtOccupancy: valid.flatMap((v) => v.courtOccupancy),
           avgOccupancyToday: avg(valid.map((v) => v.avgOccupancyToday)),
           avgOccupancyYesterday: avg(valid.map((v) => v.avgOccupancyYesterday)),
@@ -324,7 +329,10 @@ export default function EstadisticasPage() {
             confirmedBookings: valid.reduce((s, v) => s + v.previousPeriod.confirmedBookings, 0),
             cancelledBookings: valid.reduce((s, v) => s + v.previousPeriod.cancelledBookings, 0),
             pendingBookings: valid.reduce((s, v) => s + v.previousPeriod.pendingBookings, 0),
-            totalRevenue: valid.reduce((s, v) => s + v.previousPeriod.totalRevenue, 0),
+            totalRevenue: valid.reduce(
+              (s, v) => s + toUSD(v.previousPeriod.totalRevenue, v.currency),
+              0
+            ),
           },
         }
         setStats(agg)

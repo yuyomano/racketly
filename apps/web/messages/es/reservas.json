@@ -126,6 +126,7 @@
       "jugadoresCount": "{count, plural, one {# jugador} other {# jugadores}}",
       "cubiertoPorMembresia": "· 🎫 {name} cubierto por membresía",
       "pagaAhora": "{names} {count, plural, one {paga} other {pagan}} {method} ahora",
+      "tieneCortesia": "{names} {count, plural, one {tiene} other {tienen}} cortesía",
       "todosPaganApp": "Todos pagan por la app",
       "extrasPagan": "{names} {count, plural, one {paga} other {pagan}} {method}",
       "extrasPaganApp": "Extras pagan por la app",

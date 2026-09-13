@@ -3,7 +3,7 @@
 import Link from 'next/link'
 import { useTranslations } from 'next-intl'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
-import { ArrowLeft, Handshake, Loader2, Check, X } from 'lucide-react'
+import { ArrowLeft, Handshake, Loader2, Check, X, CalendarPlus } from 'lucide-react'
 import { Card } from '@/components/ui/Card'
 import { Badge, type BadgeTone } from '@/components/ui/Badge'
 import { EmptyState } from '@/components/ui/EmptyState'
@@ -129,6 +129,21 @@ export function MyMatchRequestsClient() {
                 </div>
                 <Badge tone={STATUS_TONE[r.status] ?? 'gray'}>{t(`status_${r.status}`)}</Badge>
               </div>
+
+              {r.status === 'matched' &&
+                (() => {
+                  const partner = r.applications.find((a) => a.status === 'accepted')
+                  if (!partner) return null
+                  const partnerName = partner.applicant.playerProfile?.displayName ?? ''
+                  return (
+                    <Link
+                      href={`/booking?withUserId=${partner.applicant.id}&withName=${encodeURIComponent(partnerName)}`}
+                      className="flex items-center gap-1.5 text-sm font-semibold text-court-700 bg-court-50 hover:bg-court-100 px-3.5 py-2 rounded-xl transition-colors w-fit mt-3"
+                    >
+                      <CalendarPlus className="w-4 h-4" /> {t('bookCourtButton')}
+                    </Link>
+                  )
+                })()}
 
               {r.applications.length === 0 ? (
                 <p className="text-sm text-ink-400 mt-3">{t('noApplications')}</p>

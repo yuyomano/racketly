@@ -4,7 +4,7 @@ import { useMemo, useState } from 'react'
 import Link from 'next/link'
 import { useTranslations, useLocale } from 'next-intl'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
-import { ArrowLeft, MapPin, Loader2, CheckCircle2, AlertCircle } from 'lucide-react'
+import { ArrowLeft, MapPin, Loader2, CheckCircle2, AlertCircle, Handshake } from 'lucide-react'
 import { Card } from '@/components/ui/Card'
 import { PadelIcon, PickleballIcon } from '@/components/ui/SportIcons'
 import { EmptyState } from '@/components/ui/EmptyState'
@@ -61,10 +61,14 @@ export function ClubBookingClient({
   club,
   userId,
   displayName,
+  partnerUserId,
+  partnerName,
 }: {
   club: Club
   userId: string
   displayName: string
+  partnerUserId?: string
+  partnerName?: string
 }) {
   const t = useTranslations('Booking.clubDetail')
   const locale = useLocale()
@@ -92,6 +96,7 @@ export function ClubBookingClient({
           clubId: club.id,
           ownerName: displayName,
           ownerPay: true,
+          ...(partnerUserId && { players: [{ userId: partnerUserId, name: partnerName }] }),
         }),
       })
       const data = await res.json()
@@ -156,6 +161,12 @@ export function ClubBookingClient({
           <MapPin className="w-3.5 h-3.5" /> {club.city}, {club.country}
         </p>
       </div>
+
+      {partnerUserId && partnerName && (
+        <div className="flex items-center gap-1.5 text-sm font-semibold text-court-700 bg-court-50 px-3.5 py-2 rounded-xl w-fit">
+          <Handshake className="w-4 h-4" /> {t('bookingWithPartner', { name: partnerName })}
+        </div>
+      )}
 
       <div className="flex gap-2 overflow-x-auto pb-1">
         {days.map((d) => (

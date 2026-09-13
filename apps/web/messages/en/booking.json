@@ -15,10 +15,12 @@
       "recentlyBooked": "You've played here",
       "courtsCount": "{count, plural, one {# court} other {# courts}}",
       "favorite": "Add to favorites",
-      "unfavorite": "Remove from favorites"
+      "unfavorite": "Remove from favorites",
+      "bookingWithPartner": "Booking with {name}"
     },
     "clubDetail": {
       "backToClubs": "Back to clubs",
+      "bookingWithPartner": "Booking with {name}",
       "confirmedTitle": "Booking confirmed!",
       "viewMyBookings": "View my bookings",
       "bookAnother": "Book another",

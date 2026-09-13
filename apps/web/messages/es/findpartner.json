@@ -51,6 +51,7 @@
       "status_expired": "Vencida",
       "status_cancelled": "Cancelada",
       "noApplications": "Todavía no tienes postulaciones.",
+      "bookCourtButton": "Reservar cancha",
       "applicationStatus_accepted": "Aceptada",
       "applicationStatus_rejected": "Rechazada",
       "errorRespond": "No se pudo responder la postulación",

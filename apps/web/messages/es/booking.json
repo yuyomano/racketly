@@ -15,10 +15,12 @@
       "recentlyBooked": "Jugaste aquí",
       "courtsCount": "{count, plural, one {# pista} other {# pistas}}",
       "favorite": "Marcar como favorito",
-      "unfavorite": "Quitar de favoritos"
+      "unfavorite": "Quitar de favoritos",
+      "bookingWithPartner": "Reservando con {name}"
     },
     "clubDetail": {
       "backToClubs": "Volver a clubes",
+      "bookingWithPartner": "Reservando con {name}",
       "confirmedTitle": "¡Reserva confirmada!",
       "viewMyBookings": "Ver mis reservas",
       "bookAnother": "Reservar otra",

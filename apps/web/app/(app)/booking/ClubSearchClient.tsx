@@ -2,9 +2,10 @@
 
 import { useState } from 'react'
 import Link from 'next/link'
+import { useSearchParams } from 'next/navigation'
 import { useTranslations } from 'next-intl'
 import { useQuery, useQueryClient, useMutation } from '@tanstack/react-query'
-import { Search, MapPin, CalendarClock, Loader2, Heart } from 'lucide-react'
+import { Search, MapPin, CalendarClock, Loader2, Heart, Handshake } from 'lucide-react'
 import { Card } from '@/components/ui/Card'
 import { Badge } from '@/components/ui/Badge'
 import { EmptyState } from '@/components/ui/EmptyState'
@@ -38,12 +39,20 @@ async function fetchClubs(
 }
 
 async function toggleFavorite(clubId: string, isFavorite: boolean) {
-  const res = await fetch(`/api/clubs/${clubId}/favorite`, { method: isFavorite ? 'DELETE' : 'POST' })
+  const res = await fetch(`/api/clubs/${clubId}/favorite`, {
+    method: isFavorite ? 'DELETE' : 'POST',
+  })
   if (!res.ok) throw new Error('No se pudo actualizar el favorito')
 }
 
 export function ClubSearchClient({ userId }: { userId: string }) {
   const t = useTranslations('Booking.search')
+  const searchParams = useSearchParams()
+  const withUserId = searchParams.get('withUserId')
+  const withName = searchParams.get('withName')
+  const partnerQuery = withUserId
+    ? `?withUserId=${withUserId}&withName=${encodeURIComponent(withName ?? '')}`
+    : ''
   const [search, setSearch] = useState('')
   const [sport, setSport] = useState<'all' | 'padel' | 'pickleball'>('all')
   const queryClient = useQueryClient()
@@ -92,6 +101,12 @@ export function ClubSearchClient({ userId }: { userId: string }) {
         </Link>
       </div>
 
+      {withName && (
+        <div className="flex items-center gap-1.5 text-sm font-semibold text-court-700 bg-court-50 px-3.5 py-2 rounded-xl w-fit">
+          <Handshake className="w-4 h-4" /> {t('bookingWithPartner', { name: withName })}
+        </div>
+      )}
+
       <div className="flex flex-col sm:flex-row gap-3">
         <div className="relative flex-1">
           <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-ink-400" />
@@ -130,7 +145,11 @@ export function ClubSearchClient({ userId }: { userId: string }) {
       ) : (
         <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-4">
           {clubs.map((club) => (
-            <Link key={club.id} href={`/booking/${club.id}`} className="relative block">
+            <Link
+              key={club.id}
+              href={`/booking/${club.id}${partnerQuery}`}
+              className="relative block"
+            >
               <button
                 type="button"
                 aria-label={club.isFavorite ? t('unfavorite') : t('favorite')}

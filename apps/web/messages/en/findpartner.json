@@ -51,6 +51,7 @@
       "status_expired": "Expired",
       "status_cancelled": "Cancelled",
       "noApplications": "No applications yet.",
+      "bookCourtButton": "Book a court",
       "applicationStatus_accepted": "Accepted",
       "applicationStatus_rejected": "Rejected",
       "errorRespond": "Could not respond to the application",

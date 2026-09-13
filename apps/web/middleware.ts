@@ -20,19 +20,42 @@ function decodeExpiryMs(token: string): number | null {
 
 // El refresh token se rota (single-use) en el backend, así que si varios requests en
 // paralelo ven el access token por vencer, todos menos el primero fallarían el refresh
-// (token ya rotado) y seguirían con el access token viejo/vencido → 401 espurio.
-// Se deduplica con una cache en memoria del proceso: mismo refreshToken → misma promesa.
-// ponytail: cache por proceso, no por-cluster — con múltiples réplicas del server el
-// fix completo sería un grace period de reuso en verifyAndRotateRefreshToken (backend).
-const inFlightRefresh = new Map<
-  string,
-  Promise<{ accessToken: string; refreshToken: string } | null>
->()
+// (token ya rotado) y seguirían con el access token viejo/vencido → 401 espurio. Pasa
+// también entre requests casi-simultáneos pero no exactamente concurrentes: el segundo
+// puede salir del browser con la cookie vieja antes de que el Set-Cookie del primero
+// se aplique, y llega al backend cuando el token ya fue rotado por el primero.
+// Se deduplica con una cache en memoria del proceso, por userId (no por el valor exacto
+// del refreshToken, para cubrir ambos casos): mientras hay un refresh en curso para ese
+// usuario, todos comparten la misma promesa; y por un rato corto después de completarse,
+// cualquiera que llegue con una cookie vieja recibe el par ya emitido en vez de reintentar
+// contra un refresh token que el backend ya marcó como usado.
+// ponytail: cache por proceso, no por-cluster — con múltiples réplicas del server el fix
+// completo sería este mismo grace period pero compartido (Redis) en vez de en memoria.
+const REFRESH_GRACE_MS = 10 * 1000
+type RefreshResult = { accessToken: string; refreshToken: string }
+const inFlightRefresh = new Map<string, Promise<RefreshResult | null>>()
+const recentRefresh = new Map<string, { result: RefreshResult | null; expiresAt: number }>()
 
-async function tryRefresh(
-  refreshToken: string
-): Promise<{ accessToken: string; refreshToken: string } | null> {
-  const cached = inFlightRefresh.get(refreshToken)
+// Decodifica (sin verificar firma) el `userId` del refresh token — solo se usa como
+// clave de cache; la verificación real ocurre en el backend en cada rotación.
+function decodeRefreshUserId(token: string): string | null {
+  try {
+    const base64 = token.split('.')[1].replace(/-/g, '+').replace(/_/g, '/')
+    const padded = base64 + '='.repeat((4 - (base64.length % 4)) % 4)
+    const json = JSON.parse(atob(padded))
+    return typeof json.userId === 'string' ? json.userId : null
+  } catch {
+    return null
+  }
+}
+
+async function tryRefresh(refreshToken: string): Promise<RefreshResult | null> {
+  const cacheKey = decodeRefreshUserId(refreshToken) ?? refreshToken
+
+  const recent = recentRefresh.get(cacheKey)
+  if (recent && recent.expiresAt > Date.now()) return recent.result
+
+  const cached = inFlightRefresh.get(cacheKey)
   if (cached) return cached
 
   const promise = (async () => {
@@ -51,11 +74,14 @@ async function tryRefresh(
     }
   })()
 
-  inFlightRefresh.set(refreshToken, promise)
+  inFlightRefresh.set(cacheKey, promise)
   try {
-    return await promise
+    const result = await promise
+    recentRefresh.set(cacheKey, { result, expiresAt: Date.now() + REFRESH_GRACE_MS })
+    setTimeout(() => recentRefresh.delete(cacheKey), REFRESH_GRACE_MS)
+    return result
   } finally {
-    inFlightRefresh.delete(refreshToken)
+    inFlightRefresh.delete(cacheKey)
   }
 }
 

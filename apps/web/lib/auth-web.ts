@@ -1,4 +1,4 @@
-import { cookies } from 'next/headers'
+import { cookies, headers } from 'next/headers'
 import { NextResponse } from 'next/server'
 
 const GW = process.env.API_GATEWAY_URL || 'http://localhost:3000'
@@ -77,6 +77,14 @@ export async function getSessionUser(): Promise<{ id: string; email: string } | 
 }
 
 export async function getSessionToken(): Promise<string | null> {
+  // El middleware, cuando refresca el access token dentro de este mismo request,
+  // no puede reescribir la cookie que ya llegó (el Set-Cookie solo aplica al
+  // próximo request del browser) — por eso inyecta el token nuevo acá, en el header
+  // `authorization` del request reescrito. Sin este fallback, el primer request justo
+  // después de que el access token vence usaría igual la cookie vieja y fallaría.
+  const authHeader = (await headers()).get('authorization')
+  if (authHeader?.startsWith('Bearer ')) return authHeader.slice('Bearer '.length)
+
   const cookieStore = await cookies()
   return cookieStore.get('racketly_token')?.value ?? null
 }

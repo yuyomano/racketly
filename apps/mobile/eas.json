@@ -9,7 +9,13 @@
       "distribution": "internal"
     },
     "preview": {
-      "distribution": "internal"
+      "distribution": "internal",
+      "env": {
+        "EXPO_PUBLIC_API_URL": "http://192.168.4.67:3000",
+        "EXPO_PUBLIC_GOOGLE_CLIENT_ID": "400514052229-4f38jgictthotda475f04dpo5jv4mhsp.apps.googleusercontent.com",
+        "EXPO_PUBLIC_GOOGLE_ANDROID_CLIENT_ID": "400514052229-b11ihf13fpq33jm63fu9iung4ud1t7ls.apps.googleusercontent.com",
+        "EXPO_PUBLIC_GOOGLE_IOS_CLIENT_ID": "400514052229-2lcjn2elg0uebfr7n9a59e65gnb50dod.apps.googleusercontent.com"
+      }
     },
     "production": {
       "autoIncrement": true,

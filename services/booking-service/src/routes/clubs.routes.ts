@@ -6,7 +6,7 @@ import { PrismaClient } from '@prisma/client'
 import { createPgAdapter } from '@racketly/utils/prisma-adapter'
 import { AppError } from '../middleware/error.middleware'
 import { requireClubAccess, requireClubOwner } from '../middleware/club-auth.middleware'
-import { distanceKm } from '@racketly/utils'
+import { distanceKm, zonedTimeToUtc } from '@racketly/utils'
 import { decryptPII } from '@racketly/utils/pii-crypto'
 import { generateSlotsForClub, resyncFutureSlotsForClub } from '../services/slot.service'
 import { ensureCurrencyTracked } from '../services/exchange-rate-sync.service'
@@ -362,9 +362,7 @@ router.get('/', async (req: Request, res: Response, next: NextFunction) => {
       }
 
       // Favoritos primero; dentro de cada grupo se preserva el orden ya calculado (distancia o el de la query).
-      result = [...result].sort(
-        (a, b) => (b.isFavorite ? 1 : 0) - (a.isFavorite ? 1 : 0)
-      )
+      result = [...result].sort((a, b) => (b.isFavorite ? 1 : 0) - (a.isFavorite ? 1 : 0))
     }
 
     return res.json({
@@ -951,6 +949,11 @@ router.get('/:id/availability', async (req: Request, res: Response, next: NextFu
     const { date } = req.query
     if (!date) throw new AppError('Fecha requerida', 400)
 
+    const club = await prisma.club.findUnique({
+      where: { id: req.params.id },
+      select: { timezone: true },
+    })
+
     const slots = await prisma.timeSlot.findMany({
       where: {
         court: { clubId: req.params.id, isActive: true },
@@ -975,6 +978,7 @@ router.get('/:id/availability', async (req: Request, res: Response, next: NextFu
     })
 
     const now = new Date()
+    const timezone = club?.timezone || 'UTC'
     const result = slots.map((slot) => {
       const blockExpired = slot.blockedExpiresAt && now > slot.blockedExpiresAt
       const slotStart = new Date(dayStart.getTime() + toMinutes(slot.startTime) * 60000)
@@ -982,12 +986,13 @@ router.get('/:id/availability', async (req: Request, res: Response, next: NextFu
       const maintenance = maintenanceBlocks.find(
         (b) => b.courtId === slot.courtId && slotStart < b.endAt && b.startAt < slotEnd
       )
+      const isPast = zonedTimeToUtc(slot.date, slot.startTime, timezone) <= now.getTime()
       const isBlocked = (slot.isBlocked && !blockExpired) || !!maintenance
       return {
         ...slot,
         isBlocked,
         blockedReason: slot.isBlocked ? slot.blockedReason : (maintenance?.description ?? null),
-        isAvailable: slot.bookings.length === 0 && !isBlocked,
+        isAvailable: slot.bookings.length === 0 && !isBlocked && !isPast,
         bookings: undefined,
       }
     })

@@ -6,7 +6,7 @@ import { PrismaClient } from '@prisma/client'
 import { createPgAdapter } from '@racketly/utils/prisma-adapter'
 import { generateSlotsFromCourtConfig } from '../services/slot.service'
 import { toMinutes, hasConflictingMaintenance } from '../services/schedule-conflict.service'
-import { tzOffsetMs } from '@racketly/utils'
+import { tzOffsetMs, zonedTimeToUtc } from '@racketly/utils'
 import { AppError } from '../middleware/error.middleware'
 import { assertClubAdmin } from '../middleware/club-auth.middleware'
 
@@ -19,6 +19,12 @@ router.get('/:id/slots', async (req: Request, res: Response, next: NextFunction)
     const { date } = req.query
     const where: Record<string, unknown> = { courtId: req.params.id }
     if (date) where.date = date
+
+    const court = await prisma.court.findUnique({
+      where: { id: req.params.id },
+      select: { club: { select: { timezone: true } } },
+    })
+    const timezone = court?.club.timezone || 'UTC'
 
     const slots = await prisma.timeSlot.findMany({
       where,
@@ -36,9 +42,10 @@ router.get('/:id/slots', async (req: Request, res: Response, next: NextFunction)
           toMinutes(s.startTime),
           toMinutes(s.endTime)
         )
+        const isPast = zonedTimeToUtc(s.date, s.startTime, timezone) <= Date.now()
         return {
           ...s,
-          isAvailable: s.bookings.length === 0 && !underMaintenance,
+          isAvailable: s.bookings.length === 0 && !underMaintenance && !isPast,
           underMaintenance,
           bookings: undefined,
         }

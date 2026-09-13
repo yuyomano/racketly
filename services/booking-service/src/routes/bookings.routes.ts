@@ -178,7 +178,7 @@ router.post('/', async (req: Request, res: Response, next: NextFunction) => {
 
     const slot = await prisma.timeSlot.findUnique({
       where: { id: slotId },
-      include: { court: true },
+      include: { court: { include: { club: true } } },
     })
 
     // Self-o-admin (mismo patrón que POST /:id/book en classes.routes.ts): el propio
@@ -194,6 +194,13 @@ router.post('/', async (req: Request, res: Response, next: NextFunction) => {
       await assertClubAdmin(requestingUserId, slot.court.clubId)
     }
     if (!slot) throw new AppError('Slot no encontrado', 404)
+
+    // Hora de pared del slot interpretada en la zona horaria del club, igual que en el
+    // cancel (ver DELETE /:id) — evita reservar un horario que ya pasó.
+    const slotUtcMs = zonedTimeToUtc(slot.date, slot.startTime, slot.court.club.timezone || 'UTC')
+    if (slotUtcMs <= Date.now()) {
+      throw new AppError('No se puede reservar un horario que ya pasó', 400)
+    }
 
     const blockExpired = slot.blockedExpiresAt && new Date() > slot.blockedExpiresAt
     if (slot.isBlocked && !blockExpired) {

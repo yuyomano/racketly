@@ -1,4 +1,5 @@
 import Link from 'next/link'
+import Image from 'next/image'
 import { redirect } from 'next/navigation'
 import { LogOut } from 'lucide-react'
 import { getTranslations } from 'next-intl/server'
@@ -32,9 +33,7 @@ export default async function AppLayout({ children }: { children: React.ReactNod
     <div className="min-h-screen bg-ink-50">
       <header className="sticky top-0 z-20 h-16 bg-white/80 backdrop-blur-sm border-b border-ink-100 flex items-center justify-between px-4 sm:px-6 gap-3">
         <Link href="/booking" className="flex items-center gap-2.5 shrink-0">
-          <div className="w-8 h-8 rounded-xl bg-court-500 flex items-center justify-center text-base shrink-0">
-            🎾
-          </div>
+          <Image src="/logo-mark.png" alt="" width={32} height={32} className="shrink-0" />
           <span className="font-black text-ink-900 tracking-tight hidden sm:inline">Racketly</span>
         </Link>
 

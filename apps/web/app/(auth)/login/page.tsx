@@ -5,8 +5,8 @@ import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { useTranslations } from 'next-intl'
 import { Mail, Lock, Loader2, AlertCircle } from 'lucide-react'
+import Image from 'next/image'
 import { cn } from '@/lib/utils'
-import { PadelIcon } from '@/components/ui/SportIcons'
 import GoogleProviderWrapper from '../../GoogleProviderWrapper'
 import { GoogleLoginButton } from './GoogleLoginButton'
 
@@ -75,9 +75,7 @@ export default function LoginPage() {
     <div className="min-h-screen bg-background flex items-center justify-center px-4 py-12">
       <div className="w-full max-w-md">
         <div className="text-center mb-8">
-          <div className="w-14 h-14 rounded-2xl bg-court-600 flex items-center justify-center text-white mx-auto">
-            <PadelIcon size={26} />
-          </div>
+          <Image src="/logo-mark.png" alt="" width={56} height={56} className="mx-auto" />
           <h1 className="font-display text-2xl font-black text-ink-900 mt-4 tracking-tight">
             {t('brand')}
           </h1>

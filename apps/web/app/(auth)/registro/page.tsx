@@ -2,6 +2,7 @@
 
 import { useState } from 'react'
 import Link from 'next/link'
+import Image from 'next/image'
 import { useRouter } from 'next/navigation'
 import { useTranslations } from 'next-intl'
 import { Mail, Lock, User, MapPin, ArrowRight, Loader2, AlertCircle } from 'lucide-react'
@@ -53,9 +54,7 @@ export default function RegistroPage() {
 
       <div className="w-full max-w-md relative z-10">
         <div className="text-center mb-8">
-          <div className="w-14 h-14 rounded-2xl bg-court-500 flex items-center justify-center text-2xl mx-auto shadow-lg shadow-court-500/30">
-            🎾
-          </div>
+          <Image src="/logo-mark.png" alt="" width={56} height={56} className="mx-auto" />
           <h1 className="text-2xl font-black text-white mt-4 tracking-tight">{t('brand')}</h1>
           <p className="text-primary-300 text-sm mt-1">{t('subtitle')}</p>
         </div>

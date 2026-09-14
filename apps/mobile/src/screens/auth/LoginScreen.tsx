@@ -1,6 +1,7 @@
-import React, { useState, useEffect } from 'react'
+import React, { useState } from 'react'
 import {
   View,
+  Image,
   TextInput,
   TouchableOpacity,
   StyleSheet,
@@ -13,14 +14,12 @@ import { Text } from '../../components/ui/Text'
 import { useForm, Controller } from 'react-hook-form'
 import { z } from 'zod'
 import { zodResolver } from '@hookform/resolvers/zod'
-import * as WebBrowser from 'expo-web-browser'
-import * as Google from 'expo-auth-session/providers/google'
 import { Ionicons, AntDesign } from '@expo/vector-icons'
 import { authApi } from '../../services/api'
+import { signInWithGoogle } from '../../services/googleAuthConfig'
 import { useAuthStore } from '../../store/auth.store'
-import { colors, radius, spacing, fontSize, shadow } from '../../theme'
-
-WebBrowser.maybeCompleteAuthSession()
+import { colors, radius, spacing, fontSize } from '../../theme'
+import logoIcon from '../../../assets/favicon.png'
 
 const schema = z.object({
   email: z.string().email('Email inválido'),
@@ -41,27 +40,15 @@ export function LoginScreen({ navigation }: { navigation: any }) {
     resolver: zodResolver(schema),
   })
 
-  const [_request, response, promptAsync] = Google.useAuthRequest({
-    clientId: process.env.EXPO_PUBLIC_GOOGLE_CLIENT_ID,
-    androidClientId: process.env.EXPO_PUBLIC_GOOGLE_ANDROID_CLIENT_ID,
-    iosClientId: process.env.EXPO_PUBLIC_GOOGLE_IOS_CLIENT_ID,
-  })
-
-  useEffect(() => {
-    if (response?.type === 'success') {
-      const { authentication } = response
-      if (authentication?.accessToken) handleGoogleLogin(authentication.accessToken)
-    }
-  }, [response])
-
-  const handleGoogleLogin = async (accessToken: string) => {
+  const handleGooglePress = async () => {
     setGoogleLoading(true)
     try {
+      const accessToken = await signInWithGoogle()
       const res = await authApi.googleLogin(accessToken)
       const { user, accessToken: jwt, refreshToken } = res.data.data
       await setAuth(user, jwt, refreshToken)
     } catch (err: any) {
-      Alert.alert('Error', err.response?.data?.error || 'No se pudo iniciar sesión con Google')
+      Alert.alert('Error', err.response?.data?.error || err.message || 'No se pudo iniciar sesión con Google')
     } finally {
       setGoogleLoading(false)
     }
@@ -88,11 +75,7 @@ export function LoginScreen({ navigation }: { navigation: any }) {
       <View style={styles.inner}>
         {/* Logo */}
         <View style={styles.logoContainer}>
-          <View style={styles.logoBadge}>
-            <Text variant="display" style={styles.logoMonogram}>
-              R
-            </Text>
-          </View>
+          <Image source={logoIcon} style={styles.logoImage} />
           <Text variant="display" style={styles.logoText}>
             Racketly
           </Text>
@@ -178,7 +161,7 @@ export function LoginScreen({ navigation }: { navigation: any }) {
           {/* Google button */}
           <TouchableOpacity
             style={[styles.googleBtn, googleLoading && styles.submitBtnDisabled]}
-            onPress={() => promptAsync()}
+            onPress={handleGooglePress}
             disabled={googleLoading}
           >
             {googleLoading ? (
@@ -207,16 +190,7 @@ const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: colors.bg },
   inner: { flex: 1, justifyContent: 'center', paddingHorizontal: spacing['2xl'] },
   logoContainer: { alignItems: 'center', marginBottom: spacing['3xl'] },
-  logoBadge: {
-    width: 64,
-    height: 64,
-    borderRadius: radius.xl,
-    backgroundColor: colors.court600,
-    alignItems: 'center',
-    justifyContent: 'center',
-    ...shadow.md,
-  },
-  logoMonogram: { fontSize: 28, color: colors.white },
+  logoImage: { width: 64, height: 64 },
   logoText: {
     fontSize: fontSize['3xl'],
     fontWeight: '900',

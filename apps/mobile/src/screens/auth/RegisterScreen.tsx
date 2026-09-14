@@ -1,6 +1,7 @@
-import React, { useState, useEffect } from 'react'
+import React, { useState } from 'react'
 import {
   View,
+  Image,
   TextInput,
   TouchableOpacity,
   StyleSheet,
@@ -14,15 +15,13 @@ import { Text } from '../../components/ui/Text'
 import { useForm, Controller } from 'react-hook-form'
 import { z } from 'zod'
 import { zodResolver } from '@hookform/resolvers/zod'
-import * as WebBrowser from 'expo-web-browser'
-import * as Google from 'expo-auth-session/providers/google'
 import { Ionicons, AntDesign } from '@expo/vector-icons'
 import { authApi } from '../../services/api'
+import { signInWithGoogle } from '../../services/googleAuthConfig'
 import { useAuthStore } from '../../store/auth.store'
-import { colors, radius, spacing, fontSize, shadow } from '../../theme'
+import { colors, radius, spacing, fontSize } from '../../theme'
+import logoIcon from '../../../assets/favicon.png'
 import { PadelIcon, PickleballIcon } from '../../components/ui/SportIcons'
-
-WebBrowser.maybeCompleteAuthSession()
 
 const schema = z
   .object({
@@ -61,27 +60,15 @@ export function RegisterScreen({ navigation }: { navigation: any }) {
 
   const selectedSport = watch('sport')
 
-  const [_request, response, promptAsync] = Google.useAuthRequest({
-    clientId: process.env.EXPO_PUBLIC_GOOGLE_CLIENT_ID,
-    androidClientId: process.env.EXPO_PUBLIC_GOOGLE_ANDROID_CLIENT_ID,
-    iosClientId: process.env.EXPO_PUBLIC_GOOGLE_IOS_CLIENT_ID,
-  })
-
-  useEffect(() => {
-    if (response?.type === 'success') {
-      const { authentication } = response
-      if (authentication?.accessToken) handleGoogleRegister(authentication.accessToken)
-    }
-  }, [response])
-
-  const handleGoogleRegister = async (accessToken: string) => {
+  const handleGooglePress = async () => {
     setGoogleLoading(true)
     try {
+      const accessToken = await signInWithGoogle()
       const res = await authApi.googleLogin(accessToken)
       const { user, accessToken: jwt, refreshToken } = res.data.data
       await setAuth(user, jwt, refreshToken)
     } catch (err: any) {
-      Alert.alert('Error', err.response?.data?.error || 'No se pudo registrar con Google')
+      Alert.alert('Error', err.response?.data?.error || err.message || 'No se pudo registrar con Google')
     } finally {
       setGoogleLoading(false)
     }
@@ -117,11 +104,7 @@ export function RegisterScreen({ navigation }: { navigation: any }) {
             <Ionicons name="arrow-back" size={16} color={colors.court300} />
             <Text style={styles.backText}>Volver</Text>
           </TouchableOpacity>
-          <View style={styles.logoBadge}>
-            <Text variant="display" style={styles.logoMonogram}>
-              R
-            </Text>
-          </View>
+          <Image source={logoIcon} style={styles.logoImage} />
           <Text variant="display" style={styles.title}>
             Crea tu cuenta
           </Text>
@@ -133,7 +116,7 @@ export function RegisterScreen({ navigation }: { navigation: any }) {
           {/* Google register */}
           <TouchableOpacity
             style={[styles.googleBtn, googleLoading && { opacity: 0.7 }]}
-            onPress={() => promptAsync()}
+            onPress={handleGooglePress}
             disabled={googleLoading}
           >
             {googleLoading ? (
@@ -326,16 +309,7 @@ const styles = StyleSheet.create({
     marginBottom: spacing.lg,
   },
   backText: { color: colors.ink600, fontSize: fontSize.base },
-  logoBadge: {
-    width: 64,
-    height: 64,
-    borderRadius: radius.xl,
-    backgroundColor: colors.court600,
-    alignItems: 'center',
-    justifyContent: 'center',
-    ...shadow.md,
-  },
-  logoMonogram: { fontSize: 28, color: colors.white },
+  logoImage: { width: 64, height: 64 },
   title: {
     fontSize: fontSize['2xl'],
     fontWeight: '900',

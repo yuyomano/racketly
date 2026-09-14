@@ -7,7 +7,7 @@ import { ClubSelectorClient } from './ClubSelectorClient'
 import { NavLink } from './NavLink'
 import { UserMenuClient } from './UserMenuClient'
 import { LanguageSwitcher } from '@/components/ui/LanguageSwitcher'
-import { PadelIcon } from '@/components/ui/SportIcons'
+import Image from 'next/image'
 import type { NavIconKey } from './NavLink'
 
 // Checkbox oculto + `peer` de Tailwind: abre/cierra el sidebar en mobile sin JS de
@@ -76,9 +76,7 @@ function Sidebar({
       {/* Logo */}
       <div className="px-6 py-6">
         <Link href="/dashboard" className="flex items-center gap-3">
-          <div className="w-9 h-9 rounded-xl bg-court-600 flex items-center justify-center text-white shrink-0">
-            <PadelIcon size={18} />
-          </div>
+          <Image src="/logo-mark.png" alt="" width={36} height={36} className="shrink-0" />
           <div>
             <p className="font-display text-white font-black text-lg leading-none tracking-tight">
               Racketly

@@ -1,6 +1,6 @@
 import Link from 'next/link'
+import Image from 'next/image'
 import { Calendar, Trophy, Radio, Users, GraduationCap, UserPlus } from 'lucide-react'
-import { PadelIcon } from '@/components/ui/SportIcons'
 
 export default function LandingPage() {
   return (
@@ -8,7 +8,7 @@ export default function LandingPage() {
       {/* Nav */}
       <nav className="flex items-center justify-between px-6 py-5 max-w-6xl mx-auto">
         <div className="flex items-center gap-2 text-ink-900">
-          <PadelIcon size={22} />
+          <Image src="/logo-mark.png" alt="" width={28} height={28} />
           <span className="font-display text-xl font-black tracking-tight">Racketly</span>
         </div>
         <div className="flex items-center gap-6">

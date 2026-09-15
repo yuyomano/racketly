@@ -24,12 +24,32 @@
       "confirmedTitle": "¡Reserva confirmada!",
       "viewMyBookings": "Ver mis reservas",
       "bookAnother": "Reservar otra",
+      "qrHint": "Muestra este código QR en la entrada del club",
+      "addToCalendar": "Agregar al calendario",
       "noActiveCourts": "Este club no tiene pistas activas",
       "noSlots": "Sin horarios generados para este día.",
       "confirmBooking": "Confirmar reserva",
       "bookingConfirmedToast": "Reserva confirmada",
       "fetchAvailabilityError": "Error al cargar disponibilidad",
-      "bookError": "No se pudo reservar"
+      "bookError": "No se pudo reservar",
+      "priceFree": "Gratis",
+      "priceCoveredMembership": "Incluido en tu membresía",
+      "priceCoveredCredit": "Cubierto con tu crédito",
+      "cancellationFlexible": "Cancelación flexible: reembolso hasta 24h antes",
+      "cancellationModerate": "Cancelación moderada: reembolso hasta 48h antes",
+      "cancellationStrict": "Cancelación estricta: sin reembolso",
+      "rosterTitle": "Jugadores ({count}/{capacity})",
+      "rosterMissing": "Faltan {count, plural, one {# jugador} other {# jugadores}} para completar la reserva ({capacity} en total). No necesitan pagar ahora, pero deben estar agregados.",
+      "ownerLabel": "Tú",
+      "rosterFull": "Cupo completo ({capacity}/{capacity})",
+      "addPlayerButton": "Agregar jugador",
+      "removePlayerLabel": "Quitar",
+      "addPlayerModalTitle": "Agregar jugador",
+      "playerSearchPlaceholder": "Buscar por nombre o email…",
+      "playerSearchHint": "Escribe al menos 2 letras para buscar",
+      "playerSearchEmpty": "Sin resultados",
+      "playerSearching": "Buscando…",
+      "confirmMissingPlayers": "Faltan {count, plural, one {# jugador} other {# jugadores}}"
     },
     "mine": {
       "backToClubs": "Volver a clubes",
@@ -48,7 +68,11 @@
       "cancelButton": "Cancelar",
       "cancelledToast": "Reserva cancelada",
       "fetchError": "Error al cargar tus reservas",
-      "cancelError": "No se pudo cancelar"
+      "cancelError": "No se pudo cancelar",
+      "qrButton": "Ver QR",
+      "qrModalTitle": "Código QR de entrada",
+      "qrModalHint": "Muestra este código QR en la entrada del club",
+      "withPlayers": "Con: {names}"
     }
   }
 }

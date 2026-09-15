@@ -24,12 +24,32 @@
       "confirmedTitle": "Booking confirmed!",
       "viewMyBookings": "View my bookings",
       "bookAnother": "Book another",
+      "qrHint": "Show this QR code at the club entrance",
+      "addToCalendar": "Add to calendar",
       "noActiveCourts": "This club has no active courts",
       "noSlots": "No time slots generated for this day.",
       "confirmBooking": "Confirm booking",
       "bookingConfirmedToast": "Booking confirmed",
       "fetchAvailabilityError": "Error loading availability",
-      "bookError": "Couldn't complete the booking"
+      "bookError": "Couldn't complete the booking",
+      "priceFree": "Free",
+      "priceCoveredMembership": "Included in your membership",
+      "priceCoveredCredit": "Covered by your credit",
+      "cancellationFlexible": "Flexible cancellation: refund up to 24h before",
+      "cancellationModerate": "Moderate cancellation: refund up to 48h before",
+      "cancellationStrict": "Strict cancellation: no refund",
+      "rosterTitle": "Players ({count}/{capacity})",
+      "rosterMissing": "{count, plural, one {# player is} other {# players are}} missing to complete the booking ({capacity} total). They don't need to pay now, but must be added.",
+      "ownerLabel": "You",
+      "rosterFull": "Roster full ({capacity}/{capacity})",
+      "addPlayerButton": "Add player",
+      "removePlayerLabel": "Remove",
+      "addPlayerModalTitle": "Add player",
+      "playerSearchPlaceholder": "Search by name or email…",
+      "playerSearchHint": "Type at least 2 letters to search",
+      "playerSearchEmpty": "No results",
+      "playerSearching": "Searching…",
+      "confirmMissingPlayers": "{count, plural, one {# player} other {# players}} missing"
     },
     "mine": {
       "backToClubs": "Back to clubs",
@@ -48,7 +68,11 @@
       "cancelButton": "Cancel",
       "cancelledToast": "Booking cancelled",
       "fetchError": "Error loading your bookings",
-      "cancelError": "Couldn't cancel the booking"
+      "cancelError": "Couldn't cancel the booking",
+      "qrButton": "View QR",
+      "qrModalTitle": "Entry QR code",
+      "qrModalHint": "Show this QR code at the club entrance",
+      "withPlayers": "With: {names}"
     }
   }
 }

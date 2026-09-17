@@ -6,24 +6,28 @@
   "types": "./dist/index.d.ts",
   "exports": {
     ".": {
+      "types": "./dist/index.d.ts",
       "import": "./dist/index.js",
       "require": "./dist/index.js",
-      "types": "./dist/index.d.ts"
+      "default": "./dist/index.js"
     },
     "./pii-crypto": {
+      "types": "./dist/pii-crypto.d.ts",
       "import": "./dist/pii-crypto.js",
       "require": "./dist/pii-crypto.js",
-      "types": "./dist/pii-crypto.d.ts"
+      "default": "./dist/pii-crypto.js"
     },
     "./observability": {
+      "types": "./dist/observability.d.ts",
       "import": "./dist/observability.js",
       "require": "./dist/observability.js",
-      "types": "./dist/observability.d.ts"
+      "default": "./dist/observability.js"
     },
     "./prisma-adapter": {
+      "types": "./dist/prisma-adapter.d.ts",
       "import": "./dist/prisma-adapter.js",
       "require": "./dist/prisma-adapter.js",
-      "types": "./dist/prisma-adapter.d.ts"
+      "default": "./dist/prisma-adapter.js"
     }
   },
   "typesVersions": {

@@ -48,6 +48,7 @@ export const authApi = {
   register: (data: object) => api.post('/api/auth/register', data),
   login: (email: string, password: string) => api.post('/api/auth/login', { email, password }),
   googleLogin: (accessToken: string) => api.post('/api/auth/google', { accessToken }),
+  forgotPassword: (email: string) => api.post('/api/auth/forgot-password', { email }),
   me: () => api.get('/api/auth/me'),
   logout: (refreshToken?: string) => api.post('/api/auth/logout', { refreshToken }),
   updatePushToken: (pushToken: string) => api.patch('/api/auth/me', { pushToken }),

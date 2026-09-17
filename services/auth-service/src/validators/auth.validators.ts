@@ -29,6 +29,23 @@ export const refreshSchema = z.object({
   }),
 })
 
+export const forgotPasswordSchema = z.object({
+  body: z.object({
+    email: z.string().email('Email inválido'),
+  }),
+})
+
+export const resetPasswordSchema = z.object({
+  body: z.object({
+    token: z.string().min(1, 'Token requerido'),
+    password: z
+      .string()
+      .min(8, 'La contraseña debe tener al menos 8 caracteres')
+      .regex(/[A-Z]/, 'Debe contener al menos una mayúscula')
+      .regex(/[0-9]/, 'Debe contener al menos un número'),
+  }),
+})
+
 export const updateProfileSchema = z.object({
   body: z.object({
     displayName: z.string().min(2).max(50).optional(),

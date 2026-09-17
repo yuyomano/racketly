@@ -1,5 +1,5 @@
 import jwt from 'jsonwebtoken'
-import { createHash, randomUUID } from 'crypto'
+import { createHash, randomBytes, randomUUID } from 'crypto'
 import { PrismaClient } from '@prisma/client'
 import { createPgAdapter } from '@racketly/utils/prisma-adapter'
 
@@ -102,4 +102,39 @@ export async function revokeAllUserRefreshTokens(userId: string): Promise<void> 
     where: { userId, revokedAt: null },
     data: { revokedAt: new Date() },
   })
+}
+
+const PASSWORD_RESET_TOKEN_TTL_MS = 60 * 60 * 1000 // 1 hora
+
+// Token aleatorio de alta entropía (no JWT — no necesita ser autocontenido, solo
+// impredecible). Igual que con refresh tokens, solo se persiste el hash.
+export async function issuePasswordResetToken(userId: string): Promise<string> {
+  const token = randomBytes(32).toString('hex')
+  await prisma.passwordResetToken.create({
+    data: {
+      userId,
+      tokenHash: hashToken(token),
+      expiresAt: new Date(Date.now() + PASSWORD_RESET_TOKEN_TTL_MS),
+    },
+  })
+  return token
+}
+
+// Valida el token (vigente, no usado) y lo marca como usado atómicamente para que
+// no pueda reutilizarse — incluso si dos requests llegan casi al mismo tiempo, solo
+// una gana la actualización porque el where exige usedAt: null.
+export async function consumePasswordResetToken(token: string): Promise<string> {
+  const tokenHash = hashToken(token)
+  const stored = await prisma.passwordResetToken.findUnique({ where: { tokenHash } })
+  if (!stored || stored.usedAt || stored.expiresAt < new Date()) {
+    throw new Error('Token inválido o expirado')
+  }
+
+  const { count } = await prisma.passwordResetToken.updateMany({
+    where: { id: stored.id, usedAt: null },
+    data: { usedAt: new Date() },
+  })
+  if (count === 0) throw new Error('Token inválido o expirado')
+
+  return stored.userId
 }

@@ -140,6 +140,15 @@ export function LoginScreen({ navigation }: { navigation: any }) {
           />
 
           <TouchableOpacity
+            onPress={() => navigation.navigate('ForgotPassword')}
+            style={{ alignSelf: 'flex-end' }}
+          >
+            <Text style={{ color: colors.court600, fontSize: 13, fontWeight: '600' }}>
+              ¿Olvidaste tu contraseña?
+            </Text>
+          </TouchableOpacity>
+
+          <TouchableOpacity
             style={[styles.submitBtn, isLoading && styles.submitBtnDisabled]}
             onPress={handleSubmit(onSubmit)}
             disabled={isLoading}

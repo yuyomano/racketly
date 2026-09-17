@@ -12,10 +12,20 @@ import {
   generateTokenPair,
   verifyAndRotateRefreshToken,
   revokeRefreshToken,
+  revokeAllUserRefreshTokens,
+  issuePasswordResetToken,
+  consumePasswordResetToken,
 } from '../services/token.service'
 import { authenticate } from '../middleware/auth.middleware'
 import { AppError } from '../middleware/error.middleware'
-import { validate, registerSchema, loginSchema, refreshSchema } from '../validators/auth.validators'
+import {
+  validate,
+  registerSchema,
+  loginSchema,
+  refreshSchema,
+  forgotPasswordSchema,
+  resetPasswordSchema,
+} from '../validators/auth.validators'
 import { INITIAL_ELO } from '@racketly/utils'
 import { encryptPII, decryptPII } from '@racketly/utils/pii-crypto'
 
@@ -27,6 +37,16 @@ const prisma = new PrismaClient({ adapter: createPgAdapter() })
 const authLimiter = rateLimit({
   windowMs: 15 * 60 * 1000,
   max: 10,
+  standardHeaders: true,
+  legacyHeaders: false,
+  message: { success: false, error: 'Demasiados intentos. Intenta más tarde.' },
+})
+
+// El de forgot-password es más estricto — abusarlo significa bombardear de emails
+// la bandeja de otra persona, no solo probar contraseñas propias.
+const forgotPasswordLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000,
+  max: 5,
   standardHeaders: true,
   legacyHeaders: false,
   message: { success: false, error: 'Demasiados intentos. Intenta más tarde.' },
@@ -317,6 +337,101 @@ router.post(
       return res.json({ success: true, data: tokens })
     } catch {
       return next(new AppError('Refresh token inválido o expirado', 401))
+    }
+  }
+)
+
+// POST /api/auth/forgot-password — siempre responde igual, exista o no el email,
+// para no revelar qué correos están registrados.
+router.post(
+  '/forgot-password',
+  forgotPasswordLimiter,
+  validate(forgotPasswordSchema),
+  async (req: Request, res: Response, next: NextFunction) => {
+    try {
+      const { email } = req.body
+      const genericResponse = {
+        success: true,
+        message: 'Si el email está registrado, te enviamos un link para restablecer tu contraseña.',
+      }
+
+      const user = await prisma.user.findUnique({ where: { email } })
+      if (!user || !user.passwordHash) {
+        // Sin cuenta, o cuenta solo-Google (no tiene contraseña que resetear) — misma respuesta.
+        return res.json(genericResponse)
+      }
+
+      const token = await issuePasswordResetToken(user.id)
+      const resetLink = `${WEB_URL}/reset-password?token=${token}`
+
+      try {
+        await axios.post(
+          `${NOTIFICATION_SERVICE_URL}/api/notifications/email`,
+          {
+            to: user.email,
+            subject: 'Restablecer tu contraseña de Racketly',
+            html: `<p>Recibimos una solicitud para restablecer tu contraseña.</p><p><a href="${resetLink}">${resetLink}</a></p><p>Este link expira en 1 hora. Si no fuiste tú, ignora este correo.</p>`,
+          },
+          { timeout: 3000 }
+        )
+      } catch {
+        /* best-effort — no delatamos al usuario si el envío falla */
+      }
+
+      return res.json(genericResponse)
+    } catch (err) {
+      return next(err)
+    }
+  }
+)
+
+// POST /api/auth/reset-password
+router.post(
+  '/reset-password',
+  authLimiter,
+  validate(resetPasswordSchema),
+  async (req: Request, res: Response, next: NextFunction) => {
+    try {
+      const { token, password } = req.body
+
+      let userId: string
+      try {
+        userId = await consumePasswordResetToken(token)
+      } catch {
+        throw new AppError('Este link es inválido o ya expiró', 400)
+      }
+
+      const passwordHash = await bcrypt.hash(password, 12)
+      const user = await prisma.user.update({
+        where: { id: userId },
+        data: { passwordHash },
+        include: { playerProfile: true },
+      })
+
+      // Cambiar la contraseña cierra todas las sesiones activas — si alguien más
+      // tenía acceso con la contraseña vieja, este es el momento de cortarlo.
+      await revokeAllUserRefreshTokens(userId)
+
+      const tokens = await generateTokenPair({
+        userId: user.id,
+        email: user.email,
+        subscriptionTier: user.subscriptionTier,
+      })
+
+      return res.json({
+        success: true,
+        data: {
+          user: {
+            id: user.id,
+            email: user.email,
+            subscriptionTier: user.subscriptionTier,
+            profile: user.playerProfile,
+          },
+          ...tokens,
+        },
+      })
+    } catch (err) {
+      return next(err)
     }
   }
 )

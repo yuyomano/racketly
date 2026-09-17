@@ -238,6 +238,7 @@ model User {
   classBookings             ClassBooking[]
   professorProfiles         ClubProfessor[]
   refreshTokens             RefreshToken[]
+  passwordResetTokens       PasswordResetToken[]
   instructorSessionBookings InstructorSessionBooking[]
 
   @@map("users")
@@ -257,6 +258,22 @@ model RefreshToken {
 
   @@index([userId])
   @@map("refresh_tokens")
+}
+
+// Tokens de "olvidé mi contraseña". Igual que RefreshToken, nunca se guarda el token
+// crudo — solo su hash — para que un dump de la base no permita resetear cuentas.
+model PasswordResetToken {
+  id        String    @id @default(cuid())
+  userId    String
+  tokenHash String    @unique
+  expiresAt DateTime
+  usedAt    DateTime?
+  createdAt DateTime  @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@map("password_reset_tokens")
 }
 
 model PlayerProfile {

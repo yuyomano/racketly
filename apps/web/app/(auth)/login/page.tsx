@@ -167,6 +167,14 @@ export default function LoginPage() {
                   className="w-full border border-ink-200 rounded-xl pl-10 pr-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-court-500/40 focus:border-court-400 transition-all"
                 />
               </div>
+              <div className="text-right mt-1.5">
+                <Link
+                  href="/forgot-password"
+                  className="text-xs font-semibold text-court-600 hover:text-court-700"
+                >
+                  {t('forgotPasswordLink')}
+                </Link>
+              </div>
             </div>
 
             <button

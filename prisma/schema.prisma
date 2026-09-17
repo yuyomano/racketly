@@ -22,6 +22,11 @@ enum Sport {
   both
 }
 
+enum PlayerSide {
+  derecha
+  reves
+}
+
 enum SubscriptionTier {
   free
   amateur
@@ -277,20 +282,24 @@ model PasswordResetToken {
 }
 
 model PlayerProfile {
-  userId        String         @id
-  displayName   String
-  avatarUrl     String?
-  bio           String?
-  sport         Sport          @default(padel)
-  country       String
-  city          String
-  latitude      Float?
-  longitude     Float?
-  eloPadel      Int            @default(1000)
-  eloPickleball Int            @default(1000)
-  category      PlayerCategory @default(C4)
-  xpPoints      Int            @default(0)
-  level         Int            @default(1)
+  userId          String         @id
+  displayName     String
+  avatarUrl       String?
+  bio             String?
+  sport           Sport          @default(padel)
+  country         String
+  city            String
+  latitude        Float?
+  longitude       Float?
+  plusCode        String? // Plus Code (Open Location Code) — derivado de lat/long o ingresado a mano
+  preferredSide   PlayerSide?
+  instagramHandle String?
+  whatsapp        String?
+  eloPadel        Int            @default(1000)
+  eloPickleball   Int            @default(1000)
+  category        PlayerCategory @default(C4)
+  xpPoints        Int            @default(0)
+  level           Int            @default(1)
 
   user                   User                    @relation(fields: [userId], references: [id], onDelete: Cascade)
   eloHistory             EloHistory[]
@@ -341,6 +350,7 @@ model Club {
   address                     String
   latitude                    Float
   longitude                   Float
+  plusCode                    String? // Plus Code (Open Location Code) — derivado de lat/long o ingresado a mano
   photos                      String[]           @default([])
   subscriptionTier            SubscriptionTier   @default(club_starter)
   verified                    Boolean            @default(false)

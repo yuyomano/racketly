@@ -8,6 +8,7 @@ import { AppError } from '../middleware/error.middleware'
 import { requireClubAccess, requireClubOwner } from '../middleware/club-auth.middleware'
 import { distanceKm, zonedTimeToUtc } from '@racketly/utils'
 import { decryptPII } from '@racketly/utils/pii-crypto'
+import { encodePlusCode, decodePlusCode } from '@racketly/utils/plus-code'
 import { generateSlotsForClub, resyncFutureSlotsForClub } from '../services/slot.service'
 import { ensureCurrencyTracked } from '../services/exchange-rate-sync.service'
 import { toMinutes } from '../services/schedule-conflict.service'
@@ -154,6 +155,7 @@ router.post('/', async (req: Request, res: Response, next: NextFunction) => {
       address,
       latitude,
       longitude,
+      plusCode,
       photos,
       sports,
       amenities,
@@ -178,6 +180,22 @@ router.post('/', async (req: Request, res: Response, next: NextFunction) => {
       throw new AppError('slotGenerationHour debe estar entre 0 y 23', 400)
     }
 
+    // Ubicación: un Plus Code entrante manda sobre lat/long (se decodifica), y si en
+    // cambio llegan lat/long sin Plus Code, se deriva uno para poder compartir la
+    // ubicación como código corto (mismo criterio que en el perfil de jugador).
+    let finalLat = Number(latitude ?? 0)
+    let finalLng = Number(longitude ?? 0)
+    let finalPlusCode: string | null = null
+    if (plusCode) {
+      const decoded = decodePlusCode(plusCode)
+      if (!decoded) throw new AppError('Plus Code inválido', 400)
+      finalLat = decoded.latitude
+      finalLng = decoded.longitude
+      finalPlusCode = plusCode.trim().toUpperCase()
+    } else if (latitude !== undefined && longitude !== undefined) {
+      finalPlusCode = encodePlusCode(finalLat, finalLng)
+    }
+
     const { v4: uuidv4 } = await import('uuid')
     const clubId = uuidv4()
 
@@ -191,8 +209,9 @@ router.post('/', async (req: Request, res: Response, next: NextFunction) => {
           country,
           city: city.trim(),
           address: address.trim(),
-          latitude: Number(latitude ?? 0),
-          longitude: Number(longitude ?? 0),
+          latitude: finalLat,
+          longitude: finalLng,
+          plusCode: finalPlusCode,
           photos: Array.isArray(photos) ? photos.filter(Boolean) : [],
           sports: Array.isArray(sports) ? sports : ['padel'],
           amenities: Array.isArray(amenities) ? amenities : [],
@@ -1011,6 +1030,9 @@ router.put('/:id', requireClubAccess, async (req: Request, res: Response, next: 
       description,
       city,
       address,
+      latitude,
+      longitude,
+      plusCode,
       sports,
       amenities,
       contactEmail,
@@ -1032,6 +1054,25 @@ router.put('/:id', requireClubAccess, async (req: Request, res: Response, next: 
       data.description = description ? String(description).trim() : null
     if (city !== undefined) data.city = String(city).trim()
     if (address !== undefined) data.address = String(address).trim()
+
+    // Ubicación: mismo criterio que en POST / y en el perfil de jugador — un Plus Code
+    // manda sobre lat/long (se decodifica), y lat/long sin Plus Code deriva uno.
+    if (plusCode !== undefined) {
+      if (plusCode === null) {
+        data.plusCode = null
+      } else {
+        const decoded = decodePlusCode(plusCode)
+        if (!decoded) throw new AppError('Plus Code inválido', 400)
+        data.plusCode = plusCode.trim().toUpperCase()
+        data.latitude = decoded.latitude
+        data.longitude = decoded.longitude
+      }
+    } else if (latitude !== undefined && longitude !== undefined) {
+      data.latitude = Number(latitude)
+      data.longitude = Number(longitude)
+      data.plusCode = encodePlusCode(Number(latitude), Number(longitude))
+    }
+
     if (Array.isArray(sports)) data.sports = sports
     if (Array.isArray(amenities)) data.amenities = amenities
     if (contactEmail !== undefined)

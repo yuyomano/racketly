@@ -20,8 +20,18 @@
       "countryLabel": "Country",
       "cityLabel": "City",
       "sportLabel": "Sport",
+      "preferredSideLabel": "Playing side",
+      "instagramLabel": "Instagram",
+      "whatsappLabel": "WhatsApp",
+      "plusCodeLabel": "Location (Plus Code)",
+      "changePhoto": "Change photo",
       "cancel": "Cancel",
       "save": "Save"
+    },
+    "preferredSide": {
+      "none": "Not set",
+      "derecha": "Right",
+      "reves": "Left"
     },
     "countries": {
       "DO": "Dominican Republic",

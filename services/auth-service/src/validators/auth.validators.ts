@@ -54,6 +54,12 @@ export const updateProfileSchema = z.object({
     country: z.string().length(2).optional(),
     sport: z.enum(['padel', 'pickleball', 'both']).optional(),
     avatarUrl: z.string().url().optional(),
+    preferredSide: z.enum(['derecha', 'reves']).nullable().optional(),
+    instagramHandle: z.string().max(30).nullable().optional(),
+    whatsapp: z.string().max(30).nullable().optional(),
+    latitude: z.number().min(-90).max(90).optional(),
+    longitude: z.number().min(-180).max(180).optional(),
+    plusCode: z.string().max(20).nullable().optional(),
   }),
 })
 

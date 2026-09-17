@@ -52,6 +52,8 @@ export const authApi = {
   me: () => api.get('/api/auth/me'),
   logout: (refreshToken?: string) => api.post('/api/auth/logout', { refreshToken }),
   updatePushToken: (pushToken: string) => api.patch('/api/auth/me', { pushToken }),
+  updateAccount: (data: { phone?: string | null; birthDate?: string | null }) =>
+    api.patch('/api/auth/me', data),
 }
 
 export const profileApi = {
@@ -64,7 +66,15 @@ export const profileApi = {
     sport?: 'padel' | 'pickleball' | 'both'
     avatarUrl?: string
     bio?: string
+    preferredSide?: 'derecha' | 'reves' | null
+    instagramHandle?: string | null
+    whatsapp?: string | null
+    plusCode?: string | null
   }) => api.put('/api/profile', data),
+  uploadAvatar: (formData: FormData) =>
+    api.post('/api/profile/avatar', formData, {
+      headers: { 'Content-Type': 'multipart/form-data' },
+    }),
 }
 
 export const clubsApi = {

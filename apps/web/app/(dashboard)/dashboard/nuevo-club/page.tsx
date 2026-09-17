@@ -113,6 +113,7 @@ export default function NuevoClubPage() {
     address: '',
     latitude: '',
     longitude: '',
+    plusCode: '',
     sports: ['padel'] as string[],
     amenities: [] as string[],
     contactEmail: '',
@@ -201,6 +202,7 @@ export default function NuevoClubPage() {
         photos: form.photos.filter(Boolean),
         latitude: form.latitude ? Number(form.latitude) : 0,
         longitude: form.longitude ? Number(form.longitude) : 0,
+        plusCode: form.plusCode.trim() || undefined,
         bookingHorizonDays: Number(form.bookingHorizonDays),
         slotGenerationHour: Number(form.slotGenerationHour),
       }
@@ -319,6 +321,14 @@ export default function NuevoClubPage() {
             )}
             {locating ? t('locating') : t('useMyLocation')}
           </button>
+          <Field label={t('plusCode')} hint={t('plusCodeHint')}>
+            <Input
+              value={form.plusCode}
+              onChange={(e) => setForm({ ...form, plusCode: e.target.value })}
+              placeholder={t('plusCodePlaceholder')}
+              className="uppercase"
+            />
+          </Field>
         </Section>
 
         {/* ── Deportes ── */}

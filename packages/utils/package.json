@@ -28,6 +28,18 @@
       "import": "./dist/prisma-adapter.js",
       "require": "./dist/prisma-adapter.js",
       "default": "./dist/prisma-adapter.js"
+    },
+    "./s3-media": {
+      "types": "./dist/s3-media.d.ts",
+      "import": "./dist/s3-media.js",
+      "require": "./dist/s3-media.js",
+      "default": "./dist/s3-media.js"
+    },
+    "./plus-code": {
+      "types": "./dist/plus-code.d.ts",
+      "import": "./dist/plus-code.js",
+      "require": "./dist/plus-code.js",
+      "default": "./dist/plus-code.js"
     }
   },
   "typesVersions": {
@@ -40,6 +52,12 @@
       ],
       "prisma-adapter": [
         "./dist/prisma-adapter.d.ts"
+      ],
+      "s3-media": [
+        "./dist/s3-media.d.ts"
+      ],
+      "plus-code": [
+        "./dist/plus-code.d.ts"
       ]
     }
   },
@@ -51,9 +69,11 @@
     "test": "vitest run"
   },
   "dependencies": {
+    "@aws-sdk/client-s3": "^3.0.0",
     "@prisma/adapter-pg": "^7.10.0",
     "@racketly/shared-types": "*",
-    "@sentry/node": "^10.73.0"
+    "@sentry/node": "^10.73.0",
+    "open-location-code": "^1.0.3"
   },
   "devDependencies": {
     "typescript": "*",

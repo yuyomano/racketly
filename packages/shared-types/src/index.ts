@@ -169,10 +169,13 @@ export interface User {
   id: string
   email: string
   phone?: string
+  birthDate?: string
   subscriptionTier: SubscriptionTier
   createdAt: string
   updatedAt: string
 }
+
+export type PlayerSide = 'derecha' | 'reves'
 
 export interface PlayerProfile {
   userId: string
@@ -183,6 +186,10 @@ export interface PlayerProfile {
   country: string
   city: string
   location?: GeoLocation
+  plusCode?: string
+  preferredSide?: PlayerSide
+  instagramHandle?: string
+  whatsapp?: string
   eloPadel: number
   eloPickleball: number
   category: PlayerCategory

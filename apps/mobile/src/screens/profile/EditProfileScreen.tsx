@@ -9,15 +9,25 @@ import {
   Alert,
   KeyboardAvoidingView,
   Platform,
+  Image,
 } from 'react-native'
+import * as ImagePicker from 'expo-image-picker'
 import { Text } from '../../components/ui/Text'
 import { useMutation, useQueryClient } from '@tanstack/react-query'
 import { Ionicons } from '@expo/vector-icons'
 import { useAuthStore } from '../../store/auth.store'
-import { profileApi } from '../../services/api'
+import { profileApi, authApi } from '../../services/api'
 import { BackButton } from '../../components/ui/BackButton'
 import { PadelIcon, PickleballIcon } from '../../components/ui/SportIcons'
 import { colors } from '../../theme'
+
+type PreferredSide = 'derecha' | 'reves' | ''
+
+const SIDE_OPTIONS: { value: PreferredSide; label: string }[] = [
+  { value: '', label: 'Sin definir' },
+  { value: 'derecha', label: 'Derecha' },
+  { value: 'reves', label: 'Revés' },
+]
 
 type Sport = 'padel' | 'pickleball' | 'both'
 
@@ -48,9 +58,35 @@ export function EditProfileScreen({ navigation }: { navigation: any }) {
   const [country, setCountry] = useState(profile?.country ?? 'CO')
   const [sport, setSport] = useState<Sport>((profile?.sport as Sport) ?? 'padel')
   const [showCountryPicker, setShowCountryPicker] = useState(false)
+  const [preferredSide, setPreferredSide] = useState<PreferredSide>(
+    (profile?.preferredSide as PreferredSide) ?? ''
+  )
+  const [instagramHandle, setInstagramHandle] = useState(profile?.instagramHandle ?? '')
+  const [whatsapp, setWhatsapp] = useState(profile?.whatsapp ?? '')
+  const [plusCode, setPlusCode] = useState(profile?.plusCode ?? '')
+  const [phone, setPhone] = useState(user?.phone ?? '')
+  const [birthDate, setBirthDate] = useState(user?.birthDate ?? '')
+  const [avatarUri, setAvatarUri] = useState<string | null>(null)
+  const [uploadingAvatar, setUploadingAvatar] = useState(false)
 
   const mutation = useMutation({
-    mutationFn: () => profileApi.updateProfile({ displayName, bio, city, country, sport }),
+    mutationFn: async () => {
+      const [profileRes] = await Promise.all([
+        profileApi.updateProfile({
+          displayName,
+          bio,
+          city,
+          country,
+          sport,
+          preferredSide: preferredSide || null,
+          instagramHandle: instagramHandle || null,
+          whatsapp: whatsapp || null,
+          plusCode: plusCode || null,
+        }),
+        authApi.updateAccount({ phone: phone || null, birthDate: birthDate || null }),
+      ])
+      return profileRes
+    },
     onSuccess: (res) => {
       // Actualiza el store con los nuevos datos del perfil
       updateProfile(res.data.data)
@@ -63,6 +99,40 @@ export function EditProfileScreen({ navigation }: { navigation: any }) {
       Alert.alert('Error', e.response?.data?.error || 'No se pudo actualizar el perfil.')
     },
   })
+
+  async function handlePickAvatar() {
+    const perm = await ImagePicker.requestMediaLibraryPermissionsAsync()
+    if (!perm.granted) {
+      Alert.alert('Permiso requerido', 'Necesitamos acceso a tus fotos para subir el avatar.')
+      return
+    }
+    const result = await ImagePicker.launchImageLibraryAsync({
+      mediaTypes: ['images'],
+      allowsEditing: true,
+      aspect: [1, 1],
+      quality: 0.8,
+    })
+    if (result.canceled) return
+
+    const asset = result.assets[0]
+    setAvatarUri(asset.uri)
+    setUploadingAvatar(true)
+    try {
+      const formData = new FormData()
+      formData.append('file', {
+        uri: asset.uri,
+        name: asset.fileName ?? 'avatar.jpg',
+        type: asset.mimeType ?? 'image/jpeg',
+      } as any)
+      const res = await profileApi.uploadAvatar(formData)
+      updateProfile(res.data.data)
+      qc.invalidateQueries({ queryKey: ['profile'] })
+    } catch (e: any) {
+      Alert.alert('Error', e.response?.data?.error || 'No se pudo subir la foto.')
+    } finally {
+      setUploadingAvatar(false)
+    }
+  }
 
   function handleSave() {
     if (displayName.trim().length < 2) {
@@ -103,12 +173,31 @@ export function EditProfileScreen({ navigation }: { navigation: any }) {
           </TouchableOpacity>
         </View>
 
-        {/* Avatar placeholder */}
+        {/* Avatar */}
         <View style={styles.avatarSection}>
-          <View style={styles.avatarCircle}>
-            <Ionicons name="person" size={36} color={colors.white} />
-          </View>
-          <Text style={styles.avatarHint}>Próximamente: subir foto</Text>
+          <TouchableOpacity
+            style={styles.avatarCircle}
+            onPress={handlePickAvatar}
+            disabled={uploadingAvatar}
+          >
+            {avatarUri || profile?.avatarUrl ? (
+              <Image
+                source={{ uri: avatarUri ?? profile?.avatarUrl }}
+                style={styles.avatarImage}
+              />
+            ) : (
+              <Ionicons name="person" size={36} color={colors.white} />
+            )}
+            {uploadingAvatar && (
+              <View style={styles.avatarOverlay}>
+                <ActivityIndicator size="small" color={colors.white} />
+              </View>
+            )}
+            <View style={styles.avatarEditBadge}>
+              <Ionicons name="camera" size={14} color={colors.white} />
+            </View>
+          </TouchableOpacity>
+          <Text style={styles.avatarHint}>Toca para cambiar tu foto</Text>
         </View>
 
         {/* Form */}
@@ -228,6 +317,93 @@ export function EditProfileScreen({ navigation }: { navigation: any }) {
               ))}
             </View>
           </View>
+
+          {/* Lado de juego */}
+          <View style={styles.field}>
+            <Text style={styles.label}>Lado de juego</Text>
+            <View style={styles.sportRow}>
+              {SIDE_OPTIONS.map((s) => (
+                <TouchableOpacity
+                  key={s.value || 'none'}
+                  style={[styles.sideBtn, preferredSide === s.value && styles.sportBtnActive]}
+                  onPress={() => setPreferredSide(s.value)}
+                >
+                  <Text
+                    style={[
+                      styles.sportLabel,
+                      preferredSide === s.value && styles.sportLabelActive,
+                    ]}
+                  >
+                    {s.label}
+                  </Text>
+                </TouchableOpacity>
+              ))}
+            </View>
+          </View>
+
+          {/* Celular */}
+          <View style={styles.field}>
+            <Text style={styles.label}>Celular</Text>
+            <TextInput
+              style={styles.input}
+              value={phone}
+              onChangeText={setPhone}
+              placeholder="+1 809 555 0000"
+              placeholderTextColor={colors.ink400}
+              keyboardType="phone-pad"
+            />
+          </View>
+
+          {/* Fecha de nacimiento */}
+          <View style={styles.field}>
+            <Text style={styles.label}>Fecha de nacimiento</Text>
+            <TextInput
+              style={styles.input}
+              value={birthDate}
+              onChangeText={setBirthDate}
+              placeholder="AAAA-MM-DD"
+              placeholderTextColor={colors.ink400}
+            />
+          </View>
+
+          {/* Instagram */}
+          <View style={styles.field}>
+            <Text style={styles.label}>Instagram</Text>
+            <TextInput
+              style={styles.input}
+              value={instagramHandle}
+              onChangeText={setInstagramHandle}
+              placeholder="@usuario"
+              placeholderTextColor={colors.ink400}
+              autoCapitalize="none"
+            />
+          </View>
+
+          {/* WhatsApp */}
+          <View style={styles.field}>
+            <Text style={styles.label}>WhatsApp</Text>
+            <TextInput
+              style={styles.input}
+              value={whatsapp}
+              onChangeText={setWhatsapp}
+              placeholder="+1 809 555 0000"
+              placeholderTextColor={colors.ink400}
+              keyboardType="phone-pad"
+            />
+          </View>
+
+          {/* Ubicación (Plus Code) */}
+          <View style={styles.field}>
+            <Text style={styles.label}>Ubicación (Plus Code)</Text>
+            <TextInput
+              style={styles.input}
+              value={plusCode}
+              onChangeText={setPlusCode}
+              placeholder="796RWF8Q+WF"
+              placeholderTextColor={colors.ink400}
+              autoCapitalize="characters"
+            />
+          </View>
         </View>
 
         {/* ELO info (solo lectura) */}
@@ -301,6 +477,31 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     borderWidth: 3,
     borderColor: colors.court300,
+    overflow: 'hidden',
+  },
+  avatarImage: { width: '100%', height: '100%', borderRadius: 44 },
+  avatarOverlay: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    backgroundColor: 'rgba(0,0,0,0.4)',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  avatarEditBadge: {
+    position: 'absolute',
+    bottom: 0,
+    right: 0,
+    width: 24,
+    height: 24,
+    borderRadius: 12,
+    backgroundColor: colors.court600,
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderWidth: 2,
+    borderColor: colors.white,
   },
   avatarHint: { color: colors.court300, fontSize: 12, marginTop: 8 },
 
@@ -358,6 +559,15 @@ const styles = StyleSheet.create({
     gap: 4,
   },
   sportBtnActive: { backgroundColor: colors.court50, borderColor: colors.court600 },
+  sideBtn: {
+    flex: 1,
+    backgroundColor: colors.white,
+    borderRadius: 12,
+    padding: 12,
+    alignItems: 'center',
+    borderWidth: 1.5,
+    borderColor: colors.ink100,
+  },
   sportLabel: { fontSize: 11, color: colors.textMuted, fontWeight: '600', textAlign: 'center' },
   sportLabelActive: { color: colors.court600 },
 

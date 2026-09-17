@@ -1,9 +1,10 @@
 'use client'
 
-import { useState } from 'react'
+import { useRef, useState } from 'react'
 import { useTranslations } from 'next-intl'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
-import { Pencil, Loader2, AlertCircle, Trophy, Target, Zap, MapPin } from 'lucide-react'
+import Image from 'next/image'
+import { Pencil, Loader2, AlertCircle, Trophy, Target, Zap, MapPin, Camera } from 'lucide-react'
 import { eloToCategory, xpForNextLevel } from '@racketly/utils'
 import { Card } from '@/components/ui/Card'
 import { Badge } from '@/components/ui/Badge'
@@ -20,6 +21,11 @@ type PlayerProfile = {
   sport: string
   country: string
   city: string
+  avatarUrl: string | null
+  preferredSide: 'derecha' | 'reves' | null
+  instagramHandle: string | null
+  whatsapp: string | null
+  plusCode: string | null
   eloPadel: number
   eloPickleball: number
   category: string
@@ -53,6 +59,7 @@ export function ProfileClient({
   const toast = useToast()
   const [editing, setEditing] = useState(false)
   const [error, setError] = useState('')
+  const fileInputRef = useRef<HTMLInputElement>(null)
 
   const { data } = useQuery({
     queryKey: ['profile', userId],
@@ -66,6 +73,10 @@ export function ProfileClient({
     city: data?.profile.city ?? '',
     country: data?.profile.country ?? 'DO',
     sport: (data?.profile.sport ?? 'padel') as 'padel' | 'pickleball' | 'both',
+    preferredSide: data?.profile.preferredSide ?? '',
+    instagramHandle: data?.profile.instagramHandle ?? '',
+    whatsapp: data?.profile.whatsapp ?? '',
+    plusCode: data?.profile.plusCode ?? '',
   }))
 
   function startEdit() {
@@ -76,16 +87,42 @@ export function ProfileClient({
         city: data.profile.city,
         country: data.profile.country,
         sport: data.profile.sport as any,
+        preferredSide: data.profile.preferredSide ?? '',
+        instagramHandle: data.profile.instagramHandle ?? '',
+        whatsapp: data.profile.whatsapp ?? '',
+        plusCode: data.profile.plusCode ?? '',
       })
     setEditing(true)
   }
+
+  const avatarMutation = useMutation({
+    mutationFn: async (file: File) => {
+      const formData = new FormData()
+      formData.append('file', file)
+      const res = await fetch('/api/profile/avatar', { method: 'POST', body: formData })
+      const resData = await res.json()
+      if (!res.ok) throw new Error(resData.error ?? t('errors.saveFailed'))
+      return resData.data
+    },
+    onError: (e: Error) => toast.error(e.message),
+    onSuccess: () => {
+      toast.success(t('toast.updated'))
+      queryClient.invalidateQueries({ queryKey: ['profile', userId] })
+    },
+  })
 
   const saveMutation = useMutation({
     mutationFn: async () => {
       const res = await fetch('/api/profile', {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(form),
+        body: JSON.stringify({
+          ...form,
+          preferredSide: form.preferredSide || null,
+          instagramHandle: form.instagramHandle || null,
+          whatsapp: form.whatsapp || null,
+          plusCode: form.plusCode || null,
+        }),
       })
       const resData = await res.json()
       if (!res.ok) throw new Error(resData.error ?? t('errors.saveFailed'))
@@ -117,8 +154,44 @@ export function ProfileClient({
       <Card className="p-6">
         <div className="flex items-start justify-between gap-4">
           <div className="flex items-center gap-4">
-            <div className="w-16 h-16 rounded-2xl bg-court-500 flex items-center justify-center text-2xl font-black text-white shrink-0">
-              {profile.displayName.charAt(0).toUpperCase()}
+            <div className="relative w-16 h-16 shrink-0">
+              {profile.avatarUrl ? (
+                <Image
+                  src={profile.avatarUrl}
+                  alt={profile.displayName}
+                  fill
+                  className="rounded-2xl object-cover"
+                />
+              ) : (
+                <div className="w-16 h-16 rounded-2xl bg-court-500 flex items-center justify-center text-2xl font-black text-white">
+                  {profile.displayName.charAt(0).toUpperCase()}
+                </div>
+              )}
+              {profile.userId === userId && (
+                <button
+                  onClick={() => fileInputRef.current?.click()}
+                  disabled={avatarMutation.isPending}
+                  className="absolute -bottom-1 -right-1 w-6 h-6 rounded-full bg-ink-900 text-white flex items-center justify-center shadow"
+                  title={t('form.changePhoto')}
+                >
+                  {avatarMutation.isPending ? (
+                    <Loader2 className="w-3 h-3 animate-spin" />
+                  ) : (
+                    <Camera className="w-3 h-3" />
+                  )}
+                </button>
+              )}
+              <input
+                ref={fileInputRef}
+                type="file"
+                accept="image/jpeg,image/png,image/webp"
+                className="hidden"
+                onChange={(e) => {
+                  const file = e.target.files?.[0]
+                  if (file) avatarMutation.mutate(file)
+                  e.target.value = ''
+                }}
+              />
             </div>
             <div>
               <h1 className="text-xl font-black text-ink-900 tracking-tight">
@@ -229,6 +302,58 @@ export function ProfileClient({
                   </button>
                 ))}
               </div>
+            </div>
+            <div>
+              <label className="block text-xs font-semibold text-ink-600 mb-1.5">
+                {t('form.preferredSideLabel')}
+              </label>
+              <div className="flex border border-ink-200 rounded-xl overflow-hidden">
+                {(['', 'derecha', 'reves'] as const).map((v) => (
+                  <button
+                    key={v || 'none'}
+                    type="button"
+                    onClick={() => setForm({ ...form, preferredSide: v })}
+                    className={`flex-1 py-2.5 text-sm font-semibold transition-colors ${form.preferredSide === v ? 'bg-court-600 text-white' : 'bg-white text-ink-500 hover:bg-ink-50'}`}
+                  >
+                    {v ? t(`preferredSide.${v}`) : t('preferredSide.none')}
+                  </button>
+                ))}
+              </div>
+            </div>
+            <div className="grid grid-cols-2 gap-3">
+              <div>
+                <label className="block text-xs font-semibold text-ink-600 mb-1.5">
+                  {t('form.instagramLabel')}
+                </label>
+                <input
+                  value={form.instagramHandle}
+                  onChange={(e) => setForm({ ...form, instagramHandle: e.target.value })}
+                  placeholder="@usuario"
+                  className="w-full border border-ink-200 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-court-500/40"
+                />
+              </div>
+              <div>
+                <label className="block text-xs font-semibold text-ink-600 mb-1.5">
+                  {t('form.whatsappLabel')}
+                </label>
+                <input
+                  value={form.whatsapp}
+                  onChange={(e) => setForm({ ...form, whatsapp: e.target.value })}
+                  placeholder="+1 809 555 0000"
+                  className="w-full border border-ink-200 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-court-500/40"
+                />
+              </div>
+            </div>
+            <div>
+              <label className="block text-xs font-semibold text-ink-600 mb-1.5">
+                {t('form.plusCodeLabel')}
+              </label>
+              <input
+                value={form.plusCode}
+                onChange={(e) => setForm({ ...form, plusCode: e.target.value })}
+                placeholder="796RWF8Q+WF"
+                className="w-full border border-ink-200 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-court-500/40"
+              />
             </div>
             <div className="flex gap-3">
               <Button

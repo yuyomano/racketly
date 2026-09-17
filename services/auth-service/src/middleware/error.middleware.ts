@@ -1,4 +1,5 @@
 import { Request, Response, NextFunction } from 'express'
+import { MulterError } from 'multer'
 import { Sentry } from '@racketly/utils/observability'
 
 export class AppError extends Error {
@@ -24,6 +25,12 @@ export function errorHandler(
       success: false,
       error: err.message,
     })
+  }
+
+  if (err instanceof MulterError) {
+    const message =
+      err.code === 'LIMIT_FILE_SIZE' ? 'La imagen no puede superar 5MB' : 'Error al subir el archivo'
+    return res.status(400).json({ success: false, error: message })
   }
 
   console.error('Unhandled error:', err)

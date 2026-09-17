@@ -5,6 +5,7 @@ import {
   TouchableOpacity,
   TextInput,
   Modal,
+  Image,
   ScrollView,
   StyleSheet,
   ActivityIndicator,
@@ -64,6 +65,7 @@ export function MyBookingsScreen({ navigation }: { navigation: any }) {
   const { user } = useAuthStore()
   const qc = useQueryClient()
   const [tab, setTab] = useState<Tab>('upcoming')
+  const [qrBooking, setQrBooking] = useState<any | null>(null)
 
   // ── Editar jugadores ──────────────────────────────────────────────────────
   const [editBookingId, setEditBookingId] = useState<string | null>(null)
@@ -474,7 +476,7 @@ export function MyBookingsScreen({ navigation }: { navigation: any }) {
                         </TouchableOpacity>
                       )}
                       {b.qrCode && (
-                        <TouchableOpacity style={styles.qrBtn}>
+                        <TouchableOpacity style={styles.qrBtn} onPress={() => setQrBooking(b)}>
                           <Ionicons name="qr-code-outline" size={14} color={colors.white} />
                           <Text style={styles.qrBtnText}>Ver QR</Text>
                         </TouchableOpacity>
@@ -887,6 +889,35 @@ export function MyBookingsScreen({ navigation }: { navigation: any }) {
           </View>
         </View>
       </Modal>
+
+      {/* Modal: ver QR de entrada */}
+      <Modal
+        visible={!!qrBooking}
+        transparent
+        animationType="fade"
+        onRequestClose={() => setQrBooking(null)}
+      >
+        <View style={styles.modalOverlay}>
+          <View style={styles.modalSheet}>
+            <View style={styles.modalHeader}>
+              <Text style={styles.modalTitle}>Código QR de entrada</Text>
+              <TouchableOpacity onPress={() => setQrBooking(null)}>
+                <Ionicons name="close" size={22} color={colors.ink500} />
+              </TouchableOpacity>
+            </View>
+            {qrBooking?.qrCode && (
+              <View style={styles.qrModalBody}>
+                <Image
+                  source={{ uri: qrBooking.qrCode }}
+                  style={styles.qrModalImage}
+                  resizeMode="contain"
+                />
+                <Text style={styles.qrModalHint}>Muestra este código QR en la entrada del club</Text>
+              </View>
+            )}
+          </View>
+        </View>
+      </Modal>
     </View>
   )
 }
@@ -977,6 +1008,9 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   qrBtnText: { color: colors.white, fontSize: 13, fontWeight: '700' },
+  qrModalBody: { alignItems: 'center', gap: 10, paddingVertical: 8 },
+  qrModalImage: { width: 220, height: 220 },
+  qrModalHint: { color: colors.ink400, fontSize: 12, textAlign: 'center', maxWidth: 240 },
   cancelBtn: {
     flex: 1,
     borderWidth: 1.5,

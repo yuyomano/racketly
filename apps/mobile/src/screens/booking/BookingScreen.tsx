@@ -18,6 +18,7 @@ import { Text } from '../../components/ui/Text'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { Ionicons } from '@expo/vector-icons'
 import { bookingsApi, membershipsApi, usersApi, creditsApi } from '../../services/api'
+import { buildGoogleCalendarUrl } from '@racketly/utils'
 import { useAuthStore } from '../../store/auth.store'
 import { BackButton } from '../../components/ui/BackButton'
 import { colors } from '../../theme'
@@ -311,6 +312,17 @@ export function BookingScreen({ route, navigation }: { route: any; navigation: a
   const sportEmoji = sportIcon(slot.court.sport)
   const sportName = slot.court.sport === 'padel' ? 'pádel' : 'pickleball'
 
+  function bookingCalendarUrl() {
+    return buildGoogleCalendarUrl({
+      title: `${sportName === 'pádel' ? 'Pádel' : 'Pickleball'} en ${club.name}`,
+      location: club.name,
+      description: 'Reserva hecha en Racketly',
+      date: slot.date,
+      startTime: slot.startTime,
+      endTime: slot.endTime,
+    })
+  }
+
   function buildWhatsAppMessage() {
     const date = formatDate(slot.date)
     const time = `${formatTime(slot.startTime)} - ${formatTime(slot.endTime)}`
@@ -320,7 +332,8 @@ export function BookingScreen({ route, navigation }: { route: any; navigation: a
       `📍 ${club.name}\n` +
       `📅 ${date}\n` +
       `⏰ ${time}\n\n` +
-      `Reserva hecha en Racketly — ¡solo tienes que aparecer! 🚀`
+      `Reserva hecha en Racketly — ¡solo tienes que aparecer! 🚀\n` +
+      `📆 Agrégala a tu calendario: ${bookingCalendarUrl()}`
     )
   }
 
@@ -365,6 +378,15 @@ export function BookingScreen({ route, navigation }: { route: any; navigation: a
         <TouchableOpacity style={styles.whatsappBtn} onPress={shareWhatsApp}>
           <Ionicons name="logo-whatsapp" size={18} color={colors.white} />
           <Text style={styles.whatsappBtnText}>Invitar compañero por WhatsApp</Text>
+        </TouchableOpacity>
+
+        {/* Agregar al calendario */}
+        <TouchableOpacity
+          style={styles.calendarBtn}
+          onPress={() => Linking.openURL(bookingCalendarUrl())}
+        >
+          <Ionicons name="calendar-outline" size={18} color={colors.court700} />
+          <Text style={styles.calendarBtnText}>Agregar al calendario</Text>
         </TouchableOpacity>
 
         <TouchableOpacity style={styles.doneBtn} onPress={() => navigation.navigate('MyBookings')}>
@@ -1103,6 +1125,21 @@ const styles = StyleSheet.create({
     width: '100%',
   },
   whatsappBtnText: { color: colors.white, fontSize: 15, fontWeight: '700' },
+  calendarBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 10,
+    backgroundColor: colors.court50,
+    borderWidth: 1.5,
+    borderColor: colors.court200,
+    borderRadius: 14,
+    paddingVertical: 14,
+    paddingHorizontal: 24,
+    marginTop: 12,
+    width: '100%',
+  },
+  calendarBtnText: { color: colors.court700, fontSize: 15, fontWeight: '700' },
   doneBtn: {
     backgroundColor: colors.white,
     borderRadius: 14,

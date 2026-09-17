@@ -85,6 +85,33 @@ export function minutesDiff(from: string | Date, to: string | Date): number {
   return Math.round((new Date(to).getTime() - new Date(from).getTime()) / 60000)
 }
 
+/**
+ * Genera la URL de "agregar al calendario" de Google Calendar para una reserva.
+ * `date` en formato YYYY-MM-DD, `startTime`/`endTime` en HH:MM o HH:MM:SS.
+ */
+export function buildGoogleCalendarUrl(params: {
+  title: string
+  location: string
+  description?: string
+  date: string
+  startTime: string
+  endTime: string
+}): string {
+  const toBasicTime = (time: string) => time.slice(0, 5).replace(':', '') + '00'
+  const datePart = params.date.replace(/-/g, '')
+  const dates = `${datePart}T${toBasicTime(params.startTime)}/${datePart}T${toBasicTime(params.endTime)}`
+  const qs = [
+    ['action', 'TEMPLATE'],
+    ['text', params.title],
+    ['dates', dates],
+    ['location', params.location],
+    ...(params.description ? [['details', params.description]] : []),
+  ]
+    .map(([k, v]) => `${k}=${encodeURIComponent(v as string)}`)
+    .join('&')
+  return `https://calendar.google.com/calendar/render?${qs}`
+}
+
 // ─── Currency Utilities ───────────────────────────────────────────────────────
 
 /**

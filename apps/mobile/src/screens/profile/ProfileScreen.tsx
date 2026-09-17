@@ -1,14 +1,30 @@
-import React from 'react'
+import React, { useCallback } from 'react'
 import { View, TouchableOpacity, StyleSheet, ScrollView } from 'react-native'
 import { Text } from '../../components/ui/Text'
 import { Ionicons } from '@expo/vector-icons'
+import { useFocusEffect } from '@react-navigation/native'
 import { useAuthStore } from '../../store/auth.store'
+import { profileApi } from '../../services/api'
 import { eloToCategory, xpForNextLevel } from '@racketly/utils'
 import { colors, radius, spacing, fontSize, shadow } from '../../theme'
 
 export function ProfileScreen({ navigation }: { navigation: any }) {
-  const { user, logout } = useAuthStore()
+  const { user, updateProfile, logout } = useAuthStore()
   const profile = user?.profile
+
+  // El perfil se cachea en el store desde el login y solo se actualiza vía
+  // updateProfile — sin este refetch al enfocar la pantalla, xpPoints/level
+  // quedaban pegados al valor de login aunque el servidor los cambiara
+  // (p.ej. insignias otorgadas al visitar la pantalla de logros).
+  useFocusEffect(
+    useCallback(() => {
+      if (!user?.id) return
+      profileApi
+        .getProfile(user.id)
+        .then((res) => updateProfile(res.data.data))
+        .catch(() => {})
+    }, [user?.id])
+  )
 
   if (!profile) return null
 

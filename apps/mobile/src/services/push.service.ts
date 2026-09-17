@@ -1,13 +1,20 @@
-import * as Notifications from 'expo-notifications'
 import Constants from 'expo-constants'
+import { isRunningInExpoGo } from 'expo'
 import { authApi } from './api'
 
 // Pide permiso, obtiene el Expo push token (no FCM nativo — evita requerir build/config
 // nativa de Firebase, ver notification-service) y lo registra en el backend. Se llama
 // justo después de un login exitoso; si algo falla (sin permiso, sin projectId, error de
 // red) se ignora silenciosamente — el push es un complemento del email, nunca bloqueante.
+//
+// expo-notifications quitó el soporte de push remoto en Expo Go desde SDK 53: con solo
+// importarlo, su registro automático de token (DevicePushTokenAutoRegistration.fx.js)
+// lanza una excepción no capturable en Android. isRunningInExpoGo() es el mismo check que
+// usa la librería internamente (warnOfExpoGoPushUsage.js) — cortamos antes de importar.
 export async function registerForPushNotifications(): Promise<void> {
+  if (isRunningInExpoGo()) return
   try {
+    const Notifications = await import('expo-notifications')
     const { status: existing } = await Notifications.getPermissionsAsync()
     let status = existing
     if (existing !== 'granted') {

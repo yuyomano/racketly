@@ -1,9 +1,12 @@
 # ─── Racketly — Docker Compose (Producción) ──────────────────────────────────
 # A diferencia de docker-compose.yml (solo dev, con secretos hardcodeados y sin
 # TLS), este compose:
-#   - No incluye postgres/redis como contenedores — usa un proveedor gestionado
-#     externo (ver DATABASE_URL/REDIS_URL en cada .env.production). Si preferís
-#     correrlos en el mismo servidor, agregalos aquí con volúmenes persistentes.
+#   - Postgres es gestionado externamente (ver DATABASE_URL en cada
+#     .env.production) — es la única fuente de verdad de reservas/pagos/PII y
+#     no vale la pena correrlo sin backups automáticos.
+#   - Redis SÍ corre como contenedor en este mismo servidor (servicio `redis`
+#     abajo): solo lo usa notification-service para colas de BullMQ, no es
+#     durability-critical, así que un proveedor gestionado sería gasto de más.
 #   - Enruta TODO el tráfico real a través del api-gateway Express (services/
 #     api-gateway), igual que en dev — no duplica routing logic en el proxy.
 #   - Usa Caddy como terminador TLS: obtiene y renueva certificados Let's
@@ -84,6 +87,11 @@ services:
     container_name: racketly-notification
     restart: unless-stopped
     env_file: ../../services/notification-service/.env.production
+    environment:
+      REDIS_HOST: redis
+      REDIS_PORT: 6379
+    depends_on:
+      - redis
 
   api-gateway:
     build:
@@ -136,6 +144,15 @@ services:
     depends_on:
       - api-gateway
 
+  redis:
+    image: redis:7-alpine
+    container_name: racketly-redis
+    restart: unless-stopped
+    command: redis-server --appendonly yes
+    volumes:
+      - redis_data:/data
+    # No se expone puerto al host — solo accesible dentro de la red de compose.
+
   # ─── Reverse proxy + TLS automático (Let's Encrypt) ──────────────────────────
   caddy:
     image: caddy:2-alpine
@@ -157,3 +174,5 @@ volumes:
     name: racketly_caddy_data
   caddy_config:
     name: racketly_caddy_config
+  redis_data:
+    name: racketly_redis_data

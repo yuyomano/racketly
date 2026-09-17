@@ -154,7 +154,7 @@ export function FindPartnerClient({ userId }: { userId: string }) {
       ) : !requests || requests.length === 0 ? (
         <EmptyState icon={Handshake} title={t('emptyTitle')} description={t('emptyDescription')} />
       ) : (
-        <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-4">
+        <div className="grid sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3">
           {requests.map((r) => {
             const isMine = r.requesterId === userId
             return (

@@ -66,7 +66,7 @@ export function Th({
   ...props
 }: React.ThHTMLAttributes<HTMLTableCellElement>) {
   return (
-    <th className={cn('px-4 py-3 font-semibold', className)} {...props}>
+    <th className={cn('px-4 py-2 font-semibold', className)} {...props}>
       {children}
     </th>
   )
@@ -78,7 +78,7 @@ export function Td({
   ...props
 }: React.TdHTMLAttributes<HTMLTableCellElement>) {
   return (
-    <td className={cn('px-4 py-3', className)} {...props}>
+    <td className={cn('px-4 py-2', className)} {...props}>
       {children}
     </td>
   )

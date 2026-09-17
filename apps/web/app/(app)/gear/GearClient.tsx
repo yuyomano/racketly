@@ -115,7 +115,7 @@ export function GearClient() {
           description={t('emptyDescription')}
         />
       ) : (
-        <div className="grid sm:grid-cols-2 gap-4">
+        <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-3">
           {reviews.map((r) => (
             <Card key={r.id} className="p-5">
               <div className="flex items-start justify-between gap-3">

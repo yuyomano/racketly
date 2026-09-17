@@ -126,7 +126,7 @@ export function TournamentSearchClient({ userId: _userId }: { userId: string }) 
       ) : !tournaments || tournaments.length === 0 ? (
         <EmptyState icon={Trophy} title={t('emptyTitle')} description={t('emptyDescription')} />
       ) : (
-        <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-4">
+        <div className="grid sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3">
           {tournaments.map((t) => (
             <Link key={t.id} href={`/tournaments/${t.id}`}>
               <Card className="p-5 h-full hover:border-court-200 hover:shadow-md transition-all cursor-pointer">

@@ -22,6 +22,7 @@ import { MyMembershipsScreen } from '../screens/booking/MyMembershipsScreen'
 // Screens — Tournaments
 import { TournamentsScreen } from '../screens/tournaments/TournamentsScreen'
 import { TournamentDetailScreen } from '../screens/tournaments/TournamentDetailScreen'
+import { MyTournamentsScreen } from '../screens/tournaments/MyTournamentsScreen'
 import { FindPartnerScreen } from '../screens/tournaments/FindPartnerScreen'
 import { LiveScoringScreen } from '../screens/tournaments/LiveScoringScreen'
 
@@ -38,6 +39,7 @@ import { PostDetailScreen } from '../screens/community/PostDetailScreen'
 import { AcademyScreen } from '../screens/academy/AcademyScreen'
 import { ProfileScreen } from '../screens/profile/ProfileScreen'
 import { EditProfileScreen } from '../screens/profile/EditProfileScreen'
+import { BadgesScreen } from '../screens/profile/BadgesScreen'
 
 const Tab = createBottomTabNavigator()
 const Stack = createNativeStackNavigator()
@@ -156,6 +158,9 @@ function ProfileStack() {
           saltar al stack de Reservas — así el botón de volver regresa a Perfil. */}
       <Stack.Screen name="MyBookings" component={MyBookingsScreen} />
       <Stack.Screen name="MyMemberships" component={MyMembershipsScreen} />
+      <Stack.Screen name="MyTournaments" component={MyTournamentsScreen} />
+      <Stack.Screen name="TournamentDetail" component={TournamentDetailScreen} />
+      <Stack.Screen name="Badges" component={BadgesScreen} />
     </Stack.Navigator>
   )
 }

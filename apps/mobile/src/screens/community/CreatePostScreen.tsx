@@ -24,10 +24,10 @@ const SPORTS: { value: string | null; label: string }[] = [
   { value: 'pickleball', label: 'Pickleball' },
 ]
 
-export function CreatePostScreen({ navigation }: { navigation: any }) {
+export function CreatePostScreen({ navigation, route }: { navigation: any; route: any }) {
   const { user } = useAuthStore()
   const qc = useQueryClient()
-  const [content, setContent] = useState('')
+  const [content, setContent] = useState(route.params?.initialContent ?? '')
   const [sportTag, setSportTag] = useState<string | null>(null)
 
   const createMutation = useMutation({

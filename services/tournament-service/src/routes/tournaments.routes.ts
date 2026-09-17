@@ -181,33 +181,86 @@ router.get(
         orderBy: { registeredAt: 'desc' },
       })
 
+      // "Último resultado": el partido más avanzado (mayor ronda) que ya jugó, en torneos
+      // en curso o finalizados — para poder mostrarlo en la lista sin abrir el torneo.
+      const playedTournamentIds = participations
+        .filter((p) => p.tournament.status === 'in_progress' || p.tournament.status === 'completed')
+        .map((p) => p.tournamentId)
+
+      const [maxRounds, lastMatches] = playedTournamentIds.length
+        ? await Promise.all([
+            prisma.match.groupBy({
+              by: ['tournamentId'],
+              where: { tournamentId: { in: playedTournamentIds }, round: { not: null } },
+              _max: { round: true },
+            }),
+            prisma.match.findMany({
+              where: {
+                tournamentId: { in: playedTournamentIds },
+                status: { in: ['completed', 'walkover'] },
+                OR: [{ player1Id: userId }, { player2Id: userId }],
+              },
+              orderBy: [{ round: 'desc' }, { finishedAt: 'desc' }],
+            }),
+          ])
+        : [[], []]
+      const maxRoundByTournament = new Map(maxRounds.map((r) => [r.tournamentId, r._max.round ?? 0]))
+      // `lastMatches` viene ordenado por ronda desc, así que el primero que aparece por
+      // torneo ya es el más avanzado que jugó.
+      const lastMatchByTournament = new Map<string, (typeof lastMatches)[number]>()
+      for (const m of lastMatches) {
+        if (m.tournamentId && !lastMatchByTournament.has(m.tournamentId))
+          lastMatchByTournament.set(m.tournamentId, m)
+      }
+
       const partnerIds = [
         ...new Set(participations.map((p) => p.partnerId).filter((id): id is string => !!id)),
-      ]
+        ...new Set(
+          [...lastMatchByTournament.values()].map((m) =>
+            m.player1Id === userId ? m.player2Id : m.player1Id
+          )
+        ),
+      ].filter((id): id is string => !!id)
       const partnerProfiles = partnerIds.length
         ? await prisma.playerProfile.findMany({
             where: { userId: { in: partnerIds } },
             select: { userId: true, displayName: true },
           })
         : []
-      const partnerNameById = new Map(partnerProfiles.map((p) => [p.userId, p.displayName]))
+      const nameById = new Map(partnerProfiles.map((p) => [p.userId, p.displayName]))
 
-      const data = participations.map((p) => ({
-        id: p.id,
-        tournamentId: p.tournamentId,
-        tournamentName: p.tournament.name,
-        sport: p.tournament.sport,
-        status: p.tournament.status,
-        clubName: p.tournament.club?.name ?? null,
-        location: p.tournament.location,
-        category: p.tournament.category,
-        startDate: p.tournament.startDate,
-        endDate: p.tournament.endDate,
-        partnerId: p.partnerId,
-        partnerName: p.partnerId ? (partnerNameById.get(p.partnerId) ?? null) : null,
-        paymentStatus: p.paymentStatus,
-        isActive: p.tournament.status === 'open' || p.tournament.status === 'in_progress',
-      }))
+      const data = participations.map((p) => {
+        const lastMatch = lastMatchByTournament.get(p.tournamentId)
+        const opponentId = lastMatch
+          ? lastMatch.player1Id === userId
+            ? lastMatch.player2Id
+            : lastMatch.player1Id
+          : null
+        return {
+          id: p.id,
+          tournamentId: p.tournamentId,
+          tournamentName: p.tournament.name,
+          sport: p.tournament.sport,
+          status: p.tournament.status,
+          clubName: p.tournament.club?.name ?? null,
+          location: p.tournament.location,
+          category: p.tournament.category,
+          startDate: p.tournament.startDate,
+          endDate: p.tournament.endDate,
+          partnerId: p.partnerId,
+          partnerName: p.partnerId ? (nameById.get(p.partnerId) ?? null) : null,
+          paymentStatus: p.paymentStatus,
+          isActive: p.tournament.status === 'open' || p.tournament.status === 'in_progress',
+          lastResult: lastMatch
+            ? {
+                round: lastMatch.round,
+                maxRound: maxRoundByTournament.get(p.tournamentId) ?? lastMatch.round,
+                won: lastMatch.winnerId === userId,
+                opponentName: opponentId ? nameById.get(opponentId) ?? null : null,
+              }
+            : null,
+        }
+      })
 
       return res.json({ success: true, data })
     } catch (err) {

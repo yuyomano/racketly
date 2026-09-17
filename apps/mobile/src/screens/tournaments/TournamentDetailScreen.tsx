@@ -111,7 +111,7 @@ function formatMatchDateTime(scheduledAt: string): string {
   })
 }
 
-function roundLabel(round: number, maxRound: number): string {
+export function roundLabel(round: number, maxRound: number): string {
   const fromEnd = maxRound - round
   if (fromEnd === 0) return 'Final'
   if (fromEnd === 1) return 'Semifinal'
@@ -295,7 +295,10 @@ export function TournamentDetailScreen({ route, navigation }: { route: any; navi
     queryKey: ['tournament', initial.id],
     queryFn: () => tournamentsApi.getById(initial.id),
     select: (r) => r.data.data ?? r.data,
-    initialData: { data: { data: initial } } as any,
+    // placeholderData (no initialData): el objeto que llega por navegación no trae
+    // `participants` — con initialData, el staleTime global (60s en App.tsx) lo trataría
+    // como dato fresco y no se refetchearía, mostrando "Inscribirse" aunque ya estés inscrito.
+    placeholderData: { data: { data: initial } } as any,
   })
 
   const t = tournament ?? initial
@@ -452,7 +455,9 @@ export function TournamentDetailScreen({ route, navigation }: { route: any; navi
 
       <ScrollView
         showsVerticalScrollIndicator={false}
-        contentContainerStyle={{ paddingBottom: 100 }}
+        // 100 no alcanzaba a despejar la barra inferior fija (ctaContainer, ~115px con
+        // safe area) — la última tarjeta ("Premios") quedaba tapada detrás del botón.
+        contentContainerStyle={{ paddingBottom: 160 }}
       >
         {tab === 'info' && (
           <View style={styles.section}>

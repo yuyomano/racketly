@@ -131,9 +131,9 @@ const menuItems: {
 }[] = [
   { icon: 'calendar-outline', label: 'Mis reservas', route: 'MyBookings' },
   { icon: 'pricetag-outline', label: 'Mis membresías', route: 'MyMemberships' },
-  { icon: 'trophy-outline', label: 'Mis torneos', route: 'TournamentsList', tab: 'Torneos' },
+  { icon: 'trophy-outline', label: 'Mis torneos', route: 'MyTournaments' },
   { icon: 'people-outline', label: 'Find a Partner', route: 'FindPartner', tab: 'Torneos' },
-  { icon: 'ribbon-outline', label: 'Insignias y logros' },
+  { icon: 'ribbon-outline', label: 'Insignias y logros', route: 'Badges' },
   { icon: 'stats-chart-outline', label: 'Estadísticas detalladas' },
   { icon: 'notifications-outline', label: 'Notificaciones' },
   { icon: 'settings-outline', label: 'Configuración' },

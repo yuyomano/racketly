@@ -19,15 +19,21 @@ const awardXpSchema = z.object({
   }),
 })
 
-// GET /api/gamification/:userId/badges
+// GET /api/gamification/:userId/badges — catálogo completo, con las ganadas marcadas
+// (para poder mostrar también las bloqueadas en la pantalla de insignias)
 router.get('/:userId/badges', async (req: Request, res: Response, next: NextFunction) => {
   try {
-    const badges = await prisma.userBadge.findMany({
-      where: { userId: req.params.userId },
-      include: { badge: true },
-      orderBy: { earnedAt: 'desc' },
-    })
-    return res.json({ success: true, data: badges })
+    const [allBadges, userBadges] = await Promise.all([
+      prisma.badge.findMany({ orderBy: { xpReward: 'asc' } }),
+      prisma.userBadge.findMany({ where: { userId: req.params.userId } }),
+    ])
+    const earnedByBadgeId = new Map(userBadges.map((ub) => [ub.badgeId, ub.earnedAt]))
+    const data = allBadges.map((badge) => ({
+      ...badge,
+      earned: earnedByBadgeId.has(badge.id),
+      earnedAt: earnedByBadgeId.get(badge.id) ?? null,
+    }))
+    return res.json({ success: true, data })
   } catch (err) {
     return next(err)
   }

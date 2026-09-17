@@ -129,6 +129,7 @@ export const membershipsApi = {
 
 export const tournamentsApi = {
   list: (params: object) => api.get('/api/tournaments', { params }),
+  mine: (userId: string) => api.get(`/api/tournaments/participants/user/${userId}`),
   getById: (id: string) => api.get(`/api/tournaments/${id}`),
   register: (id: string, data: object) => api.post(`/api/tournaments/${id}/register`, data),
   withdraw: (id: string, participantId: string) =>
@@ -163,6 +164,10 @@ export const communityApi = {
   addComment: (postId: string, data: object) => api.post(`/api/posts/${postId}/comments`, data),
   getGroups: (params: object) => api.get('/api/groups', { params }),
   joinGroup: (id: string, userId: string) => api.post(`/api/groups/${id}/join`, { userId }),
+}
+
+export const gamificationApi = {
+  badges: (userId: string) => api.get(`/api/gamification/${userId}/badges`),
 }
 
 export const classesApi = {

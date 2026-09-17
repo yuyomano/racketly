@@ -31,11 +31,10 @@ function formatDate(date: string) {
   })
 }
 
-// ── Confirmación rápida en Bottom Sheet — reemplaza la navegación a pantalla
-// completa para el caso más común (dueño paga solo, sin dividir con nadie): un
-// toque en la grilla (BookingPickerOptimized) abre esta hoja, un toque más confirma.
-// El flujo completo de roster + pago dividido sigue disponible sin tocarlo —
-// "Agregar jugadores y dividir pago" navega a BookingScreen tal como antes.
+// ── Confirmación rápida en Bottom Sheet — para canchas de un solo jugador
+// (capacity <= 1) un toque confirma directo. Si la cancha admite más
+// jugadores, el cupo debe completarse igual que en BookingScreen/web, así
+// que el botón principal lleva al flujo completo en vez de reservar solo.
 // Usa exactamente el mismo contrato de bookingsApi.create que BookingScreen.
 export function BookingConfirmSheet({
   visible,
@@ -73,16 +72,15 @@ export function BookingConfirmSheet({
     enabled: !!user?.id && !!club,
   })
 
-  if (!slot || !club) return null
-
-  const slotBasePrice = slot.isPeak ? slot.peakPrice : slot.basePrice
-  const capacity = slot.court.capacity || 4
+  const slotBasePrice = slot ? (slot.isPeak ? slot.peakPrice : slot.basePrice) : 0
+  const capacity = slot?.court.capacity || 4
+  const rosterComplete = capacity <= 1
   const pricing = pricingData ?? {
     pricingType: 'pay_per_use',
     price: slotBasePrice,
     pricePerPlayer: slotBasePrice / capacity,
     membershipPlan: null,
-    currency: slot.currency,
+    currency: slot?.currency,
   }
   const isMembershipIncluded = pricing.pricingType === 'membership_included'
   const isMembershipExtra = pricing.pricingType === 'membership_extra'
@@ -100,9 +98,9 @@ export function BookingConfirmSheet({
   const mutation = useMutation({
     mutationFn: () =>
       bookingsApi.create({
-        slotId: slot.id,
+        slotId: slot!.id,
         userId: user!.id,
-        clubId: club.id,
+        clubId: club!.id,
         ownerName: user?.profile?.displayName || user?.email?.split('@')[0] || 'Jugador',
         ownerPay: true,
         currency: pricing.currency,
@@ -137,6 +135,8 @@ export function BookingConfirmSheet({
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error).catch(() => {})
     },
   })
+
+  if (!slot || !club) return null
 
   function confirmTap() {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium).catch(() => {})
@@ -208,25 +208,30 @@ export function BookingConfirmSheet({
                 )}
               </View>
 
-              <TouchableOpacity style={styles.addPlayersLink} onPress={openFullFlow}>
-                <Ionicons name="people-outline" size={14} color={colors.court700} />
-                <Text style={styles.addPlayersLinkText}>Agregar jugadores y dividir el pago</Text>
-                <Ionicons name="chevron-forward" size={14} color={colors.court700} />
-              </TouchableOpacity>
-
-              <TouchableOpacity
-                style={[styles.confirmBtn, mutation.isPending && styles.confirmBtnDisabled]}
-                onPress={confirmTap}
-                disabled={mutation.isPending || pricingLoading}
-              >
-                {mutation.isPending ? (
-                  <ActivityIndicator color={colors.white} />
-                ) : (
-                  <Text style={styles.confirmBtnText}>
-                    {isMembershipIncluded ? 'Confirmar reserva ✅' : 'Reservar ahora 🎾'}
+              {rosterComplete ? (
+                <TouchableOpacity
+                  style={[styles.confirmBtn, mutation.isPending && styles.confirmBtnDisabled]}
+                  onPress={confirmTap}
+                  disabled={mutation.isPending || pricingLoading}
+                >
+                  {mutation.isPending ? (
+                    <ActivityIndicator color={colors.white} />
+                  ) : (
+                    <Text style={styles.confirmBtnText}>
+                      {isMembershipIncluded ? 'Confirmar reserva ✅' : 'Reservar ahora 🎾'}
+                    </Text>
+                  )}
+                </TouchableOpacity>
+              ) : (
+                <>
+                  <Text style={styles.rosterNoticeText}>
+                    Esta cancha requiere completar {capacity} jugadores (pueden ser invitados).
                   </Text>
-                )}
-              </TouchableOpacity>
+                  <TouchableOpacity style={styles.confirmBtn} onPress={openFullFlow}>
+                    <Text style={styles.confirmBtnText}>Agregar jugadores para reservar</Text>
+                  </TouchableOpacity>
+                </>
+              )}
 
               {mutation.isError && (
                 <Text style={styles.errorText}>
@@ -274,15 +279,12 @@ const styles = StyleSheet.create({
   priceCardMembership: { backgroundColor: colors.court800 },
   priceTag: { fontSize: fontSize.xs, color: colors.court300, fontWeight: '700' },
   priceAmount: { fontSize: fontSize['2xl'], fontWeight: '900', color: colors.white, marginTop: 4 },
-  addPlayersLink: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 6,
-    justifyContent: 'center',
+  rosterNoticeText: {
+    fontSize: fontSize.sm,
+    color: colors.ink500,
+    textAlign: 'center',
     marginTop: spacing.lg,
-    paddingVertical: 8,
   },
-  addPlayersLinkText: { fontSize: fontSize.sm, color: colors.court700, fontWeight: '700' },
   confirmBtn: {
     backgroundColor: colors.court600,
     borderRadius: radius.lg,

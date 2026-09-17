@@ -520,11 +520,13 @@ export function TournamentDetailScreen({ route, navigation }: { route: any; navi
 
             {/* Match format */}
             {t.matchFormat && (
-              <View style={styles.infoCard}>
-                <Text style={styles.infoLabel}>Modalidad de juego</Text>
-                <Text style={styles.infoValue}>
-                  {MATCH_FORMAT_LABELS[t.matchFormat] ?? t.matchFormat}
-                </Text>
+              <View style={[styles.infoCard, { flexDirection: 'column', alignItems: 'stretch' }]}>
+                <View style={styles.infoCardRow}>
+                  <Text style={styles.infoLabel}>Modalidad de juego</Text>
+                  <Text style={styles.infoValue}>
+                    {MATCH_FORMAT_LABELS[t.matchFormat] ?? t.matchFormat}
+                  </Text>
+                </View>
                 {t.matchFormatOverrides && Object.keys(t.matchFormatOverrides).length > 0 && (
                   <View style={{ marginTop: 6, gap: 2 }}>
                     {KNOCKOUT_STAGE_KEYS.filter(
@@ -848,6 +850,11 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     borderWidth: 1,
     borderColor: colors.ink100,
+  },
+  infoCardRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
   },
   infoLabel: { fontSize: 14, color: colors.textMuted, fontWeight: '600' },
   infoValue: { fontSize: 14, color: colors.textPrimary, fontWeight: '700' },

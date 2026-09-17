@@ -19,10 +19,130 @@ const awardXpSchema = z.object({
   }),
 })
 
+// conditionType → cómo calcular el progreso del usuario contra esa condición.
+// Cubre solo los tipos "tier 1" (datos que ya genera una acción real existente).
+// Los demás (matches, wins, streak, tourn_wins, both_sports) quedan sin evaluador
+// todavía porque dependen del flujo de partidos casuales, no confirmado end-to-end.
+const TIER1_CONDITIONS = [
+  'signup',
+  'bookings',
+  'tournaments',
+  'posts',
+  'likes',
+  'courses',
+  'partners',
+  'elo',
+  'level',
+  'clubs',
+  'countries',
+] as const
+
+async function getConditionCount(userId: string, conditionType: string): Promise<number> {
+  switch (conditionType) {
+    case 'signup':
+      return 1
+    case 'bookings':
+      return prisma.booking.count({ where: { userId, status: { not: 'cancelled' } } })
+    case 'tournaments':
+      return prisma.tournamentParticipant.count({ where: { playerId: userId } })
+    case 'posts':
+      return prisma.post.count({ where: { authorId: userId } })
+    case 'likes': {
+      const agg = await prisma.post.aggregate({
+        where: { authorId: userId },
+        _sum: { likesCount: true },
+      })
+      return agg._sum.likesCount ?? 0
+    }
+    case 'courses':
+      return prisma.enrollment.count({ where: { userId, completedAt: { not: null } } })
+    case 'partners':
+      return prisma.matchApplication.count({
+        where: { applicantId: userId, status: 'accepted' },
+      })
+    case 'elo': {
+      const profile = await prisma.playerProfile.findUnique({
+        where: { userId },
+        select: { eloPadel: true, eloPickleball: true },
+      })
+      if (!profile) return 0
+      return Math.max(profile.eloPadel, profile.eloPickleball)
+    }
+    case 'level': {
+      const profile = await prisma.playerProfile.findUnique({
+        where: { userId },
+        select: { level: true },
+      })
+      return profile?.level ?? 0
+    }
+    case 'clubs':
+    case 'countries': {
+      const bookings = await prisma.booking.findMany({
+        where: { userId, status: { not: 'cancelled' } },
+        select: { slot: { select: { court: { select: { clubId: true, club: { select: { country: true } } } } } } },
+      })
+      if (conditionType === 'clubs') {
+        return new Set(bookings.map((b) => b.slot.court.clubId)).size
+      }
+      return new Set(bookings.map((b) => b.slot.court.club.country)).size
+    }
+    default:
+      return 0
+  }
+}
+
+// Otorga las insignias "tier 1" que el usuario ya cumple pero no tiene registradas,
+// suma su XP y recalcula nivel (mismo patrón que /award-xp). Se llama al pedir el
+// catálogo de insignias — no hace falta enganchar esto en cada acción del monorepo:
+// basta con que se re-evalúe la próxima vez que el usuario abra la pantalla.
+// depth acota la recursión: subir de nivel por el XP recién otorgado puede desbloquear
+// una insignia "level", que a su vez suma más XP — 5 pasadas es de sobra para esa cadena.
+async function checkAndAwardBadges(userId: string, depth = 0): Promise<void> {
+  if (depth >= 5) return
+
+  const [candidateBadges, userBadges] = await Promise.all([
+    prisma.badge.findMany({ where: { conditionType: { in: TIER1_CONDITIONS as unknown as string[] } } }),
+    prisma.userBadge.findMany({ where: { userId } }),
+  ])
+  const earnedIds = new Set(userBadges.map((ub) => ub.badgeId))
+  const unearned = candidateBadges.filter((b) => !earnedIds.has(b.id))
+  if (unearned.length === 0) return
+
+  const countByCondition = new Map<string, number>()
+  for (const badge of unearned) {
+    if (!countByCondition.has(badge.conditionType)) {
+      countByCondition.set(badge.conditionType, await getConditionCount(userId, badge.conditionType))
+    }
+  }
+
+  const toAward = unearned.filter((b) => (countByCondition.get(b.conditionType) ?? 0) >= b.conditionValue)
+  if (toAward.length === 0) return
+
+  const totalXp = toAward.reduce((sum, b) => sum + b.xpReward, 0)
+  await prisma.$transaction(async (tx) => {
+    await tx.userBadge.createMany({
+      data: toAward.map((b) => ({ userId, badgeId: b.id })),
+      skipDuplicates: true,
+    })
+    const profile = await tx.playerProfile.update({
+      where: { userId },
+      data: { xpPoints: { increment: totalXp } },
+    })
+    const newLevel = xpToLevel(profile.xpPoints)
+    if (newLevel > profile.level) {
+      await tx.playerProfile.update({ where: { userId }, data: { level: newLevel } })
+    }
+  })
+
+  await checkAndAwardBadges(userId, depth + 1)
+}
+
 // GET /api/gamification/:userId/badges — catálogo completo, con las ganadas marcadas
 // (para poder mostrar también las bloqueadas en la pantalla de insignias)
 router.get('/:userId/badges', async (req: Request, res: Response, next: NextFunction) => {
   try {
+    await checkAndAwardBadges(req.params.userId)
+
     const [allBadges, userBadges] = await Promise.all([
       prisma.badge.findMany({ orderBy: { xpReward: 'asc' } }),
       prisma.userBadge.findMany({ where: { userId: req.params.userId } }),

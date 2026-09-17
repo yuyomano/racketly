@@ -129,8 +129,8 @@ const menuItems: {
   route?: string
   tab?: string
 }[] = [
-  { icon: 'calendar-outline', label: 'Mis reservas', route: 'MyBookings', tab: 'Reservas' },
-  { icon: 'pricetag-outline', label: 'Mis membresías', route: 'MyMemberships', tab: 'Reservas' },
+  { icon: 'calendar-outline', label: 'Mis reservas', route: 'MyBookings' },
+  { icon: 'pricetag-outline', label: 'Mis membresías', route: 'MyMemberships' },
   { icon: 'trophy-outline', label: 'Mis torneos', route: 'TournamentsList', tab: 'Torneos' },
   { icon: 'people-outline', label: 'Find a Partner', route: 'FindPartner', tab: 'Torneos' },
   { icon: 'ribbon-outline', label: 'Insignias y logros' },

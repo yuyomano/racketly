@@ -3,12 +3,14 @@ import { createBottomTabNavigator } from '@react-navigation/bottom-tabs'
 import { createNativeStackNavigator } from '@react-navigation/native-stack'
 import { Ionicons } from '@expo/vector-icons'
 import { View, ActivityIndicator } from 'react-native'
+import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import { useAuthStore } from '../store/auth.store'
 import { colors } from '../theme'
 
 // Screens — Auth
 import { LoginScreen } from '../screens/auth/LoginScreen'
 import { RegisterScreen } from '../screens/auth/RegisterScreen'
+import { ForgotPasswordScreen } from '../screens/auth/ForgotPasswordScreen'
 
 // Screens — Booking
 import { HomeScreen } from '../screens/booking/HomeScreen'
@@ -75,6 +77,7 @@ function TournamentsStack() {
 }
 
 function MainTabs() {
+  const insets = useSafeAreaInsets()
   return (
     <Tab.Navigator
       screenOptions={{
@@ -82,8 +85,12 @@ function MainTabs() {
         tabBarStyle: {
           backgroundColor: colors.surface,
           borderTopColor: colors.border,
-          height: 64,
+          // Altura fija + insets.bottom: react-navigation no suma el safe area
+          // automáticamente cuando se define `height` explícito, así que sin esto
+          // la barra de gestos de Android recorta los íconos (Perfil, Academia).
+          height: 58 + insets.bottom,
           paddingTop: 6,
+          paddingBottom: insets.bottom,
         },
         tabBarActiveTintColor: colors.court600,
         tabBarInactiveTintColor: colors.ink400,
@@ -144,6 +151,11 @@ function ProfileStack() {
     <Stack.Navigator screenOptions={{ headerShown: false }}>
       <Stack.Screen name="ProfileHome" component={ProfileScreen} />
       <Stack.Screen name="EditProfile" component={EditProfileScreen} />
+      {/* Registradas también aquí (igual que TournamentDetail arriba) para que "Mis
+          reservas"/"Mis membresías" desde Perfil empujen sobre este stack en vez de
+          saltar al stack de Reservas — así el botón de volver regresa a Perfil. */}
+      <Stack.Screen name="MyBookings" component={MyBookingsScreen} />
+      <Stack.Screen name="MyMemberships" component={MyMembershipsScreen} />
     </Stack.Navigator>
   )
 }
@@ -153,6 +165,7 @@ function AuthStack() {
     <Stack.Navigator screenOptions={{ headerShown: false }}>
       <Stack.Screen name="Login" component={LoginScreen} />
       <Stack.Screen name="Register" component={RegisterScreen} />
+      <Stack.Screen name="ForgotPassword" component={ForgotPasswordScreen} />
     </Stack.Navigator>
   )
 }

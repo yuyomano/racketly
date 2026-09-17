@@ -26,10 +26,14 @@ export function TournamentsScreen({ navigation }: { navigation: any }) {
   // el club específico desde Home → Club → Torneos.
   useEffect(() => {
     ;(async () => {
-      const { status: permStatus } = await Location.requestForegroundPermissionsAsync()
-      if (permStatus === 'granted') {
-        const loc = await Location.getCurrentPositionAsync({})
-        setLocation({ lat: loc.coords.latitude, lng: loc.coords.longitude })
+      try {
+        const { status: permStatus } = await Location.requestForegroundPermissionsAsync()
+        if (permStatus === 'granted') {
+          const loc = await Location.getCurrentPositionAsync({})
+          setLocation({ lat: loc.coords.latitude, lng: loc.coords.longitude })
+        }
+      } catch {
+        // ubicación no disponible (permiso denegado, GPS apagado, etc.) — se sigue sin geolocalización
       }
     })()
   }, [])

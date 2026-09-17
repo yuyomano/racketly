@@ -29,10 +29,14 @@ export function HomeScreen({ navigation }: { navigation: any }) {
 
   useEffect(() => {
     ;(async () => {
-      const { status } = await Location.requestForegroundPermissionsAsync()
-      if (status === 'granted') {
-        const loc = await Location.getCurrentPositionAsync({})
-        setLocation({ lat: loc.coords.latitude, lng: loc.coords.longitude })
+      try {
+        const { status } = await Location.requestForegroundPermissionsAsync()
+        if (status === 'granted') {
+          const loc = await Location.getCurrentPositionAsync({})
+          setLocation({ lat: loc.coords.latitude, lng: loc.coords.longitude })
+        }
+      } catch {
+        // ubicación no disponible (permiso denegado, GPS apagado, etc.) — se sigue sin geolocalización
       }
     })()
   }, [])
@@ -302,7 +306,7 @@ const styles = StyleSheet.create({
   recentTagRow: { flexDirection: 'row', alignItems: 'center', gap: 3, marginTop: 2 },
   recentTag: { fontSize: fontSize.xs, color: colors.court600, fontWeight: '600' },
   sportTags: { flexDirection: 'row', gap: spacing.xs + 2, marginTop: spacing.sm, flexWrap: 'wrap' },
-  clubMeta: { alignItems: 'flex-end', gap: spacing.xs },
+  clubMeta: { alignItems: 'flex-end', gap: spacing.xs, marginTop: spacing.xl },
   ratingRow: { flexDirection: 'row', alignItems: 'center', gap: 3 },
   rating: { fontSize: fontSize.sm, color: colors.trophy600, fontWeight: '600' },
   distance: { fontSize: fontSize.xs, color: colors.textMuted },

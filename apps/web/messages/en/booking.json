@@ -65,7 +65,26 @@
       "membershipSubscribe": "Subscribe",
       "membershipSubscribing": "Subscribing…",
       "membershipSubscribedToast": "Welcome! You're now a member.",
-      "membershipSubscribeError": "Couldn't subscribe"
+      "membershipSubscribeError": "Couldn't subscribe",
+      "payNow": "Pay now",
+      "payLater": "Pay later",
+      "guestTag": "guest",
+      "guestNamePlaceholder": "Guest name",
+      "addGuestButton": "Add guest",
+      "filterClub": "Played at this club",
+      "filterWithMe": "Played with me",
+      "filterCity": "Same city",
+      "filterAllPlayers": "All",
+      "paymentCard": "Card",
+      "paymentMercadoPago": "Mercado Pago",
+      "paymentComingSoon": "Coming soon",
+      "payingCountLabel": "{count, plural, =0 {no one pays now} one {you pay for # player} other {you pay for # players}}",
+      "coveredByMembership": "Included",
+      "coveredByCreditTag": "Covered by credit",
+      "shareWhatsApp": "Send via WhatsApp",
+      "shareEmail": "Send via email",
+      "shareEmailSubject": "Join me to play at {club}",
+      "shareMessage": "Join me to play! 🎾\n\n📍 {club}\n🏟️ {court}\n📅 {date}\n⏰ {time}\n\nBooked with Racketly — just show up!\n\nView details, pay your share, or cancel here: {link}"
     },
     "mine": {
       "backToClubs": "Back to clubs",
@@ -88,7 +107,13 @@
       "qrButton": "View QR",
       "qrModalTitle": "Entry QR code",
       "qrModalHint": "Show this QR code at the club entrance",
-      "withPlayers": "With: {names}"
+      "withPlayers": "With: {names}",
+      "payButton": "Pay my share",
+      "payError": "Couldn't register the payment",
+      "paidToast": "Payment registered",
+      "leaveButton": "Leave",
+      "leaveError": "Couldn't leave the booking",
+      "leftToast": "You left the booking"
     }
   }
 }

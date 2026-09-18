@@ -1,10 +1,19 @@
 'use client'
 
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import Link from 'next/link'
 import { useTranslations } from 'next-intl'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
-import { ArrowLeft, CalendarDays, MapPin, Loader2, X, QrCode } from 'lucide-react'
+import {
+  ArrowLeft,
+  CalendarDays,
+  MapPin,
+  Loader2,
+  X,
+  QrCode,
+  CreditCard,
+  LogOut,
+} from 'lucide-react'
 import { Card } from '@/components/ui/Card'
 import { Badge, type BadgeTone } from '@/components/ui/Badge'
 import { EmptyState } from '@/components/ui/EmptyState'
@@ -17,7 +26,7 @@ type Booking = {
   status: 'pending' | 'confirmed' | 'cancelled' | 'completed'
   isOwnerBooking: boolean
   qrCode?: string | null
-  players?: { userId: string; name: string; isOwner: boolean }[]
+  players?: { userId: string; name: string; isOwner: boolean; paymentStatus?: string }[]
   slot: {
     date: string
     startTime: string
@@ -33,12 +42,18 @@ async function fetchMyBookings(fetchErrorMessage: string): Promise<Booking[]> {
   return data.data ?? []
 }
 
-export function MyBookingsClient() {
+export function MyBookingsClient({ userId }: { userId: string }) {
   const t = useTranslations('Booking.mine')
   const queryClient = useQueryClient()
   const toast = useToast()
   const [tab, setTab] = useState<'upcoming' | 'past'>('upcoming')
   const [qrModalBooking, setQrModalBooking] = useState<Booking | null>(null)
+  const [highlightId, setHighlightId] = useState<string | null>(null)
+
+  useEffect(() => {
+    const b = new URLSearchParams(window.location.search).get('b')
+    if (b) setHighlightId(b)
+  }, [])
 
   const STATUS_LABEL: Record<Booking['status'], { label: string; tone: BadgeTone }> = {
     pending: { label: t('statusPending'), tone: 'amber' },
@@ -51,6 +66,18 @@ export function MyBookingsClient() {
     queryKey: ['bookings', 'mine'],
     queryFn: () => fetchMyBookings(t('fetchError')),
   })
+
+  useEffect(() => {
+    if (!highlightId || !bookings) return
+    const b = bookings.find((x) => x.id === highlightId)
+    if (!b) return
+    const isPast = new Date(`${b.slot.date}T${b.slot.endTime}`).getTime() < Date.now()
+    setTab(isPast || b.status === 'cancelled' ? 'past' : 'upcoming')
+    setTimeout(
+      () => document.getElementById(`booking-${highlightId}`)?.scrollIntoView({ block: 'center' }),
+      50
+    )
+  }, [highlightId, bookings])
 
   const cancelMutation = useMutation({
     mutationFn: async (bookingId: string) => {
@@ -65,6 +92,38 @@ export function MyBookingsClient() {
     },
     onSuccess: () => {
       toast.success(t('cancelledToast'))
+      queryClient.invalidateQueries({ queryKey: ['bookings', 'mine'] })
+    },
+    onError: (e: Error) => toast.error(e.message),
+  })
+
+  const payMutation = useMutation({
+    mutationFn: async (bookingId: string) => {
+      const res = await fetch(`/api/bookings/${bookingId}/players/${userId}/pay`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ paymentMethod: 'card' }),
+      })
+      const data = await res.json()
+      if (!res.ok) throw new Error(data.error ?? t('payError'))
+      return data.data
+    },
+    onSuccess: () => {
+      toast.success(t('paidToast'))
+      queryClient.invalidateQueries({ queryKey: ['bookings', 'mine'] })
+    },
+    onError: (e: Error) => toast.error(e.message),
+  })
+
+  const leaveMutation = useMutation({
+    mutationFn: async (bookingId: string) => {
+      const res = await fetch(`/api/bookings/${bookingId}/players/${userId}`, { method: 'DELETE' })
+      const data = await res.json()
+      if (!res.ok) throw new Error(data.error ?? t('leaveError'))
+      return data.data
+    },
+    onSuccess: () => {
+      toast.success(t('leftToast'))
       queryClient.invalidateQueries({ queryKey: ['bookings', 'mine'] })
     },
     onError: (e: Error) => toast.error(e.message),
@@ -133,9 +192,22 @@ export function MyBookingsClient() {
         <div className="space-y-3">
           {filtered.map((b) => {
             const canCancel = tab === 'upcoming' && b.isOwnerBooking && b.status !== 'cancelled'
+            const myPlayer = b.players?.find((p) => p.userId === userId)
+            const canPay =
+              tab === 'upcoming' &&
+              b.status !== 'cancelled' &&
+              myPlayer?.paymentStatus === 'pending'
+            const canLeave = tab === 'upcoming' && !b.isOwnerBooking && b.status !== 'cancelled'
             const st = STATUS_LABEL[b.status]
             return (
-              <Card key={b.id} className="p-4 flex items-center justify-between gap-4">
+              <Card
+                key={b.id}
+                id={`booking-${b.id}`}
+                className={cn(
+                  'p-4 flex items-center justify-between gap-4',
+                  highlightId === b.id && 'ring-2 ring-court-500'
+                )}
+              >
                 <div className="min-w-0">
                   <div className="flex items-center gap-2">
                     <p className="font-bold text-ink-900 truncate">{b.slot.court.club.name}</p>
@@ -163,6 +235,15 @@ export function MyBookingsClient() {
                       <QrCode className="w-3.5 h-3.5" /> {t('qrButton')}
                     </button>
                   )}
+                  {canPay && (
+                    <button
+                      onClick={() => payMutation.mutate(b.id)}
+                      disabled={payMutation.isPending}
+                      className="flex items-center gap-1 text-xs font-semibold text-court-700 bg-court-50 hover:bg-court-100 disabled:opacity-50 rounded-lg px-3 py-2 transition-colors"
+                    >
+                      <CreditCard className="w-3.5 h-3.5" /> {t('payButton')}
+                    </button>
+                  )}
                   {canCancel && (
                     <button
                       onClick={() => cancelMutation.mutate(b.id)}
@@ -170,6 +251,15 @@ export function MyBookingsClient() {
                       className="flex items-center gap-1 text-xs font-semibold text-red-600 bg-red-50 hover:bg-red-100 disabled:opacity-50 rounded-lg px-3 py-2 transition-colors"
                     >
                       <X className="w-3.5 h-3.5" /> {t('cancelButton')}
+                    </button>
+                  )}
+                  {canLeave && (
+                    <button
+                      onClick={() => leaveMutation.mutate(b.id)}
+                      disabled={leaveMutation.isPending}
+                      className="flex items-center gap-1 text-xs font-semibold text-red-600 bg-red-50 hover:bg-red-100 disabled:opacity-50 rounded-lg px-3 py-2 transition-colors"
+                    >
+                      <LogOut className="w-3.5 h-3.5" /> {t('leaveButton')}
                     </button>
                   )}
                 </div>

@@ -16,6 +16,11 @@ import {
   X,
   Search,
   Zap,
+  CreditCard,
+  Clock,
+  Wallet,
+  MessageCircle,
+  Mail,
 } from 'lucide-react'
 import { buildGoogleCalendarUrl } from '@racketly/utils'
 import { Card } from '@/components/ui/Card'
@@ -48,8 +53,14 @@ type Slot = {
   isPeak: boolean
   isAvailable: boolean
 }
-type Pricing = { pricingType: 'pay_per_use' | 'membership_included' | 'membership_extra'; price: number }
+type Pricing = {
+  pricingType: 'pay_per_use' | 'membership_included' | 'membership_extra'
+  price: number
+  pricePerPlayer?: number
+}
 type PlayerItem = { id: string; name: string; email?: string; avatarUrl?: string; city?: string }
+type RosterPlayer = PlayerItem & { pay: boolean; isGuest?: boolean }
+type PlayerFilter = 'club' | 'withMe' | 'city' | 'all'
 type MembershipPlan = {
   id: string
   name: string
@@ -84,8 +95,14 @@ async function fetchAvailability(
   return data.data ?? []
 }
 
-async function fetchPricing(userId: string, clubId: string, slotId: string): Promise<Pricing | null> {
-  const res = await fetch(`/api/memberships/pricing?userId=${userId}&clubId=${clubId}&slotId=${slotId}`)
+async function fetchPricing(
+  userId: string,
+  clubId: string,
+  slotId: string
+): Promise<Pricing | null> {
+  const res = await fetch(
+    `/api/memberships/pricing?userId=${userId}&clubId=${clubId}&slotId=${slotId}`
+  )
   if (!res.ok) return null
   const data = await res.json()
   return data.data ?? null
@@ -123,10 +140,14 @@ async function subscribeMembership(planId: string) {
   return data.data
 }
 
-async function searchPlayers(query: string, excludeId: string): Promise<PlayerItem[]> {
-  const res = await fetch(
-    `/api/users/search?q=${encodeURIComponent(query)}&excludeId=${encodeURIComponent(excludeId)}`
-  )
+async function searchPlayers(
+  query: string,
+  excludeId: string,
+  clubId: string,
+  filter: PlayerFilter
+): Promise<PlayerItem[]> {
+  const params = new URLSearchParams({ q: query, excludeId, clubId, filter })
+  const res = await fetch(`/api/users/search?${params.toString()}`)
   if (!res.ok) return []
   const data = await res.json()
   return data.data ?? []
@@ -159,14 +180,20 @@ export function ClubBookingClient({
   const [selectedSlot, setSelectedSlot] = useState<Slot | null>(null)
   const [confirmed, setConfirmed] = useState(false)
   const [qrCode, setQrCode] = useState<string | null>(null)
-  const initialPlayers = useMemo<PlayerItem[]>(
-    () => (partnerUserId && partnerName ? [{ id: partnerUserId, name: partnerName }] : []),
+  const [bookingId, setBookingId] = useState<string | null>(null)
+  const initialPlayers = useMemo<RosterPlayer[]>(
+    () =>
+      partnerUserId && partnerName ? [{ id: partnerUserId, name: partnerName, pay: false }] : [],
     [partnerUserId, partnerName]
   )
-  const [players, setPlayers] = useState<PlayerItem[]>(initialPlayers)
+  const [players, setPlayers] = useState<RosterPlayer[]>(initialPlayers)
+  const [ownerPay, setOwnerPay] = useState(true)
+  const [paymentMethod, setPaymentMethod] = useState<'card' | 'mercadopago'>('card')
   const [showAddPlayer, setShowAddPlayer] = useState(false)
+  const [playerFilter, setPlayerFilter] = useState<PlayerFilter>('club')
   const [playerSearch, setPlayerSearch] = useState('')
   const [playerQuery, setPlayerQuery] = useState('')
+  const [guestName, setGuestName] = useState('')
 
   useEffect(() => {
     const timer = setTimeout(() => setPlayerQuery(playerSearch), 400)
@@ -174,9 +201,9 @@ export function ClubBookingClient({
   }, [playerSearch])
 
   const { data: playerResults, isFetching: searchingPlayers } = useQuery({
-    queryKey: ['user-search', playerQuery],
-    queryFn: () => searchPlayers(playerQuery, userId),
-    enabled: playerQuery.trim().length >= 2,
+    queryKey: ['user-search', playerQuery, playerFilter, club.id],
+    queryFn: () => searchPlayers(playerQuery, userId, club.id, playerFilter),
+    enabled: playerFilter !== 'all' || playerQuery.trim().length >= 2,
   })
 
   const { data: slots, isLoading } = useQuery({
@@ -205,9 +232,7 @@ export function ClubBookingClient({
     queryKey: ['my-memberships', userId],
     queryFn: () => fetchMyMemberships(userId),
   })
-  const activeMembership = myMemberships?.find(
-    (m) => m.clubId === club.id && m.status === 'active'
-  )
+  const activeMembership = myMemberships?.find((m) => m.clubId === club.id && m.status === 'active')
 
   const subscribeMutation = useMutation({
     mutationFn: subscribeMembership,
@@ -229,8 +254,14 @@ export function ClubBookingClient({
           userId,
           clubId: club.id,
           ownerName: displayName,
-          ownerPay: true,
-          players: players.map((p) => ({ userId: p.id, name: p.name })),
+          ownerPay,
+          paymentMethod,
+          pricingType: pricing?.pricingType,
+          players: players.map((p) => ({
+            ...(p.isGuest ? {} : { userId: p.id }),
+            name: p.name,
+            pay: p.pay,
+          })),
         }),
       })
       const data = await res.json()
@@ -239,6 +270,7 @@ export function ClubBookingClient({
     },
     onSuccess: (result) => {
       setQrCode(result?.booking?.qrCode ?? null)
+      setBookingId(result?.booking?.id ?? null)
       setConfirmed(true)
       toast.success(t('bookingConfirmedToast'))
       queryClient.invalidateQueries({ queryKey: ['availability', club.id, selectedDate] })
@@ -248,10 +280,7 @@ export function ClubBookingClient({
 
   const courts = club.courts ?? []
   // Filtros rápidos de deporte/superficie — solo se muestran si el club tiene pistas mixtas.
-  const sports = useMemo(
-    () => [...new Set((slots ?? []).map((s) => s.court.sport))],
-    [slots]
-  )
+  const sports = useMemo(() => [...new Set((slots ?? []).map((s) => s.court.sport))], [slots])
   const surfaces = useMemo(
     () => [...new Set((slots ?? []).map((s) => s.court.surface).filter((s): s is string => !!s))],
     [slots]
@@ -284,12 +313,28 @@ export function ClubBookingClient({
   function addPlayer(p: PlayerItem) {
     if (players.find((x) => x.id === p.id)) return
     if (players.length + 1 >= capacity) return
-    setPlayers((prev) => [...prev, p])
+    setPlayers((prev) => [...prev, { ...p, pay: false }])
     setPlayerSearch('')
     setPlayerQuery('')
   }
+  function addGuest(name: string) {
+    if (!name.trim() || players.length + 1 >= capacity) return
+    setPlayers((prev) => [
+      ...prev,
+      {
+        id: `guest_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`,
+        name: name.trim(),
+        pay: false,
+        isGuest: true,
+      },
+    ])
+    setGuestName('')
+  }
   function removePlayer(id: string) {
     setPlayers((prev) => prev.filter((p) => p.id !== id))
+  }
+  function togglePlayerPay(id: string) {
+    setPlayers((prev) => prev.map((p) => (p.id === id ? { ...p, pay: !p.pay } : p)))
   }
 
   const rawSlotPrice = selectedSlot
@@ -297,15 +342,19 @@ export function ClubBookingClient({
       ? selectedSlot.peakPrice
       : selectedSlot.basePrice
     : 0
-  const membershipPrice = pricing?.price ?? rawSlotPrice
-  const coveredByCredit =
-    (pricing?.pricingType ?? 'pay_per_use') === 'pay_per_use' && (creditTotal ?? 0) >= membershipPrice
-  const finalPrice = coveredByCredit ? 0 : membershipPrice
+  const isMembershipIncluded = pricing?.pricingType === 'membership_included'
+  const perPlayerPrice = isMembershipIncluded
+    ? 0
+    : (pricing?.pricePerPlayer ?? rawSlotPrice / capacity)
+  const ownerCoveredByCredit = !isMembershipIncluded && (creditTotal ?? 0) >= perPlayerPrice
+  const payingExtras = players.filter((p) => p.pay).length
+  const payingCount = (ownerPay && !ownerCoveredByCredit ? 1 : 0) + payingExtras
+  const finalPrice = isMembershipIncluded ? 0 : perPlayerPrice * payingCount
   const priceNote =
     finalPrice === 0
-      ? pricing?.pricingType === 'membership_included'
+      ? isMembershipIncluded
         ? t('priceCoveredMembership')
-        : coveredByCredit
+        : ownerCoveredByCredit
           ? t('priceCoveredCredit')
           : null
       : null
@@ -327,7 +376,9 @@ export function ClubBookingClient({
           {club.name} · {selectedSlot?.date} · {selectedSlot?.startTime.slice(0, 5)}
         </p>
         {partnerName && (
-          <p className="text-xs text-ink-400 mt-1">{t('bookingWithPartner', { name: partnerName })}</p>
+          <p className="text-xs text-ink-400 mt-1">
+            {t('bookingWithPartner', { name: partnerName })}
+          </p>
         )}
         {qrCode && (
           <div className="mt-6 inline-flex flex-col items-center gap-2 bg-white border border-ink-100 rounded-2xl p-5">
@@ -337,21 +388,53 @@ export function ClubBookingClient({
           </div>
         )}
         {selectedSlot && (
-          <a
-            href={buildGoogleCalendarUrl({
-              title: `${club.name} · ${selectedSlot.court.name}`,
-              location: club.name,
-              description: 'Reserva hecha en Racketly',
-              date: selectedSlot.date,
-              startTime: selectedSlot.startTime,
-              endTime: selectedSlot.endTime,
-            })}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="mt-4 inline-flex items-center gap-1.5 text-sm font-semibold text-court-700 bg-court-50 hover:bg-court-100 rounded-xl px-4 py-2 transition-colors"
-          >
-            <CalendarPlus className="w-4 h-4" /> {t('addToCalendar')}
-          </a>
+          <div className="flex flex-wrap gap-2 justify-center mt-4">
+            <a
+              href={buildGoogleCalendarUrl({
+                title: `${club.name} · ${selectedSlot.court.name}`,
+                location: club.name,
+                description: 'Reserva hecha en Racketly',
+                date: selectedSlot.date,
+                startTime: selectedSlot.startTime,
+                endTime: selectedSlot.endTime,
+              })}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="inline-flex items-center gap-1.5 text-sm font-semibold text-court-700 bg-court-50 hover:bg-court-100 rounded-xl px-4 py-2 transition-colors"
+            >
+              <CalendarPlus className="w-4 h-4" /> {t('addToCalendar')}
+            </a>
+            <a
+              href={`https://wa.me/?text=${encodeURIComponent(
+                t('shareMessage', {
+                  club: club.name,
+                  court: selectedSlot.court.name,
+                  date: selectedSlot.date,
+                  time: selectedSlot.startTime.slice(0, 5),
+                  link: bookingId ? `${window.location.origin}/booking/mine?b=${bookingId}` : '',
+                })
+              )}`}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="inline-flex items-center gap-1.5 text-sm font-semibold text-white bg-green-600 hover:bg-green-700 rounded-xl px-4 py-2 transition-colors"
+            >
+              <MessageCircle className="w-4 h-4" /> {t('shareWhatsApp')}
+            </a>
+            <a
+              href={`mailto:?subject=${encodeURIComponent(t('shareEmailSubject', { club: club.name }))}&body=${encodeURIComponent(
+                t('shareMessage', {
+                  club: club.name,
+                  court: selectedSlot.court.name,
+                  date: selectedSlot.date,
+                  time: selectedSlot.startTime.slice(0, 5),
+                  link: bookingId ? `${window.location.origin}/booking/mine?b=${bookingId}` : '',
+                })
+              )}`}
+              className="inline-flex items-center gap-1.5 text-sm font-semibold text-ink-600 bg-ink-100 hover:bg-ink-200 rounded-xl px-4 py-2 transition-colors"
+            >
+              <Mail className="w-4 h-4" /> {t('shareEmail')}
+            </a>
+          </div>
         )}
         <div className="flex gap-3 mt-6 justify-center">
           <Link
@@ -655,6 +738,32 @@ export function ClubBookingClient({
               <p className="text-sm font-semibold text-ink-900">{t('ownerLabel')}</p>
               <p className="text-xs text-ink-400">{displayName}</p>
             </div>
+            {isMembershipIncluded ? (
+              <span className="shrink-0 flex items-center gap-1 text-xs font-semibold px-2.5 py-1.5 rounded-lg bg-court-100 text-court-700">
+                <CheckCircle2 className="w-3.5 h-3.5" /> {t('coveredByMembership')}
+              </span>
+            ) : ownerCoveredByCredit ? (
+              <span className="shrink-0 flex items-center gap-1 text-xs font-semibold px-2.5 py-1.5 rounded-lg bg-court-100 text-court-700">
+                <Wallet className="w-3.5 h-3.5" /> {t('coveredByCreditTag')}
+              </span>
+            ) : (
+              <button
+                onClick={() => setOwnerPay((v) => !v)}
+                className={cn(
+                  'shrink-0 flex items-center gap-1 text-xs font-semibold px-2.5 py-1.5 rounded-lg transition-colors',
+                  ownerPay
+                    ? 'bg-court-100 text-court-700'
+                    : 'bg-white text-ink-500 border border-ink-200'
+                )}
+              >
+                {ownerPay ? (
+                  <CreditCard className="w-3.5 h-3.5" />
+                ) : (
+                  <Clock className="w-3.5 h-3.5" />
+                )}
+                {ownerPay ? t('payNow') : t('payLater')}
+              </button>
+            )}
           </div>
 
           {players.map((p) => (
@@ -663,16 +772,37 @@ export function ClubBookingClient({
               className="flex items-center justify-between gap-2 bg-ink-50 rounded-xl px-3 py-2.5"
             >
               <div className="min-w-0">
-                <p className="text-sm font-semibold text-ink-900 truncate">{p.name}</p>
+                <p className="text-sm font-semibold text-ink-900 truncate">
+                  {p.name}{' '}
+                  {p.isGuest && <span className="text-ink-400 font-normal">· {t('guestTag')}</span>}
+                </p>
                 {p.city && <p className="text-xs text-ink-400">{p.city}</p>}
               </div>
-              <button
-                onClick={() => removePlayer(p.id)}
-                aria-label={t('removePlayerLabel')}
-                className="shrink-0 text-ink-300 hover:text-red-600 transition-colors"
-              >
-                <X className="w-4 h-4" />
-              </button>
+              <div className="flex items-center gap-1.5 shrink-0">
+                <button
+                  onClick={() => togglePlayerPay(p.id)}
+                  className={cn(
+                    'flex items-center gap-1 text-xs font-semibold px-2.5 py-1.5 rounded-lg transition-colors',
+                    p.pay
+                      ? 'bg-court-100 text-court-700'
+                      : 'bg-white text-ink-500 border border-ink-200'
+                  )}
+                >
+                  {p.pay ? (
+                    <CreditCard className="w-3.5 h-3.5" />
+                  ) : (
+                    <Clock className="w-3.5 h-3.5" />
+                  )}
+                  {p.pay ? t('payNow') : t('payLater')}
+                </button>
+                <button
+                  onClick={() => removePlayer(p.id)}
+                  aria-label={t('removePlayerLabel')}
+                  className="text-ink-300 hover:text-red-600 transition-colors"
+                >
+                  <X className="w-4 h-4" />
+                </button>
+              </div>
             </div>
           ))}
 
@@ -697,6 +827,30 @@ export function ClubBookingClient({
         title={t('addPlayerModalTitle')}
       >
         <div className="space-y-3">
+          <div className="flex gap-1.5 overflow-x-auto pb-1">
+            {(
+              [
+                ['club', t('filterClub')],
+                ['withMe', t('filterWithMe')],
+                ['city', t('filterCity')],
+                ['all', t('filterAllPlayers')],
+              ] as [PlayerFilter, string][]
+            ).map(([value, label]) => (
+              <button
+                key={value}
+                onClick={() => setPlayerFilter(value)}
+                className={cn(
+                  'shrink-0 px-3 py-1.5 rounded-full text-xs font-semibold transition-colors',
+                  playerFilter === value
+                    ? 'bg-court-600 text-white'
+                    : 'bg-ink-100 text-ink-500 hover:bg-ink-200'
+                )}
+              >
+                {label}
+              </button>
+            ))}
+          </div>
+
           <div className="flex items-center gap-2 border border-ink-200 rounded-xl px-3 py-2">
             <Search className="w-4 h-4 text-ink-400 shrink-0" />
             <input
@@ -709,8 +863,8 @@ export function ClubBookingClient({
             {searchingPlayers && <Loader2 className="w-4 h-4 animate-spin text-ink-300" />}
           </div>
 
-          <div className="space-y-1 max-h-72 overflow-y-auto">
-            {playerQuery.trim().length < 2 ? (
+          <div className="space-y-1 h-72 overflow-y-auto">
+            {playerFilter === 'all' && playerQuery.trim().length < 2 ? (
               <p className="text-xs text-ink-400 text-center py-4">{t('playerSearchHint')}</p>
             ) : (playerResults ?? []).filter((p) => !players.find((x) => x.id === p.id)).length ===
               0 ? (
@@ -737,50 +891,89 @@ export function ClubBookingClient({
                 ))
             )}
           </div>
+
+          <div className="border-t border-ink-100 pt-3 flex items-center gap-2">
+            <input
+              value={guestName}
+              onChange={(e) => setGuestName(e.target.value)}
+              onKeyDown={(e) => e.key === 'Enter' && addGuest(guestName)}
+              placeholder={t('guestNamePlaceholder')}
+              className="flex-1 text-sm outline-none border border-ink-200 rounded-xl px-3 py-2"
+            />
+            <button
+              onClick={() => addGuest(guestName)}
+              disabled={!guestName.trim()}
+              className="shrink-0 text-xs font-bold text-white bg-court-600 hover:bg-court-700 disabled:opacity-50 rounded-xl px-3.5 py-2 transition-colors"
+            >
+              {t('addGuestButton')}
+            </button>
+          </div>
         </div>
       </Modal>
 
       {selectedSlot && (
         <div className="fixed bottom-0 left-0 right-0 bg-white border-t border-ink-100 shadow-[0_-4px_16px_rgba(0,0,0,0.06)] px-4 py-4 z-30">
-          <div className="max-w-5xl mx-auto flex items-center justify-between gap-4">
-            <div>
-              <p className="text-sm font-bold text-ink-900">
-                {selectedSlot.court.name} · {selectedSlot.startTime.slice(0, 5)}
-              </p>
-              <p className="text-xs text-ink-400">
-                {selectedDate} ·{' '}
-                {finalPrice === 0 ? (
-                  <span className="font-semibold text-court-600">{priceNote ?? t('priceFree')}</span>
-                ) : (
-                  <>
-                    {club.currency} {finalPrice.toFixed(0)}
-                    {finalPrice < rawSlotPrice && (
-                      <span className="line-through text-ink-300 ml-1.5">
-                        {club.currency} {rawSlotPrice.toFixed(0)}
-                      </span>
-                    )}
-                  </>
-                )}
-              </p>
-              {bookMutation.isError && (
-                <p className="flex items-center gap-1 text-xs text-red-600 mt-1">
-                  <AlertCircle className="w-3.5 h-3.5" /> {(bookMutation.error as Error).message}
+          <div className="max-w-5xl mx-auto space-y-3">
+            {finalPrice > 0 && (
+              <div className="flex gap-2">
+                <button
+                  onClick={() => setPaymentMethod('card')}
+                  className={cn(
+                    'flex-1 flex items-center justify-center gap-1.5 text-xs font-semibold px-3 py-2 rounded-xl border transition-colors',
+                    paymentMethod === 'card'
+                      ? 'bg-court-50 border-court-500 text-court-700'
+                      : 'bg-white border-ink-200 text-ink-500'
+                  )}
+                >
+                  <CreditCard className="w-3.5 h-3.5" /> {t('paymentCard')}
+                </button>
+                <button
+                  disabled
+                  title={t('paymentComingSoon')}
+                  className="flex-1 flex items-center justify-center gap-1.5 text-xs font-semibold px-3 py-2 rounded-xl border border-ink-100 text-ink-300 bg-ink-50 cursor-not-allowed"
+                >
+                  {t('paymentMercadoPago')}
+                </button>
+              </div>
+            )}
+            <div className="flex items-center justify-between gap-4">
+              <div>
+                <p className="text-sm font-bold text-ink-900">
+                  {selectedSlot.court.name} · {selectedSlot.startTime.slice(0, 5)}
                 </p>
-              )}
+                <p className="text-xs text-ink-400">
+                  {selectedDate} ·{' '}
+                  {finalPrice === 0 ? (
+                    <span className="font-semibold text-court-600">
+                      {priceNote ?? t('priceFree')}
+                    </span>
+                  ) : (
+                    <>
+                      {club.currency} {finalPrice.toFixed(0)} ·{' '}
+                      {t('payingCountLabel', { count: payingCount })}
+                    </>
+                  )}
+                </p>
+                {bookMutation.isError && (
+                  <p className="flex items-center gap-1 text-xs text-red-600 mt-1">
+                    <AlertCircle className="w-3.5 h-3.5" /> {(bookMutation.error as Error).message}
+                  </p>
+                )}
+              </div>
+              <button
+                onClick={() => bookMutation.mutate()}
+                disabled={bookMutation.isPending || !rosterComplete}
+                className="shrink-0 bg-court-600 hover:bg-court-700 disabled:opacity-60 text-white font-bold px-6 py-3 rounded-xl transition-all flex items-center gap-2"
+              >
+                {bookMutation.isPending ? (
+                  <Loader2 className="w-4 h-4 animate-spin" />
+                ) : !rosterComplete ? (
+                  t('confirmMissingPlayers', { count: missingPlayers })
+                ) : (
+                  t('confirmBooking')
+                )}
+              </button>
             </div>
-            <button
-              onClick={() => bookMutation.mutate()}
-              disabled={bookMutation.isPending || !rosterComplete}
-              className="shrink-0 bg-court-600 hover:bg-court-700 disabled:opacity-60 text-white font-bold px-6 py-3 rounded-xl transition-all flex items-center gap-2"
-            >
-              {bookMutation.isPending ? (
-                <Loader2 className="w-4 h-4 animate-spin" />
-              ) : !rosterComplete ? (
-                t('confirmMissingPlayers', { count: missingPlayers })
-              ) : (
-                t('confirmBooking')
-              )}
-            </button>
           </div>
         </div>
       )}

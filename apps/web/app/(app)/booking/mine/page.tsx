@@ -6,5 +6,5 @@ export default async function MyBookingsPage() {
   const user = await getSessionUser()
   if (!user) redirect('/login')
 
-  return <MyBookingsClient />
+  return <MyBookingsClient userId={user.id} />
 }

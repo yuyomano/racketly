@@ -113,7 +113,21 @@
       "paidToast": "Payment registered",
       "leaveButton": "Leave",
       "leaveError": "Couldn't leave the booking",
-      "leftToast": "You left the booking"
+      "leftToast": "You left the booking",
+      "coveredByMembership": "Covered by your membership",
+      "coveredByCredit": "Covered with credit",
+      "payForButton": "Pay for {name}",
+      "editButton": "Edit",
+      "editModalTitle": "Edit players",
+      "editSavedToast": "Players updated",
+      "editError": "Couldn't save the changes",
+      "editNoPlayers": "Just you in this booking",
+      "editSearchPlaceholder": "Search player by name...",
+      "editSaveButton": "Save changes",
+      "payModalTitle": "Pay booking",
+      "payModalAmountFor": "Amount for {name}",
+      "payModalPayButton": "Pay now",
+      "payModalDevModeHint": "Test mode — the club hasn't set up real payment collection yet. This button simulates the payment."
     }
   }
 }

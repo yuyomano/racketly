@@ -113,7 +113,21 @@
       "paidToast": "Pago registrado",
       "leaveButton": "Salir",
       "leaveError": "No se pudo salir de la reserva",
-      "leftToast": "Saliste de la reserva"
+      "leftToast": "Saliste de la reserva",
+      "coveredByMembership": "Cubierto por tu membresía",
+      "coveredByCredit": "Cubierto con crédito",
+      "payForButton": "Pagar por {name}",
+      "editButton": "Editar",
+      "editModalTitle": "Editar jugadores",
+      "editSavedToast": "Jugadores actualizados",
+      "editError": "No se pudo guardar los cambios",
+      "editNoPlayers": "Solo tú en esta reserva",
+      "editSearchPlaceholder": "Buscar jugador por nombre...",
+      "editSaveButton": "Guardar cambios",
+      "payModalTitle": "Pagar reserva",
+      "payModalAmountFor": "A pagar por {name}",
+      "payModalPayButton": "Pagar ahora",
+      "payModalDevModeHint": "Modo de prueba — el club aún no configuró un método de cobro real. Este botón simula el pago."
     }
   }
 }

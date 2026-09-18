@@ -795,8 +795,13 @@ router.patch('/:id/cancel', async (req: Request, res: Response, next: NextFuncti
 })
 
 // PATCH /api/bookings/:id/players/:playerId/pay — Admin marca pago de un jugador (cobro
-// presencial desde el dashboard). :playerId matchea userId (jugador con cuenta) o guestId
-// (invitado sin cuenta). Body opcional: { paymentMethod: 'cash' | 'card' }.
+// presencial desde el dashboard, sin cargo real por Stripe). :playerId matchea userId
+// (jugador con cuenta) o guestId (invitado sin cuenta). Body opcional:
+// { paymentMethod: 'cash' | 'card' }.
+// Solo admin del club: a diferencia de /players/:playerId/intent + /confirm (pago real con
+// tarjeta, para que un jugador pague su parte o la de otro), esta ruta da por pagado sin
+// verificar ningún cobro — si cualquier usuario pudiera llamarla, marcaría reservas ajenas
+// como pagadas gratis.
 router.patch(
   '/:id/players/:playerId/pay',
   async (req: Request, res: Response, next: NextFunction) => {
@@ -806,6 +811,8 @@ router.patch(
         include: { slot: { include: { court: true } } },
       })
       if (!booking) throw new AppError('Reserva no encontrada', 404)
+
+      await assertClubAdmin(req.headers['x-user-id'] as string | undefined, booking.slot.court.clubId)
 
       const players = (booking.players as any[]) || []
       const idx = players.findIndex(
@@ -841,6 +848,124 @@ router.patch(
         amount: amountToCollect,
         currency: booking.currency,
         method,
+      })
+
+      return res.json({ success: true, data: updated })
+    } catch (err) {
+      return next(err)
+    }
+  }
+)
+
+// Un participante (dueño o jugador) puede pagar su parte o la de otro jugador de la misma
+// reserva — nunca la de una reserva ajena.
+async function assertBookingParticipant(booking: any, requestingUserId: string | undefined) {
+  if (!requestingUserId) throw new AppError('Autenticación requerida', 401)
+  const players = (booking.players as any[]) || []
+  const isParticipant =
+    booking.userId === requestingUserId || players.some((p: any) => p.userId === requestingUserId)
+  if (!isParticipant) throw new AppError('No formas parte de esta reserva', 403)
+}
+
+// POST /api/bookings/:id/players/:playerId/intent — crea (o reutiliza) el PaymentIntent de
+// Stripe para que un participante de la reserva pague la parte de :playerId (la propia u otra).
+router.post(
+  '/:id/players/:playerId/intent',
+  async (req: Request, res: Response, next: NextFunction) => {
+    try {
+      const booking = await prisma.booking.findUnique({
+        where: { id: req.params.id },
+        include: { slot: { include: { court: true } } },
+      })
+      if (!booking) throw new AppError('Reserva no encontrada', 404)
+      await assertBookingParticipant(booking, req.headers['x-user-id'] as string | undefined)
+
+      const players = (booking.players as any[]) || []
+      const player = players.find((p: any) => p.userId === req.params.playerId)
+      if (!player) throw new AppError('Jugador no encontrado en esta reserva', 404)
+      if (player.paymentStatus !== 'pending')
+        throw new AppError('Este jugador ya está resuelto (pagado, cortesía o cubierto)', 400)
+
+      const paymentData = await createStripePaymentIntent({
+        amount: Math.round((player.amountOwed ?? 0) * 100),
+        currency: booking.currency,
+        bookingId: booking.id,
+        userId: req.params.playerId,
+        description: `Reserva ${booking.slot.court.name} - ${booking.slot.date} ${booking.slot.startTime} (${player.name})`,
+      })
+
+      return res.json({
+        success: true,
+        data: {
+          clientSecret: paymentData.clientSecret,
+          paymentIntentId: paymentData.paymentIntentId,
+          devMode: !!paymentData.devMode,
+        },
+      })
+    } catch (err) {
+      return next(err)
+    }
+  }
+)
+
+// POST /api/bookings/:id/players/:playerId/confirm-payment — el cliente llama esto tras
+// confirmar el pago con Stripe.js. Verificamos server-side el estado real del PaymentIntent
+// antes de dar por pagado (mismo patrón que /guest-payments/:token/confirm).
+router.post(
+  '/:id/players/:playerId/confirm-payment',
+  async (req: Request, res: Response, next: NextFunction) => {
+    try {
+      const booking = await prisma.booking.findUnique({
+        where: { id: req.params.id },
+        include: { slot: { include: { court: true } } },
+      })
+      if (!booking) throw new AppError('Reserva no encontrada', 404)
+      await assertBookingParticipant(booking, req.headers['x-user-id'] as string | undefined)
+
+      const players = (booking.players as any[]) || []
+      const idx = players.findIndex((p: any) => p.userId === req.params.playerId)
+      if (idx === -1) throw new AppError('Jugador no encontrado en esta reserva', 404)
+      if (players[idx].paymentStatus === 'paid') {
+        return res.json({ success: true, data: { alreadyPaid: true } })
+      }
+
+      const { paymentIntentId } = req.body
+      if (!paymentIntentId) throw new AppError('paymentIntentId requerido', 400)
+      const intent = await retrieveStripePaymentIntent(paymentIntentId)
+      if (intent.status !== 'succeeded') throw new AppError('El pago aún no se completó', 400)
+
+      const amountOwed = players[idx].amountOwed ?? 0
+      players[idx] = {
+        ...players[idx],
+        amountPaid: amountOwed,
+        paymentStatus: 'paid',
+        paymentMethod: 'card',
+        paidAt: new Date().toISOString(),
+      }
+
+      const newAmountPaid = players.reduce((sum: number, p: any) => sum + (p.amountPaid ?? 0), 0)
+      const allSettled = players.every(
+        (p: any) => p.paymentStatus === 'paid' || p.paymentStatus === 'courtesy'
+      )
+
+      const updated = await prisma.booking.update({
+        where: { id: req.params.id },
+        data: {
+          players,
+          amountPaid: newAmountPaid,
+          paymentStatus: allSettled ? 'paid' : booking.paymentStatus,
+        },
+        include: { slot: { include: { court: { include: { club: true } } } } },
+      })
+
+      await recordPayment({
+        clubId: booking.slot.court.clubId,
+        bookingId: booking.id,
+        playerUserId: players[idx].userId,
+        playerName: players[idx].name,
+        amount: amountOwed,
+        currency: booking.currency,
+        method: 'card',
       })
 
       return res.json({ success: true, data: updated })

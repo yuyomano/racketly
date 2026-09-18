@@ -1,0 +1,9 @@
+{
+  "Badges": {
+    "backLink": "Back to profile",
+    "title": "Badges & achievements",
+    "progress": "{earned}/{total} unlocked",
+    "loadError": "Failed to load your badges",
+    "xpReward": "+{xp} XP"
+  }
+}

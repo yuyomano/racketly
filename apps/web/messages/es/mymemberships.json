@@ -1,0 +1,19 @@
+{
+  "MyMemberships": {
+    "backLink": "Volver al perfil",
+    "title": "Mis membresías",
+    "loadError": "Error al cargar tus membresías",
+    "emptyTitle": "No tienes membresías",
+    "emptyDescription": "Suscríbete a un club para acceder a sesiones gratuitas cada día.",
+    "statusActive": "Activa",
+    "statusCancelled": "Cancelada",
+    "statusExpired": "Expirada",
+    "pendingCancelBadge": "Se cancela pronto",
+    "perMonth": "mes",
+    "nextBilling": "Próximo cobro: {date}",
+    "cancelButton": "Cancelar",
+    "cancelConfirm": "¿Seguro que quieres cancelar tu membresía en {club}? Seguirá activa hasta el fin del período ya pagado.",
+    "cancelError": "No se pudo cancelar la membresía",
+    "cancelledToast": "Membresía cancelada"
+  }
+}

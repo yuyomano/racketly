@@ -1,0 +1,9 @@
+{
+  "Badges": {
+    "backLink": "Volver al perfil",
+    "title": "Insignias y logros",
+    "progress": "{earned}/{total} desbloqueadas",
+    "loadError": "Error al cargar tus insignias",
+    "xpReward": "+{xp} XP"
+  }
+}

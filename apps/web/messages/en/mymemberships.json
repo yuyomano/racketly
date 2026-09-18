@@ -1,0 +1,19 @@
+{
+  "MyMemberships": {
+    "backLink": "Back to profile",
+    "title": "My memberships",
+    "loadError": "Failed to load your memberships",
+    "emptyTitle": "No memberships yet",
+    "emptyDescription": "Subscribe to a club to get free sessions every day.",
+    "statusActive": "Active",
+    "statusCancelled": "Cancelled",
+    "statusExpired": "Expired",
+    "pendingCancelBadge": "Cancelling soon",
+    "perMonth": "month",
+    "nextBilling": "Next billing: {date}",
+    "cancelButton": "Cancel",
+    "cancelConfirm": "Cancel your membership at {club}? It stays active until the end of the paid period.",
+    "cancelError": "Couldn't cancel the membership",
+    "cancelledToast": "Membership cancelled"
+  }
+}

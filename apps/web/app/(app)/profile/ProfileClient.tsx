@@ -4,13 +4,28 @@ import { useRef, useState } from 'react'
 import { useTranslations } from 'next-intl'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import Image from 'next/image'
-import { Pencil, Loader2, AlertCircle, Trophy, Target, Zap, MapPin, Camera } from 'lucide-react'
+import {
+  Pencil,
+  Loader2,
+  AlertCircle,
+  Trophy,
+  Target,
+  Zap,
+  MapPin,
+  Camera,
+  CalendarDays,
+  Handshake,
+  Ribbon,
+  Wallet,
+  ChevronRight,
+} from 'lucide-react'
 import { eloToCategory, xpForNextLevel } from '@racketly/utils'
 import { Card } from '@/components/ui/Card'
 import { Badge } from '@/components/ui/Badge'
 import { Button } from '@/components/ui/Button'
 import { PadelIcon, PickleballIcon } from '@/components/ui/SportIcons'
 import { useToast } from '@/components/ui/Toast'
+import Link from 'next/link'
 
 const COUNTRY_CODES = ['DO', 'CO', 'MX', 'ES', 'AR', 'US'] as const
 
@@ -46,6 +61,21 @@ async function fetchStats(userId: string, fallbackError: string): Promise<Profil
   return data.data
 }
 
+async function fetchPhone(): Promise<string> {
+  const res = await fetch('/api/auth/me')
+  const data = await res.json()
+  if (!res.ok) return ''
+  return data.data?.phone ?? ''
+}
+
+const QUICK_LINKS: { href: string; key: string; icon: typeof CalendarDays }[] = [
+  { href: '/booking/mine', key: 'myBookings', icon: CalendarDays },
+  { href: '/tournaments/mine', key: 'myTournaments', icon: Trophy },
+  { href: '/find-a-partner/mine', key: 'findPartner', icon: Handshake },
+  { href: '/memberships/mine', key: 'myMemberships', icon: Wallet },
+  { href: '/badges', key: 'badges', icon: Ribbon },
+]
+
 export function ProfileClient({
   userId,
   email,
@@ -68,6 +98,11 @@ export function ProfileClient({
     initialData: initial ?? undefined,
   })
 
+  const { data: phone } = useQuery({
+    queryKey: ['profile', userId, 'phone'],
+    queryFn: fetchPhone,
+  })
+
   const [form, setForm] = useState(() => ({
     displayName: data?.profile.displayName ?? '',
     bio: data?.profile.bio ?? '',
@@ -79,6 +114,7 @@ export function ProfileClient({
     instagramHandle: data?.profile.instagramHandle ?? '',
     whatsapp: data?.profile.whatsapp ?? '',
     plusCode: data?.profile.plusCode ?? '',
+    phone: phone ?? '',
   }))
 
   function startEdit() {
@@ -94,6 +130,7 @@ export function ProfileClient({
         instagramHandle: data.profile.instagramHandle ?? '',
         whatsapp: data.profile.whatsapp ?? '',
         plusCode: data.profile.plusCode ?? '',
+        phone: phone ?? '',
       })
     setEditing(true)
   }
@@ -116,21 +153,31 @@ export function ProfileClient({
 
   const saveMutation = useMutation({
     mutationFn: async () => {
-      const res = await fetch('/api/profile', {
-        method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          ...form,
-          preferredSide: form.preferredSide || null,
-          gender: form.gender || null,
-          instagramHandle: form.instagramHandle || null,
-          whatsapp: form.whatsapp || null,
-          plusCode: form.plusCode || null,
+      const { phone: phoneValue, ...profileForm } = form
+      const [profileRes, meRes] = await Promise.all([
+        fetch('/api/profile', {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            ...profileForm,
+            preferredSide: form.preferredSide || null,
+            gender: form.gender || null,
+            instagramHandle: form.instagramHandle || null,
+            whatsapp: form.whatsapp || null,
+            plusCode: form.plusCode || null,
+          }),
         }),
-      })
-      const resData = await res.json()
-      if (!res.ok) throw new Error(resData.error ?? t('errors.saveFailed'))
-      return resData.data
+        fetch('/api/auth/me', {
+          method: 'PATCH',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ phone: phoneValue || null }),
+        }),
+      ])
+      const profileData = await profileRes.json()
+      const meData = await meRes.json()
+      if (!profileRes.ok) throw new Error(profileData.error ?? t('errors.saveFailed'))
+      if (!meRes.ok) throw new Error(meData.error ?? t('errors.saveFailed'))
+      return profileData.data
     },
     onError: (e: Error) => setError(e.message),
     onSuccess: () => {
@@ -342,12 +389,12 @@ export function ProfileClient({
             <div className="grid grid-cols-2 gap-3">
               <div>
                 <label className="block text-xs font-semibold text-ink-600 mb-1.5">
-                  {t('form.instagramLabel')}
+                  {t('form.phoneLabel')}
                 </label>
                 <input
-                  value={form.instagramHandle}
-                  onChange={(e) => setForm({ ...form, instagramHandle: e.target.value })}
-                  placeholder="@usuario"
+                  value={form.phone}
+                  onChange={(e) => setForm({ ...form, phone: e.target.value })}
+                  placeholder="+1 809 555 0000"
                   className="w-full border border-ink-200 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-court-500/40"
                 />
               </div>
@@ -362,6 +409,17 @@ export function ProfileClient({
                   className="w-full border border-ink-200 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-court-500/40"
                 />
               </div>
+            </div>
+            <div>
+              <label className="block text-xs font-semibold text-ink-600 mb-1.5">
+                {t('form.instagramLabel')}
+              </label>
+              <input
+                value={form.instagramHandle}
+                onChange={(e) => setForm({ ...form, instagramHandle: e.target.value })}
+                placeholder="@usuario"
+                className="w-full border border-ink-200 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-court-500/40"
+              />
             </div>
             <div>
               <label className="block text-xs font-semibold text-ink-600 mb-1.5">
@@ -450,6 +508,24 @@ export function ProfileClient({
             <p className="text-[11px] text-ink-400 mt-0.5">{t('matches.winRate')}</p>
           </div>
         </div>
+      </Card>
+
+      <Card className="overflow-hidden">
+        {QUICK_LINKS.map(({ href, key, icon: Icon }) => (
+          <Link
+            key={href}
+            href={href}
+            className="flex items-center gap-3 px-5 py-4 border-b border-ink-100 last:border-0 hover:bg-ink-50 transition-colors"
+          >
+            <div className="w-8 h-8 rounded-lg bg-court-50 flex items-center justify-center shrink-0">
+              <Icon className="w-4 h-4 text-court-600" />
+            </div>
+            <span className="flex-1 text-sm font-semibold text-ink-800">
+              {t(`quickLinks.${key}`)}
+            </span>
+            <ChevronRight className="w-4 h-4 text-ink-300" />
+          </Link>
+        ))}
       </Card>
     </div>
   )

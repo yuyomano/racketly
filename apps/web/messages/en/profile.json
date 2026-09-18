@@ -22,6 +22,7 @@
       "sportLabel": "Sport",
       "preferredSideLabel": "Playing side",
       "genderLabel": "Gender",
+      "phoneLabel": "Phone",
       "instagramLabel": "Instagram",
       "whatsappLabel": "WhatsApp",
       "plusCodeLabel": "Location (Plus Code)",
@@ -60,6 +61,13 @@
       "won": "Won",
       "lost": "Lost",
       "winRate": "Win rate"
+    },
+    "quickLinks": {
+      "myBookings": "My bookings",
+      "myTournaments": "My tournaments",
+      "findPartner": "Find a partner",
+      "myMemberships": "My memberships",
+      "badges": "Badges & achievements"
     }
   }
 }

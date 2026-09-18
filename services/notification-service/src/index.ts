@@ -3,7 +3,7 @@ import express from 'express'
 import helmet from 'helmet'
 import cors from 'cors'
 import { Queue, Worker } from 'bullmq'
-import sgMail from '@sendgrid/mail'
+import { Resend } from 'resend'
 import { PrismaClient } from '@prisma/client'
 import { createPgAdapter } from '@racketly/utils/prisma-adapter'
 import { distanceKm } from '@racketly/utils'
@@ -20,14 +20,14 @@ const PORT = process.env.PORT || 3006
 app.use(helmet())
 app.use(cors({ origin: process.env.ALLOWED_ORIGINS?.split(','), credentials: true }))
 
-// ─── SendGrid Init (opcional en dev) ─────────────────────────────────────────
-let sendgridReady = false
-if (process.env.SENDGRID_API_KEY) {
-  sgMail.setApiKey(process.env.SENDGRID_API_KEY)
-  sendgridReady = true
+// ─── Resend Init (opcional en dev) ───────────────────────────────────────────
+let resend: Resend | null = null
+if (process.env.RESEND_API_KEY) {
+  resend = new Resend(process.env.RESEND_API_KEY)
 } else {
-  console.warn('⚠️  SENDGRID_API_KEY no configurado — emails deshabilitados')
+  console.warn('⚠️  RESEND_API_KEY no configurado — emails deshabilitados')
 }
+const EMAIL_FROM = process.env.EMAIL_FROM || 'Racketly <noreply@racketly.club>'
 
 // ─── Redis Connection ─────────────────────────────────────────────────────────
 export const redisConnection = {
@@ -70,17 +70,12 @@ new Worker(
   'email-notifications',
   async (job) => {
     const { to, subject, html, text } = job.data
-    if (!sendgridReady) {
-      console.info(`[Email] SKIP (SendGrid no config): ${subject} → ${to}`)
+    if (!resend) {
+      console.info(`[Email] SKIP (Resend no config): ${subject} → ${to}`)
       return
     }
-    await sgMail.send({
-      to,
-      from: { email: 'noreply@racketly.app', name: 'Racketly' },
-      subject,
-      html,
-      text,
-    })
+    const { error } = await resend.emails.send({ from: EMAIL_FROM, to, subject, html, text })
+    if (error) throw new Error(error.message)
     console.info(`[Email] Sent to ${to}: ${subject}`)
   },
   { connection: redisConnection }
@@ -183,7 +178,7 @@ app.get('/health', (_req, res) => {
     status: 'ok',
     capabilities: {
       push: true, // Expo Push Service no requiere config previa
-      email: sendgridReady,
+      email: !!resend,
       queues: true,
     },
   })

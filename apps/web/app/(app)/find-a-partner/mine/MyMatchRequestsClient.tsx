@@ -1,15 +1,18 @@
 'use client'
 
+import { useState } from 'react'
 import Link from 'next/link'
 import { useTranslations } from 'next-intl'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
-import { ArrowLeft, Handshake, Loader2, Check, X, CalendarPlus } from 'lucide-react'
+import { ArrowLeft, Handshake, Loader2, Check, X, CalendarPlus, Pencil } from 'lucide-react'
 import { Card } from '@/components/ui/Card'
 import { Badge, type BadgeTone } from '@/components/ui/Badge'
 import { EmptyState } from '@/components/ui/EmptyState'
 import { Button } from '@/components/ui/Button'
 import { PadelIcon, PickleballIcon } from '@/components/ui/SportIcons'
 import { useToast } from '@/components/ui/Toast'
+import { RequestFormModal } from '../RequestFormModal'
+import type { Tournament } from '../shared'
 
 type Application = {
   id: string
@@ -32,6 +35,12 @@ type MatchRequest = {
   city: string
   levelMin: string
   levelMax: string
+  maxDistanceKm: number
+  preferredDate: string | null
+  timePreference: string | null
+  tournamentId: string | null
+  tournament: Tournament | null
+  message: string | null
   status: string
   applications: Application[]
 }
@@ -54,12 +63,32 @@ export function MyMatchRequestsClient() {
   const t = useTranslations('FindPartner.mine')
   const toast = useToast()
   const queryClient = useQueryClient()
+  const [editRequest, setEditRequest] = useState<MatchRequest | null>(null)
 
   const {
     data: requests,
     isLoading,
     error,
   } = useQuery({ queryKey: ['match-requests-mine'], queryFn: fetchMine })
+
+  const editMutation = useMutation({
+    mutationFn: async ({ id, payload }: { id: string; payload: Record<string, unknown> }) => {
+      const res = await fetch(`/api/match-requests/${id}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload),
+      })
+      const data = await res.json()
+      if (!res.ok) throw new Error(data.error ?? t('errorEdit'))
+      return data.data
+    },
+    onSuccess: () => {
+      toast.success(t('editSuccess'))
+      setEditRequest(null)
+      queryClient.invalidateQueries({ queryKey: ['match-requests-mine'] })
+    },
+    onError: (e: Error) => toast.error(e.message),
+  })
 
   const respondMutation = useMutation({
     mutationFn: async ({ id, status }: { id: string; status: 'accepted' | 'rejected' }) => {
@@ -126,8 +155,21 @@ export function MyMatchRequestsClient() {
                   <Badge tone="violet">
                     {r.levelMin === r.levelMax ? r.levelMin : `${r.levelMin}–${r.levelMax}`}
                   </Badge>
+                  {r.tournament && <Badge tone="amber">🏆 {r.tournament.name}</Badge>}
                 </div>
-                <Badge tone={STATUS_TONE[r.status] ?? 'gray'}>{t(`status_${r.status}`)}</Badge>
+                <div className="flex items-center gap-2 shrink-0">
+                  {r.status === 'open' && (
+                    <Button
+                      size="sm"
+                      variant="secondary"
+                      className="!px-2.5"
+                      onClick={() => setEditRequest(r)}
+                    >
+                      <Pencil className="w-3.5 h-3.5" />
+                    </Button>
+                  )}
+                  <Badge tone={STATUS_TONE[r.status] ?? 'gray'}>{t(`status_${r.status}`)}</Badge>
+                </div>
               </div>
 
               {r.status === 'matched' &&
@@ -194,6 +236,28 @@ export function MyMatchRequestsClient() {
             </Card>
           ))}
         </div>
+      )}
+
+      {editRequest && (
+        <RequestFormModal
+          open={!!editRequest}
+          onClose={() => setEditRequest(null)}
+          onSubmit={(payload) => editMutation.mutate({ id: editRequest.id, payload })}
+          isPending={editMutation.isPending}
+          title={t('editModalTitle')}
+          submitLabel={t('saveButton')}
+          initial={{
+            sport: editRequest.sport,
+            levelMin: editRequest.levelMin,
+            levelMax: editRequest.levelMax,
+            city: editRequest.city,
+            maxDistanceKm: String(editRequest.maxDistanceKm),
+            preferredDate: editRequest.preferredDate ?? '',
+            timePreference: editRequest.timePreference ?? '',
+            tournamentId: editRequest.tournamentId ?? '',
+            message: editRequest.message ?? '',
+          }}
+        />
       )}
     </div>
   )

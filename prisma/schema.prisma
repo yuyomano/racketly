@@ -880,11 +880,12 @@ model Tournament {
   sponsorLogoUrl       String?
   createdAt            DateTime         @default(now())
 
-  club         Club?                   @relation(fields: [clubId], references: [id])
-  event        TournamentEvent?        @relation(fields: [eventId], references: [id])
-  participants TournamentParticipant[]
-  matches      Match[]
-  sponsorships TournamentSponsorship[]
+  club          Club?                   @relation(fields: [clubId], references: [id])
+  event         TournamentEvent?        @relation(fields: [eventId], references: [id])
+  participants  TournamentParticipant[]
+  matches       Match[]
+  sponsorships  TournamentSponsorship[]
+  matchRequests MatchRequest[]
 
   @@map("tournaments")
 }
@@ -988,12 +989,14 @@ model MatchRequest {
   preferredDate  String?
   timePreference String?
   courtId        String?
+  tournamentId   String? // busca pareja para inscribirse a este torneo de parejas específico
   message        String?
   status         String         @default("open") // open | matched | expired | cancelled
   expiresAt      DateTime
   createdAt      DateTime       @default(now())
 
   requester    User               @relation(fields: [requesterId], references: [id])
+  tournament   Tournament?        @relation(fields: [tournamentId], references: [id])
   applications MatchApplication[]
 
   @@map("match_requests")

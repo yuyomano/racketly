@@ -37,7 +37,11 @@
       "time_flexible": "Flexible",
       "publishButton": "Post",
       "errorCreate": "Could not post the request",
-      "createSuccess": "Request posted"
+      "createSuccess": "Request posted",
+      "fieldTournament": "Tournament (optional)",
+      "tournamentNone": "None — general search",
+      "filterTournamentAll": "All tournaments",
+      "maxDistanceValue": "{km} km"
     },
     "mine": {
       "backLink": "Back to Find a Partner",
@@ -56,7 +60,11 @@
       "applicationStatus_rejected": "Rejected",
       "errorRespond": "Could not respond to the application",
       "acceptSuccess": "Application accepted",
-      "rejectSuccess": "Application rejected"
+      "rejectSuccess": "Application rejected",
+      "editModalTitle": "Edit request",
+      "saveButton": "Save changes",
+      "errorEdit": "Could not update the request",
+      "editSuccess": "Request updated"
     }
   }
 }

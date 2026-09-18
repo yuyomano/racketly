@@ -67,6 +67,7 @@ router.get('/', async (req: Request, res: Response, next: NextFunction) => {
       country,
       status,
       category,
+      type,
       page = '1',
       limit = '20',
       lat,
@@ -79,6 +80,7 @@ router.get('/', async (req: Request, res: Response, next: NextFunction) => {
     if (sport) where.sport = sport
     if (status) where.status = status
     if (category) where.category = category
+    if (type) where.type = type
     if (city || country)
       where.location = { contains: (city || country) as string, mode: 'insensitive' }
 

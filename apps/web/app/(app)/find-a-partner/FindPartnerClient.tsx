@@ -11,15 +11,13 @@ import { EmptyState } from '@/components/ui/EmptyState'
 import { Button } from '@/components/ui/Button'
 import { Modal } from '@/components/ui/Modal'
 import { FormField } from '@/components/ui/FormField'
-import { Input } from '@/components/ui/Input'
 import { Select } from '@/components/ui/Select'
 import { Textarea } from '@/components/ui/Textarea'
 import { PadelIcon, PickleballIcon } from '@/components/ui/SportIcons'
 import { useToast } from '@/components/ui/Toast'
 import { cn } from '@/lib/utils'
-
-const CATEGORIES = ['C4', 'C3', 'C2', 'C1', 'B3', 'B2', 'B1', 'A', 'Open'] as const
-const TIME_PREFERENCES = ['morning', 'afternoon', 'evening', 'flexible'] as const
+import { RequestFormModal } from './RequestFormModal'
+import { type Tournament, TIME_PREFERENCES, fetchUpcomingPairsTournaments } from './shared'
 
 type MatchRequest = {
   id: string
@@ -33,6 +31,8 @@ type MatchRequest = {
   timePreference: string | null
   message: string | null
   status: string
+  tournamentId: string | null
+  tournament: Tournament | null
   requester: {
     id: string
     playerProfile: {
@@ -45,9 +45,17 @@ type MatchRequest = {
   _count: { applications: number }
 }
 
-async function fetchRequests(sport: 'all' | 'padel' | 'pickleball'): Promise<MatchRequest[]> {
+function formatTimePreference(t: ReturnType<typeof useTranslations>, value: string) {
+  return (TIME_PREFERENCES as readonly string[]).includes(value) ? t(`time_${value}`) : value
+}
+
+async function fetchRequests(
+  sport: 'all' | 'padel' | 'pickleball',
+  tournamentId: string
+): Promise<MatchRequest[]> {
   const params = new URLSearchParams()
   if (sport !== 'all') params.set('sport', sport)
+  if (tournamentId) params.set('tournamentId', tournamentId)
   const res = await fetch(`/api/match-requests?${params.toString()}`)
   const data = await res.json()
   if (!res.ok) throw new Error(data.error ?? 'Failed to load match requests')
@@ -60,6 +68,7 @@ export function FindPartnerClient({ userId }: { userId: string }) {
   const toast = useToast()
   const queryClient = useQueryClient()
   const [sport, setSport] = useState<'all' | 'padel' | 'pickleball'>('all')
+  const [tournamentFilter, setTournamentFilter] = useState('')
   const [createOpen, setCreateOpen] = useState(false)
   const [applyRequest, setApplyRequest] = useState<MatchRequest | null>(null)
 
@@ -68,8 +77,13 @@ export function FindPartnerClient({ userId }: { userId: string }) {
     isLoading,
     error,
   } = useQuery({
-    queryKey: ['match-requests', sport],
-    queryFn: () => fetchRequests(sport),
+    queryKey: ['match-requests', sport, tournamentFilter],
+    queryFn: () => fetchRequests(sport, tournamentFilter),
+  })
+
+  const { data: tournaments } = useQuery({
+    queryKey: ['tournaments-pairs-open'],
+    queryFn: fetchUpcomingPairsTournaments,
   })
 
   const createMutation = useMutation({
@@ -130,19 +144,35 @@ export function FindPartnerClient({ userId }: { userId: string }) {
         </div>
       </div>
 
-      <div className="flex border border-ink-200 rounded-xl overflow-hidden w-fit">
-        {(['all', 'padel', 'pickleball'] as const).map((v) => (
-          <button
-            key={v}
-            onClick={() => setSport(v)}
-            className={cn(
-              'px-4 py-2 text-sm font-semibold transition-colors',
-              sport === v ? 'bg-court-600 text-white' : 'bg-white text-ink-500 hover:bg-ink-50'
-            )}
+      <div className="flex items-center gap-3 flex-wrap">
+        <div className="flex border border-ink-200 rounded-xl overflow-hidden w-fit">
+          {(['all', 'padel', 'pickleball'] as const).map((v) => (
+            <button
+              key={v}
+              onClick={() => setSport(v)}
+              className={cn(
+                'px-4 py-2 text-sm font-semibold transition-colors',
+                sport === v ? 'bg-court-600 text-white' : 'bg-white text-ink-500 hover:bg-ink-50'
+              )}
+            >
+              {v === 'all' ? t('sportAll') : v === 'padel' ? t('sportPadel') : t('sportPickleball')}
+            </button>
+          ))}
+        </div>
+        {tournaments && tournaments.length > 0 && (
+          <Select
+            className="w-auto"
+            value={tournamentFilter}
+            onChange={(e) => setTournamentFilter(e.target.value)}
           >
-            {v === 'all' ? t('sportAll') : v === 'padel' ? t('sportPadel') : t('sportPickleball')}
-          </button>
-        ))}
+            <option value="">{t('filterTournamentAll')}</option>
+            {tournaments.map((tour) => (
+              <option key={tour.id} value={tour.id}>
+                {tour.name}
+              </option>
+            ))}
+          </Select>
+        )}
       </div>
 
       {isLoading ? (
@@ -190,7 +220,10 @@ export function FindPartnerClient({ userId }: { userId: string }) {
                       })}
                     </Badge>
                   )}
-                  {r.timePreference && <Badge tone="gray">{r.timePreference}</Badge>}
+                  {r.timePreference && (
+                    <Badge tone="gray">{formatTimePreference(t, r.timePreference)}</Badge>
+                  )}
+                  {r.tournament && <Badge tone="amber">🏆 {r.tournament.name}</Badge>}
                 </div>
                 {r.message && <p className="text-sm text-ink-500 mt-2 line-clamp-2">{r.message}</p>}
                 <div className="flex items-center justify-between mt-3">
@@ -211,11 +244,13 @@ export function FindPartnerClient({ userId }: { userId: string }) {
         </div>
       )}
 
-      <CreateRequestModal
+      <RequestFormModal
         open={createOpen}
         onClose={() => setCreateOpen(false)}
         onSubmit={(payload) => createMutation.mutate(payload)}
         isPending={createMutation.isPending}
+        title={t('createModalTitle')}
+        submitLabel={t('publishButton')}
       />
 
       <Modal
@@ -243,153 +278,55 @@ export function FindPartnerClient({ userId }: { userId: string }) {
           </>
         }
       >
-        <FormField label={t('applyMessageLabel')} htmlFor="apply-message">
-          <Textarea id="apply-message" rows={3} placeholder={t('applyMessagePlaceholder')} />
-        </FormField>
+        {applyRequest && (
+          <div className="space-y-4">
+            <div className="bg-ink-50 rounded-xl p-4 space-y-2">
+              <div className="flex items-center justify-between gap-2">
+                <p className="font-bold text-ink-900">
+                  {applyRequest.requester.playerProfile?.displayName ?? '—'}
+                </p>
+                {applyRequest.requester.playerProfile && (
+                  <span className="flex items-center gap-1 text-xs text-ink-400">
+                    <Star className="w-3 h-3 text-amber-400 fill-amber-400" />
+                    {applyRequest.requester.playerProfile.eloPadel} ELO
+                  </span>
+                )}
+              </div>
+              <div className="flex items-center gap-1.5 flex-wrap">
+                <Badge tone="violet">
+                  {applyRequest.levelMin === applyRequest.levelMax
+                    ? applyRequest.levelMin
+                    : `${applyRequest.levelMin}–${applyRequest.levelMax}`}
+                </Badge>
+                <Badge tone="gray">
+                  <MapPin className="w-3 h-3" /> {applyRequest.city} (
+                  {t('maxDistanceValue', { km: applyRequest.maxDistanceKm })})
+                </Badge>
+                {applyRequest.preferredDate && (
+                  <Badge tone="gray">
+                    {new Date(applyRequest.preferredDate + 'T00:00:00').toLocaleDateString(locale, {
+                      day: 'numeric',
+                      month: 'short',
+                    })}
+                  </Badge>
+                )}
+                {applyRequest.timePreference && (
+                  <Badge tone="gray">{formatTimePreference(t, applyRequest.timePreference)}</Badge>
+                )}
+                {applyRequest.tournament && (
+                  <Badge tone="amber">🏆 {applyRequest.tournament.name}</Badge>
+                )}
+              </div>
+              {applyRequest.message && (
+                <p className="text-sm text-ink-600">{applyRequest.message}</p>
+              )}
+            </div>
+            <FormField label={t('applyMessageLabel')} htmlFor="apply-message">
+              <Textarea id="apply-message" rows={3} placeholder={t('applyMessagePlaceholder')} />
+            </FormField>
+          </div>
+        )}
       </Modal>
     </div>
-  )
-}
-
-function CreateRequestModal({
-  open,
-  onClose,
-  onSubmit,
-  isPending,
-}: {
-  open: boolean
-  onClose: () => void
-  onSubmit: (payload: Record<string, unknown>) => void
-  isPending: boolean
-}) {
-  const t = useTranslations('FindPartner.list')
-  const [sport, setSport] = useState<'padel' | 'pickleball'>('padel')
-  const [levelMin, setLevelMin] = useState<(typeof CATEGORIES)[number]>('B2')
-  const [levelMax, setLevelMax] = useState<(typeof CATEGORIES)[number]>('B1')
-  const [city, setCity] = useState('')
-  const [maxDistanceKm, setMaxDistanceKm] = useState('20')
-  const [preferredDate, setPreferredDate] = useState('')
-  const [timePreference, setTimePreference] = useState('')
-  const [message, setMessage] = useState('')
-
-  return (
-    <Modal
-      open={open}
-      onClose={onClose}
-      title={t('createModalTitle')}
-      footer={
-        <>
-          <Button variant="secondary" onClick={onClose}>
-            {t('cancel')}
-          </Button>
-          <Button
-            disabled={!city.trim() || isPending}
-            onClick={() =>
-              onSubmit({
-                sport,
-                levelMin,
-                levelMax,
-                city: city.trim(),
-                maxDistanceKm: Number(maxDistanceKm) || 20,
-                ...(preferredDate && { preferredDate }),
-                ...(timePreference && { timePreference }),
-                ...(message.trim() && { message: message.trim() }),
-              })
-            }
-          >
-            {isPending ? <Loader2 className="w-4 h-4 animate-spin" /> : t('publishButton')}
-          </Button>
-        </>
-      }
-    >
-      <div className="space-y-4">
-        <div className="grid grid-cols-2 gap-3">
-          <FormField label={t('fieldSport')} htmlFor="req-sport">
-            <Select
-              id="req-sport"
-              value={sport}
-              onChange={(e) => setSport(e.target.value as 'padel' | 'pickleball')}
-            >
-              <option value="padel">{t('sportPadel')}</option>
-              <option value="pickleball">{t('sportPickleball')}</option>
-            </Select>
-          </FormField>
-          <FormField label={t('fieldCity')} htmlFor="req-city" required>
-            <Input id="req-city" value={city} onChange={(e) => setCity(e.target.value)} />
-          </FormField>
-        </div>
-        <div className="grid grid-cols-2 gap-3">
-          <FormField label={t('fieldMaxDistance')} htmlFor="req-distance">
-            <Input
-              id="req-distance"
-              type="number"
-              min={1}
-              value={maxDistanceKm}
-              onChange={(e) => setMaxDistanceKm(e.target.value)}
-            />
-          </FormField>
-        </div>
-        <div className="grid grid-cols-2 gap-3">
-          <FormField label={t('fieldLevelMin')} htmlFor="req-level-min">
-            <Select
-              id="req-level-min"
-              value={levelMin}
-              onChange={(e) => setLevelMin(e.target.value as (typeof CATEGORIES)[number])}
-            >
-              {CATEGORIES.map((c) => (
-                <option key={c} value={c}>
-                  {c}
-                </option>
-              ))}
-            </Select>
-          </FormField>
-          <FormField label={t('fieldLevelMax')} htmlFor="req-level-max">
-            <Select
-              id="req-level-max"
-              value={levelMax}
-              onChange={(e) => setLevelMax(e.target.value as (typeof CATEGORIES)[number])}
-            >
-              {CATEGORIES.map((c) => (
-                <option key={c} value={c}>
-                  {c}
-                </option>
-              ))}
-            </Select>
-          </FormField>
-        </div>
-        <div className="grid grid-cols-2 gap-3">
-          <FormField label={t('fieldPreferredDate')} htmlFor="req-date">
-            <Input
-              id="req-date"
-              type="date"
-              value={preferredDate}
-              onChange={(e) => setPreferredDate(e.target.value)}
-            />
-          </FormField>
-          <FormField label={t('fieldTimePreference')} htmlFor="req-time">
-            <Select
-              id="req-time"
-              value={timePreference}
-              onChange={(e) => setTimePreference(e.target.value)}
-            >
-              <option value="">{t('timeAny')}</option>
-              {TIME_PREFERENCES.map((v) => (
-                <option key={v} value={v}>
-                  {t(`time_${v}`)}
-                </option>
-              ))}
-            </Select>
-          </FormField>
-        </div>
-        <FormField label={t('fieldMessage')} htmlFor="req-message">
-          <Textarea
-            id="req-message"
-            rows={2}
-            value={message}
-            onChange={(e) => setMessage(e.target.value)}
-          />
-        </FormField>
-      </div>
-    </Modal>
   )
 }

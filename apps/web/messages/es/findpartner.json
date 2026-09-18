@@ -37,7 +37,11 @@
       "time_flexible": "Flexible",
       "publishButton": "Publicar",
       "errorCreate": "No se pudo publicar la solicitud",
-      "createSuccess": "Solicitud publicada"
+      "createSuccess": "Solicitud publicada",
+      "fieldTournament": "Torneo (opcional)",
+      "tournamentNone": "Ninguno — búsqueda general",
+      "filterTournamentAll": "Todos los torneos",
+      "maxDistanceValue": "{km} km"
     },
     "mine": {
       "backLink": "Volver a Buscar pareja",
@@ -56,7 +60,11 @@
       "applicationStatus_rejected": "Rechazada",
       "errorRespond": "No se pudo responder la postulación",
       "acceptSuccess": "Postulación aceptada",
-      "rejectSuccess": "Postulación rechazada"
+      "rejectSuccess": "Postulación rechazada",
+      "editModalTitle": "Editar solicitud",
+      "saveButton": "Guardar cambios",
+      "errorEdit": "No se pudo actualizar la solicitud",
+      "editSuccess": "Solicitud actualizada"
     }
   }
 }

@@ -52,6 +52,25 @@ const forgotPasswordLimiter = rateLimit({
   message: { success: false, error: 'Demasiados intentos. Intenta más tarde.' },
 })
 
+// authLimiter no sirve para /refresh: todo el tráfico llega al auth-service desde la
+// IP del gateway (proxy interno, sin trust proxy/X-Forwarded-For), así que por IP el
+// límite queda compartido entre TODOS los usuarios de la plataforma — el refresh
+// silencioso del middleware web (cada ~13 min por sesión) lo agota con poco tráfico y
+// bloquea el refresh de usuarios random con 429. /refresh ya exige un refresh token
+// válido (no es fuerza bruta de credenciales como /login), así que limitamos por
+// usuario en vez de por IP.
+const refreshLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000,
+  max: 20,
+  standardHeaders: true,
+  legacyHeaders: false,
+  message: { success: false, error: 'Demasiados intentos. Intenta más tarde.' },
+  keyGenerator: (req) => {
+    const decoded = jwt.decode(req.body?.refreshToken) as { userId?: string } | null
+    return decoded?.userId || req.ip || 'unknown'
+  },
+})
+
 const WEB_URL = process.env.WEB_URL || 'http://localhost:3010'
 const NOTIFICATION_SERVICE_URL = process.env.NOTIFICATION_SERVICE_URL || 'http://localhost:3006'
 
@@ -315,7 +334,7 @@ router.post(
 // POST /api/auth/refresh
 router.post(
   '/refresh',
-  authLimiter,
+  refreshLimiter,
   validate(refreshSchema),
   async (req: Request, res: Response, next: NextFunction) => {
     try {

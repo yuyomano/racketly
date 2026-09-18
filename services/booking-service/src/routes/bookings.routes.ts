@@ -857,18 +857,29 @@ router.patch(
   }
 )
 
-// Un participante (dueño o jugador) puede pagar su parte o la de otro jugador de la misma
-// reserva — nunca la de una reserva ajena.
-async function assertBookingParticipant(booking: any, requestingUserId: string | undefined) {
+// Cualquier participante (dueño o jugador) puede pagar su propia parte. Pagar la parte de
+// OTRO jugador es exclusivo de quien creó la reserva — igual que editar jugadores o cancelar.
+async function assertCanPayFor(
+  booking: any,
+  requestingUserId: string | undefined,
+  targetPlayerId: string
+) {
   if (!requestingUserId) throw new AppError('Autenticación requerida', 401)
-  const players = (booking.players as any[]) || []
-  const isParticipant =
-    booking.userId === requestingUserId || players.some((p: any) => p.userId === requestingUserId)
-  if (!isParticipant) throw new AppError('No formas parte de esta reserva', 403)
+  if (requestingUserId === targetPlayerId) {
+    const players = (booking.players as any[]) || []
+    const isParticipant =
+      booking.userId === requestingUserId ||
+      players.some((p: any) => p.userId === requestingUserId)
+    if (!isParticipant) throw new AppError('No formas parte de esta reserva', 403)
+    return
+  }
+  if (booking.userId !== requestingUserId)
+    throw new AppError('Solo quien creó la reserva puede pagar la parte de otro jugador', 403)
 }
 
 // POST /api/bookings/:id/players/:playerId/intent — crea (o reutiliza) el PaymentIntent de
-// Stripe para que un participante de la reserva pague la parte de :playerId (la propia u otra).
+// Stripe para pagar la parte de :playerId. La propia, cualquier participante; la de otro
+// jugador, solo quien creó la reserva.
 router.post(
   '/:id/players/:playerId/intent',
   async (req: Request, res: Response, next: NextFunction) => {
@@ -878,7 +889,11 @@ router.post(
         include: { slot: { include: { court: true } } },
       })
       if (!booking) throw new AppError('Reserva no encontrada', 404)
-      await assertBookingParticipant(booking, req.headers['x-user-id'] as string | undefined)
+      await assertCanPayFor(
+        booking,
+        req.headers['x-user-id'] as string | undefined,
+        req.params.playerId
+      )
 
       const players = (booking.players as any[]) || []
       const player = players.find((p: any) => p.userId === req.params.playerId)
@@ -920,7 +935,11 @@ router.post(
         include: { slot: { include: { court: true } } },
       })
       if (!booking) throw new AppError('Reserva no encontrada', 404)
-      await assertBookingParticipant(booking, req.headers['x-user-id'] as string | undefined)
+      await assertCanPayFor(
+        booking,
+        req.headers['x-user-id'] as string | undefined,
+        req.params.playerId
+      )
 
       const players = (booking.players as any[]) || []
       const idx = players.findIndex((p: any) => p.userId === req.params.playerId)

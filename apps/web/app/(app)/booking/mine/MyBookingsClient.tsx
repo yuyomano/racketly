@@ -204,9 +204,12 @@ export function MyBookingsClient({ userId }: { userId: string }) {
             const myPlayer = b.players?.find((p) => p.userId === userId)
             const isActive = tab === 'upcoming' && b.status !== 'cancelled'
             const canPay = isActive && myPlayer?.paymentStatus === 'pending'
-            const othersToPay = isActive
-              ? (b.players ?? []).filter((p) => p.userId !== userId && p.paymentStatus === 'pending')
-              : []
+            const othersToPay =
+              isActive && b.isOwnerBooking
+                ? (b.players ?? []).filter(
+                    (p) => p.userId !== userId && p.paymentStatus === 'pending'
+                  )
+                : []
             const canEdit = isActive && b.isOwnerBooking
             const canLeave = tab === 'upcoming' && !b.isOwnerBooking && b.status !== 'cancelled'
             const st = STATUS_LABEL[b.status]

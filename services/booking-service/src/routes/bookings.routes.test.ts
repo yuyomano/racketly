@@ -214,13 +214,20 @@ describe('/api/bookings/:id/players/:playerId pago', () => {
     expect(res.status).toBe(403)
   })
 
-  it('POST /players/:playerId/intent (un jugador paga por otro) devuelve un PaymentIntent en DEV mode', async () => {
+  it('POST /players/:playerId/intent con quien creó la reserva pagando por otro jugador devuelve un PaymentIntent en DEV mode', async () => {
     const res = await request(app)
       .post(`/api/bookings/${bookingId}/players/${otherId}/intent`)
       .set('x-user-id', ownerId)
     expect(res.status).toBe(200)
     expect(res.body.data.paymentIntentId).toBeTruthy()
     expect(res.body.data.devMode).toBe(true)
+  })
+
+  it('POST /players/:playerId/intent con un jugador que no creó la reserva pagando por otro jugador responde 403', async () => {
+    const res = await request(app)
+      .post(`/api/bookings/${bookingId}/players/${ownerId}/intent`)
+      .set('x-user-id', otherId)
+    expect(res.status).toBe(403)
   })
 
   it('POST /players/:playerId/confirm-payment sin paymentIntentId responde 400', async () => {

@@ -43,11 +43,11 @@ export function AppNavLink({
     <Link
       href={href}
       className={cn(
-        'flex items-center gap-2 px-3.5 py-2 rounded-xl text-sm font-medium transition-colors',
+        'flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-xs font-medium transition-colors whitespace-nowrap',
         isActive ? 'text-court-700 bg-court-50' : 'text-ink-500 hover:bg-ink-50 hover:text-ink-700'
       )}
     >
-      <Icon className="w-4 h-4" strokeWidth={2} />
+      <Icon className="w-3.5 h-3.5 shrink-0" strokeWidth={2} />
       <span className="hidden md:inline">{label}</span>
     </Link>
   )

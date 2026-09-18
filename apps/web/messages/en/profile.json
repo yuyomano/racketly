@@ -21,6 +21,7 @@
       "cityLabel": "City",
       "sportLabel": "Sport",
       "preferredSideLabel": "Playing side",
+      "genderLabel": "Gender",
       "instagramLabel": "Instagram",
       "whatsappLabel": "WhatsApp",
       "plusCodeLabel": "Location (Plus Code)",
@@ -32,6 +33,12 @@
       "none": "Not set",
       "derecha": "Right",
       "reves": "Left"
+    },
+    "gender": {
+      "none": "Not set",
+      "masculino": "Male",
+      "femenino": "Female",
+      "prefiero_no_decir": "Prefer not to say"
     },
     "countries": {
       "DO": "Dominican Republic",

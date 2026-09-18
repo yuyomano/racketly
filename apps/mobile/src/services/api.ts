@@ -67,6 +67,7 @@ export const profileApi = {
     avatarUrl?: string
     bio?: string
     preferredSide?: 'derecha' | 'reves' | null
+    gender?: 'masculino' | 'femenino' | 'prefiero_no_decir' | null
     instagramHandle?: string | null
     whatsapp?: string | null
     plusCode?: string | null

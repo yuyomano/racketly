@@ -55,6 +55,7 @@ export const updateProfileSchema = z.object({
     sport: z.enum(['padel', 'pickleball', 'both']).optional(),
     avatarUrl: z.string().url().optional(),
     preferredSide: z.enum(['derecha', 'reves']).nullable().optional(),
+    gender: z.enum(['masculino', 'femenino', 'prefiero_no_decir']).nullable().optional(),
     instagramHandle: z.string().max(30).nullable().optional(),
     whatsapp: z.string().max(30).nullable().optional(),
     latitude: z.number().min(-90).max(90).optional(),

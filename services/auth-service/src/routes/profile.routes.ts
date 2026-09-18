@@ -58,6 +58,7 @@ router.put(
         sport,
         avatarUrl,
         preferredSide,
+        gender,
         instagramHandle,
         whatsapp,
         latitude,
@@ -72,6 +73,7 @@ router.put(
       if (sport !== undefined) data.sport = sport
       if (avatarUrl !== undefined) data.avatarUrl = avatarUrl
       if (preferredSide !== undefined) data.preferredSide = preferredSide
+      if (gender !== undefined) data.gender = gender
       if (instagramHandle !== undefined) data.instagramHandle = instagramHandle
       if (whatsapp !== undefined) data.whatsapp = whatsapp
 

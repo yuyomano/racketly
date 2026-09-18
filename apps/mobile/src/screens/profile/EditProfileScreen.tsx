@@ -29,6 +29,15 @@ const SIDE_OPTIONS: { value: PreferredSide; label: string }[] = [
   { value: 'reves', label: 'Revés' },
 ]
 
+type Gender = 'masculino' | 'femenino' | 'prefiero_no_decir' | ''
+
+const GENDER_OPTIONS: { value: Gender; label: string }[] = [
+  { value: '', label: 'Sin definir' },
+  { value: 'masculino', label: 'Masculino' },
+  { value: 'femenino', label: 'Femenino' },
+  { value: 'prefiero_no_decir', label: 'No quiero decir' },
+]
+
 type Sport = 'padel' | 'pickleball' | 'both'
 
 const SPORT_OPTIONS: { value: Sport; label: string }[] = [
@@ -61,6 +70,7 @@ export function EditProfileScreen({ navigation }: { navigation: any }) {
   const [preferredSide, setPreferredSide] = useState<PreferredSide>(
     (profile?.preferredSide as PreferredSide) ?? ''
   )
+  const [gender, setGender] = useState<Gender>((profile?.gender as Gender) ?? '')
   const [instagramHandle, setInstagramHandle] = useState(profile?.instagramHandle ?? '')
   const [whatsapp, setWhatsapp] = useState(profile?.whatsapp ?? '')
   const [plusCode, setPlusCode] = useState(profile?.plusCode ?? '')
@@ -79,6 +89,7 @@ export function EditProfileScreen({ navigation }: { navigation: any }) {
           country,
           sport,
           preferredSide: preferredSide || null,
+          gender: gender || null,
           instagramHandle: instagramHandle || null,
           whatsapp: whatsapp || null,
           plusCode: plusCode || null,
@@ -335,6 +346,24 @@ export function EditProfileScreen({ navigation }: { navigation: any }) {
                     ]}
                   >
                     {s.label}
+                  </Text>
+                </TouchableOpacity>
+              ))}
+            </View>
+          </View>
+
+          {/* Género */}
+          <View style={styles.field}>
+            <Text style={styles.label}>Género</Text>
+            <View style={styles.sportRow}>
+              {GENDER_OPTIONS.map((g) => (
+                <TouchableOpacity
+                  key={g.value || 'none'}
+                  style={[styles.sideBtn, gender === g.value && styles.sportBtnActive]}
+                  onPress={() => setGender(g.value)}
+                >
+                  <Text style={[styles.sportLabel, gender === g.value && styles.sportLabelActive]}>
+                    {g.label}
                   </Text>
                 </TouchableOpacity>
               ))}

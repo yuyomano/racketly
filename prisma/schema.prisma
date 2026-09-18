@@ -27,6 +27,12 @@ enum PlayerSide {
   reves
 }
 
+enum PlayerGender {
+  masculino
+  femenino
+  prefiero_no_decir
+}
+
 enum SubscriptionTier {
   free
   amateur
@@ -292,6 +298,7 @@ model PlayerProfile {
   latitude        Float?
   longitude       Float?
   plusCode        String? // Plus Code (Open Location Code) — derivado de lat/long o ingresado a mano
+  gender          PlayerGender?
   preferredSide   PlayerSide?
   instagramHandle String?
   whatsapp        String?

@@ -23,6 +23,7 @@ type PlayerProfile = {
   city: string
   avatarUrl: string | null
   preferredSide: 'derecha' | 'reves' | null
+  gender: 'masculino' | 'femenino' | 'prefiero_no_decir' | null
   instagramHandle: string | null
   whatsapp: string | null
   plusCode: string | null
@@ -74,6 +75,7 @@ export function ProfileClient({
     country: data?.profile.country ?? 'DO',
     sport: (data?.profile.sport ?? 'padel') as 'padel' | 'pickleball' | 'both',
     preferredSide: data?.profile.preferredSide ?? '',
+    gender: data?.profile.gender ?? '',
     instagramHandle: data?.profile.instagramHandle ?? '',
     whatsapp: data?.profile.whatsapp ?? '',
     plusCode: data?.profile.plusCode ?? '',
@@ -88,6 +90,7 @@ export function ProfileClient({
         country: data.profile.country,
         sport: data.profile.sport as any,
         preferredSide: data.profile.preferredSide ?? '',
+        gender: data.profile.gender ?? '',
         instagramHandle: data.profile.instagramHandle ?? '',
         whatsapp: data.profile.whatsapp ?? '',
         plusCode: data.profile.plusCode ?? '',
@@ -119,6 +122,7 @@ export function ProfileClient({
         body: JSON.stringify({
           ...form,
           preferredSide: form.preferredSide || null,
+          gender: form.gender || null,
           instagramHandle: form.instagramHandle || null,
           whatsapp: form.whatsapp || null,
           plusCode: form.plusCode || null,
@@ -319,6 +323,21 @@ export function ProfileClient({
                   </button>
                 ))}
               </div>
+            </div>
+            <div>
+              <label className="block text-xs font-semibold text-ink-600 mb-1.5">
+                {t('form.genderLabel')}
+              </label>
+              <select
+                value={form.gender}
+                onChange={(e) => setForm({ ...form, gender: e.target.value as any })}
+                className="w-full border border-ink-200 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-court-500/40"
+              >
+                <option value="">{t('gender.none')}</option>
+                <option value="masculino">{t('gender.masculino')}</option>
+                <option value="femenino">{t('gender.femenino')}</option>
+                <option value="prefiero_no_decir">{t('gender.prefiero_no_decir')}</option>
+              </select>
             </div>
             <div className="grid grid-cols-2 gap-3">
               <div>

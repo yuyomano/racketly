@@ -176,6 +176,7 @@ export interface User {
 }
 
 export type PlayerSide = 'derecha' | 'reves'
+export type PlayerGender = 'masculino' | 'femenino' | 'prefiero_no_decir'
 
 export interface PlayerProfile {
   userId: string
@@ -188,6 +189,7 @@ export interface PlayerProfile {
   location?: GeoLocation
   plusCode?: string
   preferredSide?: PlayerSide
+  gender?: PlayerGender
   instagramHandle?: string
   whatsapp?: string
   eloPadel: number

@@ -15,6 +15,7 @@ import {
   UserPlus,
   X,
   Search,
+  Zap,
 } from 'lucide-react'
 import { buildGoogleCalendarUrl } from '@racketly/utils'
 import { Card } from '@/components/ui/Card'
@@ -24,7 +25,7 @@ import { EmptyState } from '@/components/ui/EmptyState'
 import { useToast } from '@/components/ui/Toast'
 import { cn } from '@/lib/utils'
 
-type Court = { id: string; name: string; sport: string; capacity: number }
+type Court = { id: string; name: string; sport: string; capacity: number; surface?: string }
 type Club = {
   id: string
   name: string
@@ -32,11 +33,13 @@ type Club = {
   country: string
   currency: string
   courts: Court[]
+  bookingHorizonDays?: number
   cancellationPolicy?: 'flexible' | 'moderate' | 'strict'
 }
 type Slot = {
   id: string
   courtId: string
+  court: { id: string; name: string; sport: string; capacity: number; surface?: string }
   date: string
   startTime: string
   endTime: string
@@ -47,6 +50,14 @@ type Slot = {
 }
 type Pricing = { pricingType: 'pay_per_use' | 'membership_included' | 'membership_extra'; price: number }
 type PlayerItem = { id: string; name: string; email?: string; avatarUrl?: string; city?: string }
+type MembershipPlan = {
+  id: string
+  name: string
+  price: number
+  currency: string
+  sessionsPerDay: number
+}
+type Membership = { clubId: string; status: string; plan?: MembershipPlan }
 
 function nextDays(n: number, locale: string): { date: string; label: string; dayNum: string }[] {
   const out = []
@@ -87,6 +98,31 @@ async function fetchCreditTotal(userId: string, clubId: string): Promise<number>
   return data.summary?.[clubId]?.total ?? 0
 }
 
+async function fetchMembershipPlans(clubId: string): Promise<MembershipPlan[]> {
+  const res = await fetch(`/api/clubs/${clubId}/membership-plans`)
+  if (!res.ok) return []
+  const data = await res.json()
+  return data.data ?? []
+}
+
+async function fetchMyMemberships(userId: string): Promise<Membership[]> {
+  const res = await fetch(`/api/memberships/user/${userId}`)
+  if (!res.ok) return []
+  const data = await res.json()
+  return data.data ?? []
+}
+
+async function subscribeMembership(planId: string) {
+  const res = await fetch('/api/memberships/subscribe', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ planId }),
+  })
+  const data = await res.json()
+  if (!res.ok) throw new Error(data.error)
+  return data.data
+}
+
 async function searchPlayers(query: string, excludeId: string): Promise<PlayerItem[]> {
   const res = await fetch(
     `/api/users/search?q=${encodeURIComponent(query)}&excludeId=${encodeURIComponent(excludeId)}`
@@ -113,9 +149,13 @@ export function ClubBookingClient({
   const locale = useLocale()
   const queryClient = useQueryClient()
   const toast = useToast()
-  const days = useMemo(() => nextDays(7, locale), [locale])
+  const days = useMemo(
+    () => nextDays(club.bookingHorizonDays ?? 7, locale),
+    [locale, club.bookingHorizonDays]
+  )
   const [selectedDate, setSelectedDate] = useState(days[0].date)
-  const [selectedCourtId, setSelectedCourtId] = useState<string | null>(null)
+  const [selectedSport, setSelectedSport] = useState<string | null>(null)
+  const [selectedSurface, setSelectedSurface] = useState<string | null>(null)
   const [selectedSlot, setSelectedSlot] = useState<Slot | null>(null)
   const [confirmed, setConfirmed] = useState(false)
   const [qrCode, setQrCode] = useState<string | null>(null)
@@ -156,6 +196,28 @@ export function ClubBookingClient({
     enabled: !!selectedSlot,
   })
 
+  const { data: membershipPlans } = useQuery({
+    queryKey: ['membership-plans', club.id],
+    queryFn: () => fetchMembershipPlans(club.id),
+  })
+
+  const { data: myMemberships } = useQuery({
+    queryKey: ['my-memberships', userId],
+    queryFn: () => fetchMyMemberships(userId),
+  })
+  const activeMembership = myMemberships?.find(
+    (m) => m.clubId === club.id && m.status === 'active'
+  )
+
+  const subscribeMutation = useMutation({
+    mutationFn: subscribeMembership,
+    onSuccess: () => {
+      toast.success(t('membershipSubscribedToast'))
+      queryClient.invalidateQueries({ queryKey: ['my-memberships', userId] })
+    },
+    onError: (e: Error) => toast.error(e.message || t('membershipSubscribeError')),
+  })
+
   const bookMutation = useMutation({
     mutationFn: async () => {
       if (!selectedSlot) return
@@ -185,18 +247,37 @@ export function ClubBookingClient({
   })
 
   const courts = club.courts ?? []
-  const slotsByCourtId = new Map<string, Slot[]>()
-  for (const s of slots ?? []) {
-    if (!slotsByCourtId.has(s.courtId)) slotsByCourtId.set(s.courtId, [])
-    slotsByCourtId.get(s.courtId)!.push(s)
-  }
-  const activeCourtId = selectedCourtId ?? courts[0]?.id ?? null
-  const activeCourt = courts.find((c) => c.id === activeCourtId) ?? null
-  const activeCourtSlots = (slotsByCourtId.get(activeCourtId ?? '') ?? []).sort((a, b) =>
-    a.startTime.localeCompare(b.startTime)
+  // Filtros rápidos de deporte/superficie — solo se muestran si el club tiene pistas mixtas.
+  const sports = useMemo(
+    () => [...new Set((slots ?? []).map((s) => s.court.sport))],
+    [slots]
   )
+  const surfaces = useMemo(
+    () => [...new Set((slots ?? []).map((s) => s.court.surface).filter((s): s is string => !!s))],
+    [slots]
+  )
+  const availableSlots = (slots ?? []).filter(
+    (s) =>
+      s.isAvailable &&
+      (selectedSport === null || s.court.sport === selectedSport) &&
+      (selectedSurface === null || s.court.surface === selectedSurface)
+  )
+  // Grid pistas × horas — mismo criterio visual que BookingPickerOptimized (mobile) y
+  // CourtScheduleGrid (dashboard): filas = horas, columnas = pistas, celda = pista+hora.
+  const gridCourts = useMemo(() => {
+    const map = new Map<string, Slot['court']>()
+    availableSlots.forEach((s) => map.set(s.court.id, s.court))
+    return [...map.values()].sort((a, b) => a.name.localeCompare(b.name))
+  }, [availableSlots])
+  const gridTimes = useMemo(
+    () => [...new Set(availableSlots.map((s) => s.startTime))].sort(),
+    [availableSlots]
+  )
+  function slotAt(courtId: string, time: string) {
+    return availableSlots.find((s) => s.court.id === courtId && s.startTime === time) ?? null
+  }
 
-  const capacity = activeCourt?.capacity || 4
+  const capacity = selectedSlot?.court.capacity || 4
   const missingPlayers = Math.max(0, capacity - (players.length + 1))
   const rosterComplete = missingPlayers === 0
 
@@ -258,7 +339,7 @@ export function ClubBookingClient({
         {selectedSlot && (
           <a
             href={buildGoogleCalendarUrl({
-              title: `${club.name} · ${courts.find((c) => c.id === selectedSlot.courtId)?.name ?? ''}`,
+              title: `${club.name} · ${selectedSlot.court.name}`,
               location: club.name,
               description: 'Reserva hecha en Racketly',
               date: selectedSlot.date,
@@ -315,6 +396,61 @@ export function ClubBookingClient({
         </div>
       )}
 
+      {(membershipPlans?.length ?? 0) > 0 &&
+        (activeMembership ? (
+          <div className="flex items-center justify-between gap-3 bg-court-900 text-white rounded-2xl px-4 py-3.5">
+            <div>
+              <p className="text-sm font-extrabold">{t('membershipActiveTitle')}</p>
+              <p className="text-xs text-court-300 mt-0.5">
+                {t('membershipActiveSub', {
+                  sessions: activeMembership.plan?.sessionsPerDay ?? 1,
+                  currency: activeMembership.plan?.currency ?? club.currency,
+                  price: Number(activeMembership.plan?.price ?? 0).toLocaleString(),
+                })}
+              </p>
+            </div>
+            <Link
+              href="/memberships/mine"
+              className="shrink-0 text-xs font-bold bg-white/15 hover:bg-white/25 rounded-lg px-3 py-2 transition-colors"
+            >
+              {t('membershipManage')}
+            </Link>
+          </div>
+        ) : (
+          <div className="flex flex-col sm:flex-row gap-3">
+            {membershipPlans!.map((plan) => (
+              <Card
+                key={plan.id}
+                className="p-4 flex-1 flex items-center justify-between gap-3 border-2 border-court-100"
+              >
+                <div>
+                  <p className="text-sm font-extrabold text-court-900">{plan.name}</p>
+                  <p className="text-xs text-ink-500 mt-1">
+                    {t('membershipFeatureIncluded', { sessions: plan.sessionsPerDay })}
+                  </p>
+                  <p className="text-xs text-ink-400">{t('membershipFeatureExtra')}</p>
+                  <p className="text-xs text-ink-400">{t('membershipFeatureCancel')}</p>
+                </div>
+                <div className="shrink-0 text-center">
+                  <p className="text-sm font-black text-court-600">
+                    {plan.currency} {Number(plan.price).toLocaleString()}
+                  </p>
+                  <p className="text-[10px] text-ink-400 mb-2">{t('membershipPricePerMonth')}</p>
+                  <button
+                    onClick={() => subscribeMutation.mutate(plan.id)}
+                    disabled={subscribeMutation.isPending}
+                    className="text-xs font-bold text-white bg-court-600 hover:bg-court-700 disabled:opacity-60 rounded-lg px-3 py-2 transition-colors"
+                  >
+                    {subscribeMutation.isPending
+                      ? t('membershipSubscribing')
+                      : t('membershipSubscribe')}
+                  </button>
+                </div>
+              </Card>
+            ))}
+          </div>
+        ))}
+
       <div className="flex gap-2 overflow-x-auto pb-1">
         {days.map((d) => (
           <button
@@ -336,79 +472,169 @@ export function ClubBookingClient({
         ))}
       </div>
 
+      {(sports.length > 1 || surfaces.length > 1) && (
+        <div className="flex flex-wrap gap-2">
+          {sports.length > 1 && (
+            <div className="flex gap-1.5">
+              <button
+                onClick={() => {
+                  setSelectedSport(null)
+                  setSelectedSlot(null)
+                }}
+                className={cn(
+                  'px-3 py-1.5 rounded-full text-xs font-semibold transition-colors',
+                  selectedSport === null
+                    ? 'bg-court-600 text-white'
+                    : 'bg-ink-100 text-ink-500 hover:bg-ink-200'
+                )}
+              >
+                {t('filterAllSports')}
+              </button>
+              {sports.map((s) => (
+                <button
+                  key={s}
+                  onClick={() => {
+                    setSelectedSport(s)
+                    setSelectedSlot(null)
+                  }}
+                  className={cn(
+                    'flex items-center gap-1 px-3 py-1.5 rounded-full text-xs font-semibold transition-colors',
+                    selectedSport === s
+                      ? 'bg-court-600 text-white'
+                      : 'bg-ink-100 text-ink-500 hover:bg-ink-200'
+                  )}
+                >
+                  {s === 'padel' ? <PadelIcon size={12} /> : <PickleballIcon size={12} />}
+                  {s === 'padel' ? t('sportPadel') : t('sportPickleball')}
+                </button>
+              ))}
+            </div>
+          )}
+          {surfaces.length > 1 && (
+            <div className="flex gap-1.5">
+              <button
+                onClick={() => {
+                  setSelectedSurface(null)
+                  setSelectedSlot(null)
+                }}
+                className={cn(
+                  'px-3 py-1.5 rounded-full text-xs font-semibold border transition-colors',
+                  selectedSurface === null
+                    ? 'bg-court-600 border-court-600 text-white'
+                    : 'bg-white border-ink-200 text-ink-500 hover:border-ink-300'
+                )}
+              >
+                {t('filterAllSurfaces')}
+              </button>
+              {surfaces.map((s) => (
+                <button
+                  key={s}
+                  onClick={() => {
+                    setSelectedSurface(s)
+                    setSelectedSlot(null)
+                  }}
+                  className={cn(
+                    'px-3 py-1.5 rounded-full text-xs font-semibold border transition-colors',
+                    selectedSurface === s
+                      ? 'bg-court-600 border-court-600 text-white'
+                      : 'bg-white border-ink-200 text-ink-500 hover:border-ink-300'
+                  )}
+                >
+                  {s}
+                </button>
+              ))}
+            </div>
+          )}
+        </div>
+      )}
+
       {isLoading ? (
         <div className="flex items-center justify-center py-16 text-ink-400">
           <Loader2 className="w-5 h-5 animate-spin" />
         </div>
       ) : courts.length === 0 ? (
         <EmptyState icon={MapPin} title={t('noActiveCourts')} />
+      ) : gridTimes.length === 0 || gridCourts.length === 0 ? (
+        <EmptyState icon={MapPin} title={t('noSlots')} />
       ) : (
-        <div className="space-y-3">
-          <div className="flex gap-2 overflow-x-auto pb-1">
-            {courts.map((court) => (
-              <button
-                key={court.id}
-                onClick={() => {
-                  setSelectedCourtId(court.id)
-                  setSelectedSlot(null)
-                  setPlayers(initialPlayers)
-                }}
-                className={cn(
-                  'flex items-center gap-1.5 shrink-0 px-3.5 py-2 rounded-xl border text-sm font-semibold transition-colors',
-                  activeCourtId === court.id
-                    ? 'bg-court-600 border-court-600 text-white'
-                    : 'bg-white border-ink-200 text-ink-500 hover:border-ink-300'
-                )}
-              >
-                {court.sport === 'padel' ? (
-                  <PadelIcon size={14} />
-                ) : (
-                  <PickleballIcon size={14} />
-                )}
-                {court.name}
-              </button>
-            ))}
-          </div>
-          {activeCourt && (
-            <Card className="p-5">
-              {activeCourtSlots.length === 0 ? (
-                <p className="text-xs text-ink-400">{t('noSlots')}</p>
-              ) : (
-                <div className="flex flex-wrap gap-2">
-                  {activeCourtSlots.map((slot) => {
+        <Card className="p-4 overflow-x-auto">
+          <table className="border-separate border-spacing-1.5 w-full">
+            <thead>
+              <tr>
+                <th className="w-14" />
+                {gridCourts.map((court) => (
+                  <th key={court.id} className="text-center px-1 pb-2 min-w-[92px]">
+                    <span className="flex items-center justify-center gap-1 text-xs font-bold text-ink-900">
+                      {court.sport === 'padel' ? (
+                        <PadelIcon size={13} />
+                      ) : (
+                        <PickleballIcon size={13} />
+                      )}
+                      {court.name}
+                    </span>
+                  </th>
+                ))}
+              </tr>
+            </thead>
+            <tbody>
+              {gridTimes.map((time) => (
+                <tr key={time}>
+                  <td className="text-xs font-bold text-ink-500 text-right pr-2">
+                    {time.slice(0, 5)}
+                  </td>
+                  {gridCourts.map((court) => {
+                    const slot = slotAt(court.id, time)
+                    if (!slot) {
+                      return (
+                        <td key={court.id}>
+                          <div className="flex items-center justify-center min-h-[44px] rounded-xl bg-ink-50 border border-ink-100 text-ink-300 text-sm">
+                            —
+                          </div>
+                        </td>
+                      )
+                    }
                     const price = slot.isPeak ? slot.peakPrice : slot.basePrice
                     const isSelected = selectedSlot?.id === slot.id
                     return (
-                      <button
-                        key={slot.id}
-                        disabled={!slot.isAvailable}
-                        onClick={() => setSelectedSlot(slot)}
-                        className={cn(
-                          'flex flex-col items-center px-3 py-2 rounded-xl border text-xs font-semibold min-w-[64px] transition-colors',
-                          !slot.isAvailable
-                            ? 'bg-ink-50 border-ink-100 text-ink-300 cursor-not-allowed'
-                            : isSelected
-                              ? 'bg-court-600 border-court-600 text-white'
-                              : 'bg-white border-ink-200 text-ink-700 hover:border-court-300'
-                        )}
-                      >
-                        <span>{slot.startTime.slice(0, 5)}</span>
-                        <span
+                      <td key={court.id}>
+                        <button
+                          onClick={() => {
+                            setSelectedSlot(slot)
+                            setPlayers(initialPlayers)
+                          }}
                           className={cn(
-                            'text-[10px] font-normal mt-0.5',
-                            isSelected ? 'text-court-50' : 'text-ink-400'
+                            'flex flex-col items-center justify-center w-full min-h-[44px] px-2 py-1.5 rounded-xl border text-xs font-semibold transition-colors',
+                            isSelected
+                              ? 'bg-court-600 border-court-600 text-white'
+                              : slot.isPeak
+                                ? 'bg-trophy-50 border-trophy-400 text-ink-700 hover:border-trophy-500'
+                                : 'bg-court-50 border-court-200 text-ink-700 hover:border-court-400'
                           )}
                         >
-                          {club.currency} {price.toFixed(0)}
-                        </span>
-                      </button>
+                          <span>
+                            {club.currency} {price.toFixed(0)}
+                          </span>
+                          {slot.isPeak && (
+                            <span
+                              className={cn(
+                                'flex items-center gap-0.5 text-[9px] font-bold mt-0.5 px-1 py-0.5 rounded',
+                                isSelected
+                                  ? 'bg-white/20 text-white'
+                                  : 'bg-trophy-100 text-trophy-700'
+                              )}
+                            >
+                              <Zap className="w-2.5 h-2.5" /> {t('peakBadge')}
+                            </span>
+                          )}
+                        </button>
+                      </td>
                     )
                   })}
-                </div>
-              )}
-            </Card>
-          )}
-        </div>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </Card>
       )}
 
       {selectedSlot && (
@@ -519,8 +745,7 @@ export function ClubBookingClient({
           <div className="max-w-5xl mx-auto flex items-center justify-between gap-4">
             <div>
               <p className="text-sm font-bold text-ink-900">
-                {courts.find((c) => c.id === selectedSlot.courtId)?.name} ·{' '}
-                {selectedSlot.startTime.slice(0, 5)}
+                {selectedSlot.court.name} · {selectedSlot.startTime.slice(0, 5)}
               </p>
               <p className="text-xs text-ink-400">
                 {selectedDate} ·{' '}

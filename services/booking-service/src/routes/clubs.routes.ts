@@ -273,12 +273,19 @@ router.get('/', async (req: Request, res: Response, next: NextFunction) => {
     if (country) where.country = country
     if (sport) where.sports = { has: sport }
 
-    let clubs = await prisma.club.findMany({
-      where,
-      include: { courts: { where: { isActive: true }, select: { id: true, sport: true } } },
-      // Con búsqueda por texto se filtra en memoria (insensible a tildes), así que no se pagina en la consulta.
-      ...(term ? {} : { take: Number(limit), skip: (Number(page) - 1) * Number(limit) }),
-    })
+    // Sin búsqueda explícita (nombre/ciudad) ni geolocalización, no se listan todos los clubs:
+    // solo deben salir los favoritos y los recientemente jugados (agregados más abajo). Para ver
+    // el resto, el jugador busca por nombre, ciudad o usa su ubicación.
+    const hasExplicitQuery = Boolean(term || (lat && lng))
+
+    let clubs = hasExplicitQuery
+      ? await prisma.club.findMany({
+          where,
+          include: { courts: { where: { isActive: true }, select: { id: true, sport: true } } },
+          // Con búsqueda por texto se filtra en memoria (insensible a tildes), así que no se pagina en la consulta.
+          ...(term ? {} : { take: Number(limit), skip: (Number(page) - 1) * Number(limit) }),
+        })
+      : []
 
     if (term) {
       const needle = normalizeText(term)

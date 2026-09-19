@@ -84,7 +84,8 @@
       "shareWhatsApp": "Send via WhatsApp",
       "shareEmail": "Send via email",
       "shareEmailSubject": "Join me to play at {club}",
-      "shareMessage": "Join me to play! 🎾\n\n📍 {club}\n🏟️ {court}\n📅 {date}\n⏰ {time}\n\nBooked with Racketly — just show up!\n\nView details, pay your share, or cancel here: {link}"
+      "shareMessage": "Join me to play! 🎾\n\n📍 {club}\n🏟️ {court}\n📅 {date}\n⏰ {time}\n\nBooked with Racketly — just show up!\n\nView details, pay your share, or cancel here: {link}",
+      "classesLink": "Classes with an instructor"
     },
     "mine": {
       "backToClubs": "Back to clubs",
@@ -147,6 +148,24 @@
       "matchConfirmedToast": "Result confirmed",
       "matchDisputedToast": "Result disputed — you can report it again",
       "cancel": "Cancel"
+    },
+    "classes": {
+      "backToClub": "Back to club",
+      "title": "Classes with an instructor",
+      "allProfessors": "All",
+      "emptyProfessors": "This club has no instructors available",
+      "emptySlots": "No upcoming classes available",
+      "errorFetchProfessors": "Couldn't load instructors",
+      "errorFetchSlots": "Couldn't load classes",
+      "spotsLabel": "{booked}/{max} spots",
+      "bookedBadge": "Booked",
+      "bookButton": "Book",
+      "fullButton": "Full",
+      "cancelButton": "Cancel",
+      "classBooked": "Class booked — pay at the club",
+      "classCancelledToast": "Class booking cancelled",
+      "errorBook": "Couldn't book the class",
+      "errorCancel": "Couldn't cancel the booking"
     }
   }
 }

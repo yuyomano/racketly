@@ -84,7 +84,8 @@
       "shareWhatsApp": "Enviar por WhatsApp",
       "shareEmail": "Enviar por email",
       "shareEmailSubject": "Te invito a jugar en {club}",
-      "shareMessage": "¡Te invito a jugar! 🎾\n\n📍 {club}\n🏟️ {court}\n📅 {date}\n⏰ {time}\n\nReserva hecha en Racketly — ¡solo tienes que aparecer!\n\nVe los detalles, paga tu parte o cancela aquí: {link}"
+      "shareMessage": "¡Te invito a jugar! 🎾\n\n📍 {club}\n🏟️ {court}\n📅 {date}\n⏰ {time}\n\nReserva hecha en Racketly — ¡solo tienes que aparecer!\n\nVe los detalles, paga tu parte o cancela aquí: {link}",
+      "classesLink": "Clases con profesor"
     },
     "mine": {
       "backToClubs": "Volver a clubes",
@@ -147,6 +148,24 @@
       "matchConfirmedToast": "Resultado confirmado",
       "matchDisputedToast": "Resultado objetado — puedes registrarlo de nuevo",
       "cancel": "Cancelar"
+    },
+    "classes": {
+      "backToClub": "Volver al club",
+      "title": "Clases con profesor",
+      "allProfessors": "Todos",
+      "emptyProfessors": "Este club no tiene profesores disponibles",
+      "emptySlots": "No hay clases próximas disponibles",
+      "errorFetchProfessors": "No se pudieron cargar los profesores",
+      "errorFetchSlots": "No se pudieron cargar las clases",
+      "spotsLabel": "{booked}/{max} cupos",
+      "bookedBadge": "Reservada",
+      "bookButton": "Reservar",
+      "fullButton": "Sin cupo",
+      "cancelButton": "Cancelar",
+      "classBooked": "Clase reservada — paga en el club",
+      "classCancelledToast": "Reserva de clase cancelada",
+      "errorBook": "No se pudo reservar la clase",
+      "errorCancel": "No se pudo cancelar la reserva"
     }
   }
 }

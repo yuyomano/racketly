@@ -21,6 +21,7 @@ import {
   Wallet,
   MessageCircle,
   Mail,
+  GraduationCap,
 } from 'lucide-react'
 import { buildGoogleCalendarUrl } from '@racketly/utils'
 import { Card } from '@/components/ui/Card'
@@ -463,14 +464,22 @@ export function ClubBookingClient({
         <ArrowLeft className="w-4 h-4" /> {t('backToClubs')}
       </Link>
 
-      <div>
-        <h1 className="text-xl font-black text-ink-900 tracking-tight">{club.name}</h1>
-        <p className="flex items-center gap-1 text-sm text-ink-400 mt-0.5">
-          <MapPin className="w-3.5 h-3.5" /> {club.city}, {club.country}
-        </p>
-        <p className="text-xs text-ink-400 mt-1">
-          {CANCELLATION_LABEL[club.cancellationPolicy ?? 'flexible']}
-        </p>
+      <div className="flex items-start justify-between gap-4">
+        <div>
+          <h1 className="text-xl font-black text-ink-900 tracking-tight">{club.name}</h1>
+          <p className="flex items-center gap-1 text-sm text-ink-400 mt-0.5">
+            <MapPin className="w-3.5 h-3.5" /> {club.city}, {club.country}
+          </p>
+          <p className="text-xs text-ink-400 mt-1">
+            {CANCELLATION_LABEL[club.cancellationPolicy ?? 'flexible']}
+          </p>
+        </div>
+        <Link
+          href={`/booking/${club.id}/classes`}
+          className="shrink-0 flex items-center gap-1.5 text-sm font-semibold text-court-700 bg-court-50 hover:bg-court-100 px-3.5 py-2 rounded-xl transition-colors"
+        >
+          <GraduationCap className="w-4 h-4" /> {t('classesLink')}
+        </Link>
       </div>
 
       {partnerUserId && partnerName && (

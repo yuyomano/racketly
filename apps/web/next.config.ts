@@ -41,6 +41,7 @@ const nextConfig: NextConfig = {
       },
       { source: '/api/rankings/:path*', destination: `${GW}/api/rankings/:path*` },
       { source: '/api/match-requests/:path*', destination: `${GW}/api/match-requests/:path*` },
+      { source: '/api/matches/:path*', destination: `${GW}/api/matches/:path*` },
       { source: '/api/posts/:path*', destination: `${GW}/api/posts/:path*` },
       { source: '/api/groups/:path*', destination: `${GW}/api/groups/:path*` },
       { source: '/api/gear/:path*', destination: `${GW}/api/gear/:path*` },

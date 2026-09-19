@@ -1,0 +1,51 @@
+{
+  "Live": {
+    "entry": {
+      "title": "Live scoring",
+      "subtitle": "Scan the QR code or paste the match link/ID",
+      "placeholder": "Match ID or link",
+      "viewButton": "View scoreboard",
+      "emptyError": "Enter a match ID or link"
+    },
+    "match": {
+      "backToEntry": "Search another match",
+      "loadError": "Couldn't load the match",
+      "notFound": "Match not found",
+      "vs": "vs",
+      "serving": "Serving",
+      "setsLabel": "Sets",
+      "gameLabel": "Game",
+      "tiebreakLabel": "Tie-break",
+      "superTiebreakLabel": "Super tie-break",
+      "formatLabel": "Format",
+      "deuceRuleLabel": "Deuce rule",
+      "liveTag": "LIVE",
+      "connecting": "Connecting…",
+      "reconnecting": "Reconnecting…",
+      "waitingToStart": "The match hasn't started yet",
+      "showQrButton": "Show QR",
+      "hideQrButton": "Hide QR",
+      "qrHint": "Scan to watch this match live",
+      "shareLinkCopied": "Link copied",
+      "copyLinkButton": "Copy link",
+      "refereeTag": "Referee",
+      "startConfigTitle": "Set up match",
+      "startConfigHint": "Choose the deuce rule and who serves first before starting",
+      "initialServerLabel": "Serves first",
+      "startButton": "Start scoring",
+      "pointButton": "+1 point",
+      "undoButton": "Undo last point",
+      "finishButton": "Finish match",
+      "finishConfirm": "Finish the match with the current score?",
+      "matchFinished": "Match finished",
+      "eloChangesTitle": "ELO changes",
+      "actionError": "Couldn't register the action",
+      "configError": "Couldn't save the configuration"
+    },
+    "deuceRule": {
+      "advantage": "Traditional advantage",
+      "golden_point": "Golden point",
+      "star_point": "Star point"
+    }
+  }
+}

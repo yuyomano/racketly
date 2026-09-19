@@ -7,6 +7,7 @@ import { createPgAdapter } from '@racketly/utils/prisma-adapter'
 import { AppError } from '../middleware/error.middleware'
 import { requireAuth } from '../middleware/auth.middleware'
 import { io } from '../index'
+import { resolveFormatForMatch } from '../services/match-format.service'
 
 const router = Router()
 const prisma = new PrismaClient({ adapter: createPgAdapter() })
@@ -62,6 +63,51 @@ router.put('/:id/score', requireAuth, async (req: Request, res: Response, next: 
   }
 })
 
+// PATCH /api/matches/:id/live-config — el árbitro fija la regla de avances y quién
+// saca primero antes de arrancar el marcador punto a punto. Misma autorización que
+// PUT /:id/score (jugadores del partido, árbitro asignado, u organizador del torneo).
+router.patch(
+  '/:id/live-config',
+  requireAuth,
+  async (req: Request, res: Response, next: NextFunction) => {
+    try {
+      const { deuceRule, initialServer } = req.body
+      const match = await prisma.match.findUnique({ where: { id: req.params.id } })
+      if (!match) throw new AppError('Partido no encontrado', 404)
+
+      const allowedIds = new Set(
+        [
+          match.player1Id,
+          match.player1PartnerId,
+          match.player2Id,
+          match.player2PartnerId,
+          match.refereeId,
+        ].filter((x): x is string => !!x)
+      )
+      let authorized = allowedIds.has(req.userId!)
+      if (!authorized && match.tournamentId) {
+        const tournament = await prisma.tournament.findUnique({
+          where: { id: match.tournamentId },
+          select: { organizerId: true },
+        })
+        authorized = tournament?.organizerId === req.userId
+      }
+      if (!authorized) throw new AppError('No puedes configurar este partido', 403)
+
+      const updated = await prisma.match.update({
+        where: { id: req.params.id },
+        data: {
+          deuceRule: deuceRule ?? undefined,
+          initialServer: initialServer === 1 || initialServer === 2 ? initialServer : undefined,
+        },
+      })
+      return res.json({ success: true, data: updated })
+    } catch (err) {
+      return next(err)
+    }
+  }
+)
+
 // GET /api/matches/:id
 router.get('/:id', async (req: Request, res: Response, next: NextFunction) => {
   try {
@@ -69,12 +115,15 @@ router.get('/:id', async (req: Request, res: Response, next: NextFunction) => {
       where: { id: req.params.id },
       include: {
         player1: { select: { displayName: true, avatarUrl: true, eloPadel: true, category: true } },
+        player1Partner: { select: { displayName: true, avatarUrl: true } },
         player2: { select: { displayName: true, avatarUrl: true, eloPadel: true, category: true } },
+        player2Partner: { select: { displayName: true, avatarUrl: true } },
         tournament: { select: { name: true, sport: true } },
       },
     })
     if (!match) throw new AppError('Partido no encontrado', 404)
-    return res.json({ success: true, data: match })
+    const format = await resolveFormatForMatch(prisma, match)
+    return res.json({ success: true, data: { ...match, format } })
   } catch (err) {
     return next(err)
   }

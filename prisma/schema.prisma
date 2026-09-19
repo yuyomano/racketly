@@ -73,6 +73,12 @@ enum MatchFormat {
   timed_40 // tiempo fijo: 40 minutos, gana quien tenga más games al terminar
 }
 
+enum DeuceRule {
+  advantage // avance normal: en 40-40 hay que ganar por 2 puntos
+  golden_point // punto de oro: en 40-40 el próximo punto decide el juego
+  star_point // variante de punto de oro (misma mecánica, etiqueta distinta para la UI)
+}
+
 enum TournamentType {
   pairs
   teams
@@ -935,6 +941,8 @@ model Match {
   winningSide      Int? // 1 o 2 — lado ganador (funciona tanto para singles como dobles)
   status           MatchStatus @default(scheduled)
   isLive           Boolean     @default(false)
+  deuceRule        DeuceRule   @default(advantage) // regla de avances para el marcador punto a punto en vivo
+  initialServer    Int         @default(1) // 1 o 2 — quién saca primero (lo fija el árbitro al iniciar el live scoring)
   createdAt        DateTime    @default(now())
 
   // Confirmación del resultado (solo partidos casuales, estilo Playtomic): el ELO no se

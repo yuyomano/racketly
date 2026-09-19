@@ -340,6 +340,212 @@ export function matchFormatMaxSets(format: string): number {
   return MATCH_FORMAT_MAX_SETS[format as MatchFormat] ?? 3
 }
 
+// ─── Regla de avances (deuce) ──────────────────────────────────────────────────
+// "advantage" = avance normal (deuce con ventaja, hay que ganar por 2). "golden_point"
+// y "star_point" son ambas variantes de "punto de oro": en 40-40 el próximo punto
+// decide el juego sin ventaja. No se encontró una regla distinta documentada para
+// "star point" — se trata como sinónimo de golden_point a nivel de mecánica, y se
+// guarda como valor separado solo para que la UI pueda mostrar la etiqueta que
+// eligió el árbitro.
+
+export type DeuceRule = 'advantage' | 'golden_point' | 'star_point'
+
+export const DEUCE_RULE_LABELS: Record<DeuceRule, string> = {
+  advantage: 'Avance normal',
+  golden_point: 'Punto de oro',
+  star_point: 'Star point',
+}
+
+export const MATCH_FORMAT_SET_RULES: Record<
+  MatchFormat,
+  { gamesToWin: number; tiebreakTo: number; setsToWinMatch: number; superTieDecider: boolean }
+> = {
+  best_of_3_full: { gamesToWin: 6, tiebreakTo: 7, setsToWinMatch: 2, superTieDecider: false },
+  two_sets_super_tb: { gamesToWin: 6, tiebreakTo: 7, setsToWinMatch: 2, superTieDecider: true },
+  pro_set_8: { gamesToWin: 8, tiebreakTo: 7, setsToWinMatch: 1, superTieDecider: false },
+  pro_set_10: { gamesToWin: 10, tiebreakTo: 7, setsToWinMatch: 1, superTieDecider: false },
+  single_set_6: { gamesToWin: 6, tiebreakTo: 7, setsToWinMatch: 1, superTieDecider: false },
+  // timed_30/timed_40 no tienen objetivo de games — el árbitro corta el partido a
+  // mano con `finishMatch`, así que un objetivo alto simplemente nunca se alcanza solo.
+  timed_30: { gamesToWin: 999, tiebreakTo: 7, setsToWinMatch: 1, superTieDecider: false },
+  timed_40: { gamesToWin: 999, tiebreakTo: 7, setsToWinMatch: 1, superTieDecider: false },
+}
+
+// ─── Motor de marcador punto a punto (live scoring) ────────────────────────────
+// Estado en memoria de un partido en vivo. No se persiste punto a punto — el
+// servidor de sockets guarda una instancia de esto por partido y solo escribe en
+// BD (`Match.score`) cada vez que se cierra un set, igual que ya hacía el flujo de
+// marcador por sets. Si el proceso se reinicia, el estado punto a punto se pierde
+// pero los sets ya jugados no (quedan en `Match.score`).
+export type LiveMatchState = {
+  completedSets: SetScore[]
+  games: { player1: number; player2: number } // games del set en curso
+  points: { player1: number; player2: number } // puntos del game (o del tiebreak) en curso
+  inTiebreak: boolean
+  inSuperTiebreak: boolean // "set decisivo" de two_sets_super_tb (1-1 en sets)
+  server: 1 | 2
+  matchWinner: 1 | 2 | null
+}
+
+export function initLiveMatchState(initialServer: 1 | 2 = 1): LiveMatchState {
+  return {
+    completedSets: [],
+    games: { player1: 0, player2: 0 },
+    points: { player1: 0, player2: 0 },
+    inTiebreak: false,
+    inSuperTiebreak: false,
+    server: initialServer,
+    matchWinner: null,
+  }
+}
+
+// Etiqueta visual del punto de un jugador dentro del game en curso (0/15/30/40/AD).
+// No aplica dentro de un tiebreak, donde el punto se muestra como número (1,2,3...).
+export function gamePointLabel(
+  points: { player1: number; player2: number },
+  side: 1 | 2,
+  deuceRule: DeuceRule
+): string {
+  const BASE = ['0', '15', '30', '40']
+  const mine = side === 1 ? points.player1 : points.player2
+  const theirs = side === 1 ? points.player2 : points.player1
+  if (mine < 3 || theirs < 3) return BASE[Math.min(mine, 3)]
+  if (deuceRule !== 'advantage') return '40' // punto de oro/star point: 40-40 hasta que decide el punto
+  if (mine === theirs) return '40'
+  return mine > theirs ? 'AD' : '40'
+}
+
+function isGameWon(points: { player1: number; player2: number }, deuceRule: DeuceRule): 1 | 2 | null {
+  const { player1: a, player2: b } = points
+  if (deuceRule === 'advantage') {
+    if (a >= 4 && a - b >= 2) return 1
+    if (b >= 4 && b - a >= 2) return 2
+    return null
+  }
+  // golden_point / star_point: sin ventaja — el primer punto que llega a >=4 y va
+  // arriba (incluye el "punto de oro" en 3-3) gana el juego.
+  if (a >= 4 && a > b) return 1
+  if (b >= 4 && b > a) return 2
+  return null
+}
+
+// Quién sirve el punto `pointNumber` (1-indexado) dentro de un tiebreak: el jugador
+// que empieza sirve el primer punto, luego se alterna cada 2 puntos.
+function tiebreakServer(pointNumber: number, initialServer: 1 | 2): 1 | 2 {
+  if (pointNumber <= 1) return initialServer
+  const other = initialServer === 1 ? 2 : 1
+  const block = Math.floor((pointNumber - 2) / 2)
+  return block % 2 === 0 ? other : initialServer
+}
+
+/**
+ * Aplica un punto ganado por `side` al estado en vivo y devuelve el nuevo estado
+ * (inmutable). Maneja juegos, tiebreaks, sets, el set decisivo en super tie-break,
+ * rotación de saque y el fin del partido según `setsToWinMatch`.
+ */
+function getSide(score: { player1: number; player2: number }, side: 1 | 2): number {
+  return side === 1 ? score.player1 : score.player2
+}
+
+function incSide(
+  score: { player1: number; player2: number },
+  side: 1 | 2
+): { player1: number; player2: number } {
+  return side === 1
+    ? { player1: score.player1 + 1, player2: score.player2 }
+    : { player1: score.player1, player2: score.player2 + 1 }
+}
+
+const ZERO = { player1: 0, player2: 0 }
+
+export function applyLivePoint(
+  state: LiveMatchState,
+  side: 1 | 2,
+  format: MatchFormat,
+  deuceRule: DeuceRule
+): LiveMatchState {
+  if (state.matchWinner) return state
+  const rules = MATCH_FORMAT_SET_RULES[format]
+  const other = side === 1 ? 2 : 1
+
+  if (state.inSuperTiebreak) {
+    const points = incSide(state.points, side)
+    const mine = getSide(points, side)
+    const theirs = getSide(points, other)
+    if (mine >= 10 && mine - theirs >= 2) {
+      return { ...state, points, completedSets: [...state.completedSets, points], matchWinner: side }
+    }
+    return { ...state, points, server: tiebreakServer(mine + theirs + 1, state.server) }
+  }
+
+  if (state.inTiebreak) {
+    const points = incSide(state.points, side)
+    const mine = getSide(points, side)
+    const theirs = getSide(points, other)
+    if (mine >= rules.tiebreakTo && mine - theirs >= 2) {
+      return closeSet(state, incSide(state.games, side), format)
+    }
+    return { ...state, points, server: tiebreakServer(mine + theirs + 1, state.server) }
+  }
+
+  const points = incSide(state.points, side)
+  const gameWinner = isGameWon(points, deuceRule)
+  if (!gameWinner) return { ...state, points }
+
+  const games = incSide(state.games, gameWinner)
+  const newServer = state.server === 1 ? 2 : 1
+
+  if (games.player1 === rules.gamesToWin && games.player2 === rules.gamesToWin) {
+    return { ...state, points: ZERO, games, inTiebreak: true, server: newServer }
+  }
+  if (
+    (games.player1 >= rules.gamesToWin && games.player1 - games.player2 >= 2) ||
+    (games.player2 >= rules.gamesToWin && games.player2 - games.player1 >= 2)
+  ) {
+    return closeSet(state, games, format, newServer)
+  }
+
+  return { ...state, points: ZERO, games, server: newServer }
+}
+
+function closeSet(
+  state: LiveMatchState,
+  games: { player1: number; player2: number },
+  format: MatchFormat,
+  server?: 1 | 2
+): LiveMatchState {
+  const rules = MATCH_FORMAT_SET_RULES[format]
+  const completedSets = [...state.completedSets, games]
+  const setsWon = completedSets.reduce(
+    (acc, s) => {
+      if (s.player1 > s.player2) acc.player1++
+      else if (s.player2 > s.player1) acc.player2++
+      return acc
+    },
+    { player1: 0, player2: 0 }
+  )
+
+  if (setsWon.player1 >= rules.setsToWinMatch) {
+    return { ...state, completedSets, games: ZERO, points: ZERO, inTiebreak: false, matchWinner: 1 }
+  }
+  if (setsWon.player2 >= rules.setsToWinMatch) {
+    return { ...state, completedSets, games: ZERO, points: ZERO, inTiebreak: false, matchWinner: 2 }
+  }
+
+  // two_sets_super_tb con 1-1: el "set decisivo" es un super tie-break a 10 en vez de un set completo.
+  const goesToSuperTie = rules.superTieDecider && setsWon.player1 === 1 && setsWon.player2 === 1
+  return {
+    ...state,
+    completedSets,
+    games: ZERO,
+    points: ZERO,
+    inTiebreak: false,
+    inSuperTiebreak: goesToSuperTie,
+    server: server ?? state.server,
+    matchWinner: null,
+  }
+}
+
 // Identificador único de una pareja, insensible al orden de sus dos integrantes
 // (o de un jugador individual, en torneos de tipo "singles" donde partnerId es null).
 export function pairKey(playerId: string, partnerId?: string | null): string {

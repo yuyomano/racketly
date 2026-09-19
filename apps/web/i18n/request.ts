@@ -33,6 +33,7 @@ const NAMESPACE_FILES = [
   'community',
   'mymemberships',
   'badges',
+  'live',
 ] as const
 
 export default getRequestConfig(async () => {

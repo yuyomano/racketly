@@ -1,12 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react'
-import {
-  View,
-  TouchableOpacity,
-  StyleSheet,
-  Alert,
-  ActivityIndicator,
-  ScrollView,
-} from 'react-native'
+import { View, TouchableOpacity, StyleSheet, Alert, ActivityIndicator } from 'react-native'
 import { Text } from '../../components/ui/Text'
 import { Ionicons } from '@expo/vector-icons'
 import { io, Socket } from 'socket.io-client'
@@ -14,6 +7,13 @@ import { useQuery } from '@tanstack/react-query'
 import { matchesApi } from '../../services/api'
 import { BackButton } from '../../components/ui/BackButton'
 import { colors } from '../../theme'
+import {
+  MATCH_FORMAT_LABELS,
+  DEUCE_RULE_LABELS,
+  gamePointLabel,
+  type MatchFormat,
+  type DeuceRule,
+} from '@racketly/utils'
 
 const WS_URL = process.env.EXPO_PUBLIC_API_URL
   ? process.env.EXPO_PUBLIC_API_URL.replace('http', 'ws')
@@ -29,38 +29,21 @@ type Match = {
   status: string
   isLive: boolean
   winnerId?: string | null
+  format: MatchFormat
+  deuceRule: DeuceRule
+  initialServer: number
 }
 
-function ScoreInput({
-  value,
-  onInc,
-  onDec,
-  disabled,
-}: {
-  value: number
-  onInc: () => void
-  onDec: () => void
-  disabled: boolean
-}) {
-  return (
-    <View style={styles.scoreControl}>
-      <TouchableOpacity
-        style={[styles.scoreBtn, styles.scoreBtnDec, disabled && styles.scoreBtnDisabled]}
-        onPress={onDec}
-        disabled={disabled}
-      >
-        <Text style={styles.scoreBtnText}>−</Text>
-      </TouchableOpacity>
-      <Text style={styles.scoreValue}>{value}</Text>
-      <TouchableOpacity
-        style={[styles.scoreBtn, styles.scoreBtnInc, disabled && styles.scoreBtnDisabled]}
-        onPress={onInc}
-        disabled={disabled}
-      >
-        <Text style={styles.scoreBtnText}>+</Text>
-      </TouchableOpacity>
-    </View>
-  )
+type LiveState = {
+  completedSets: SetScore[]
+  games: { player1: number; player2: number }
+  points: { player1: number; player2: number }
+  inTiebreak: boolean
+  inSuperTiebreak: boolean
+  server: 1 | 2
+  matchWinner: 1 | 2 | null
+  deuceRule: DeuceRule
+  format: MatchFormat
 }
 
 export function LiveScoringScreen({ route, navigation }: { route: any; navigation: any }) {
@@ -69,13 +52,12 @@ export function LiveScoringScreen({ route, navigation }: { route: any; navigatio
 
   const [connected, setConnected] = useState(false)
   const [match, setMatch] = useState<Match | null>(null)
-  const [sets, setSets] = useState<SetScore[]>([{ player1: 0, player2: 0 }])
+  const [live, setLive] = useState<LiveState | null>(null)
   const [finished, setFinished] = useState(false)
   const [eloChanges, setEloChanges] = useState<Record<
     string,
     { before: number; after: number; delta: number }
   > | null>(null)
-  const [spectatorScore, setSpectatorScore] = useState<SetScore[]>([])
 
   const { data: loadedMatch, isLoading: loadingMatch } = useQuery({
     queryKey: ['match', matchId],
@@ -87,12 +69,6 @@ export function LiveScoringScreen({ route, navigation }: { route: any; navigatio
   useEffect(() => {
     if (!loadedMatch) return
     setMatch(loadedMatch)
-    const existingScore =
-      Array.isArray(loadedMatch.score) && loadedMatch.score.length > 0
-        ? loadedMatch.score
-        : [{ player1: 0, player2: 0 }]
-    setSets(existingScore)
-    setSpectatorScore(existingScore)
     if (loadedMatch.status === 'completed' || loadedMatch.status === 'walkover') {
       setFinished(true)
     }
@@ -109,15 +85,11 @@ export function LiveScoringScreen({ route, navigation }: { route: any; navigatio
 
     socket.on('disconnect', () => setConnected(false))
 
-    // Espectador recibe actualizaciones
-    socket.on('score:updated', ({ sets: updatedSets }: { sets: SetScore[] }) => {
-      setSpectatorScore(updatedSets)
-    })
+    socket.on('live:state', (state: LiveState) => setLive(state))
 
     socket.on(
       'match:finished',
       ({
-        sets: finalSets,
         eloChanges: changes,
         winnerId,
       }: {
@@ -125,7 +97,6 @@ export function LiveScoringScreen({ route, navigation }: { route: any; navigatio
         eloChanges: any
         winnerId: string
       }) => {
-        setSpectatorScore(finalSets)
         setEloChanges(changes)
         setFinished(true)
         if (match) setMatch({ ...match, winnerId })
@@ -141,25 +112,12 @@ export function LiveScoringScreen({ route, navigation }: { route: any; navigatio
     }
   }, [matchId])
 
-  function updateSet(setIndex: number, player: 'player1' | 'player2', delta: number) {
-    setSets((prev) => {
-      const next = [...prev]
-      const current = next[setIndex][player] + delta
-      next[setIndex] = { ...next[setIndex], [player]: Math.max(0, current) }
-      return next
-    })
+  function addPoint(side: 1 | 2) {
+    socketRef.current?.emit('point:add', { matchId, side })
   }
 
-  function addSet() {
-    setSets((prev) => [...prev, { player1: 0, player2: 0 }])
-  }
-
-  function removeSet() {
-    if (sets.length > 1) setSets((prev) => prev.slice(0, -1))
-  }
-
-  function sendScore() {
-    socketRef.current?.emit('score:update', { matchId, sets })
+  function undoPoint() {
+    socketRef.current?.emit('point:undo', { matchId })
   }
 
   function finishMatch() {
@@ -172,7 +130,10 @@ export function LiveScoringScreen({ route, navigation }: { route: any; navigatio
           text: 'Finalizar',
           style: 'destructive',
           onPress: () => {
-            socketRef.current?.emit('match:finish', { matchId, sets })
+            socketRef.current?.emit('match:finish', {
+              matchId,
+              sets: live?.completedSets ?? [],
+            })
             setFinished(true)
           },
         },
@@ -182,7 +143,7 @@ export function LiveScoringScreen({ route, navigation }: { route: any; navigatio
 
   // ─── Vista de resultado final ─────────────────────────────────────────────
   if (finished) {
-    const finalSets = isReferee ? sets : spectatorScore
+    const finalSets = live?.completedSets ?? []
     const p1Score = finalSets.reduce((a, s) => a + (s.player1 > s.player2 ? 1 : 0), 0)
     const p2Score = finalSets.reduce((a, s) => a + (s.player2 > s.player1 ? 1 : 0), 0)
 
@@ -225,96 +186,6 @@ export function LiveScoringScreen({ route, navigation }: { route: any; navigatio
     )
   }
 
-  // ─── Vista árbitro ─────────────────────────────────────────────────────────
-  if (isReferee) {
-    return (
-      <View style={styles.container}>
-        <View style={styles.header}>
-          <BackButton onPress={() => navigation.goBack()} />
-          <View style={styles.headerInfo}>
-            <Text style={styles.headerTitle}>Live Scoring</Text>
-            <View
-              style={[
-                styles.connDot,
-                { backgroundColor: connected ? colors.court500 : colors.referee500 },
-              ]}
-            />
-          </View>
-          <Text style={styles.refereeLabel}>Árbitro</Text>
-        </View>
-
-        <ScrollView style={styles.scroll} showsVerticalScrollIndicator={false}>
-          {/* Sets */}
-          {sets.map((set, i) => (
-            <View key={i} style={styles.setCard}>
-              <View style={styles.setHeader}>
-                <Text style={styles.setTitle}>Set {i + 1}</Text>
-                {i === sets.length - 1 && sets.length > 1 && (
-                  <TouchableOpacity onPress={removeSet}>
-                    <Text style={styles.removeSetText}>Eliminar</Text>
-                  </TouchableOpacity>
-                )}
-              </View>
-
-              <View style={styles.setRow}>
-                {/* Jugador 1 */}
-                <View style={styles.playerScore}>
-                  <Text style={styles.playerLabel} numberOfLines={1}>
-                    {match?.player1?.displayName || 'Jugador 1'}
-                  </Text>
-                  <ScoreInput
-                    value={set.player1}
-                    onInc={() => updateSet(i, 'player1', 1)}
-                    onDec={() => updateSet(i, 'player1', -1)}
-                    disabled={false}
-                  />
-                </View>
-
-                <Text style={styles.setVs}>VS</Text>
-
-                {/* Jugador 2 */}
-                <View style={styles.playerScore}>
-                  <Text style={styles.playerLabel} numberOfLines={1}>
-                    {match?.player2?.displayName || 'Jugador 2'}
-                  </Text>
-                  <ScoreInput
-                    value={set.player2}
-                    onInc={() => updateSet(i, 'player2', 1)}
-                    onDec={() => updateSet(i, 'player2', -1)}
-                    disabled={false}
-                  />
-                </View>
-              </View>
-            </View>
-          ))}
-
-          {/* Añadir set */}
-          <TouchableOpacity style={styles.addSetBtn} onPress={addSet}>
-            <Text style={styles.addSetText}>+ Añadir set</Text>
-          </TouchableOpacity>
-
-          {/* Botones de acción */}
-          <TouchableOpacity
-            style={[styles.updateBtn, !connected && styles.updateBtnDisabled]}
-            onPress={sendScore}
-            disabled={!connected}
-          >
-            <Ionicons name="radio-outline" size={16} color={colors.white} />
-            <Text style={styles.updateBtnText}>Enviar marcador en vivo</Text>
-          </TouchableOpacity>
-
-          <TouchableOpacity style={styles.finishBtn} onPress={finishMatch}>
-            <Ionicons name="flag-outline" size={16} color={colors.white} />
-            <Text style={styles.finishBtnText}>Finalizar partido</Text>
-          </TouchableOpacity>
-
-          <View style={{ height: 60 }} />
-        </ScrollView>
-      </View>
-    )
-  }
-
-  // ─── Vista espectador ──────────────────────────────────────────────────────
   if (loadingMatch) {
     return (
       <View style={[styles.container, { justifyContent: 'center', alignItems: 'center' }]}>
@@ -323,72 +194,123 @@ export function LiveScoringScreen({ route, navigation }: { route: any; navigatio
     )
   }
 
-  const displaySets = spectatorScore.length > 0 ? spectatorScore : [{ player1: 0, player2: 0 }]
-  const p1Sets = displaySets.reduce((a, s) => a + (s.player1 > s.player2 ? 1 : 0), 0)
-  const p2Sets = displaySets.reduce((a, s) => a + (s.player2 > s.player1 ? 1 : 0), 0)
+  const format = live?.format ?? match?.format ?? 'best_of_3_full'
+  const deuceRule = live?.deuceRule ?? match?.deuceRule ?? 'advantage'
+  const server = live?.server ?? (match?.initialServer === 2 ? 2 : 1)
+  const completedSets = live?.completedSets ?? []
+  const games = live?.games ?? { player1: 0, player2: 0 }
+  const points = live?.points ?? { player1: 0, player2: 0 }
+  const inTiebreak = live?.inTiebreak ?? false
+  const inSuperTiebreak = live?.inSuperTiebreak ?? false
+  const p1Sets = completedSets.reduce((a, s) => a + (s.player1 > s.player2 ? 1 : 0), 0)
+  const p2Sets = completedSets.reduce((a, s) => a + (s.player2 > s.player1 ? 1 : 0), 0)
 
   return (
     <View style={styles.container}>
       <View style={styles.header}>
         <BackButton onPress={() => navigation.goBack()} />
-        <Text style={styles.headerTitle}>EN VIVO</Text>
+        <Text style={styles.headerTitle}>{isReferee ? 'Live Scoring' : 'EN VIVO'}</Text>
         <View
-          style={[styles.connDot, { backgroundColor: connected ? colors.court500 : colors.ink300 }]}
+          style={[styles.connDot, { backgroundColor: connected ? colors.court500 : colors.referee500 }]}
         />
+        {isReferee && <Text style={styles.refereeLabel}>Árbitro</Text>}
       </View>
 
-      {(match?.player1 || match?.player2) && (
-        <View style={styles.spectatorNamesRow}>
+      <View style={styles.formatRow}>
+        <Text style={styles.formatBadge}>{MATCH_FORMAT_LABELS[format]}</Text>
+        <Text style={styles.formatBadge}>{DEUCE_RULE_LABELS[deuceRule]}</Text>
+      </View>
+
+      <View style={styles.spectatorNamesRow}>
+        <View style={styles.spectatorNameWrap}>
+          {server === 1 && <View style={styles.serverDot} />}
           <Text style={styles.spectatorName} numberOfLines={1}>
             {match?.player1?.displayName || 'Jugador 1'}
           </Text>
-          <Text style={styles.spectatorVs}>vs</Text>
+        </View>
+        <Text style={styles.spectatorVs}>vs</Text>
+        <View style={styles.spectatorNameWrap}>
+          {server === 2 && <View style={styles.serverDot} />}
           <Text style={styles.spectatorName} numberOfLines={1}>
             {match?.player2?.displayName || 'Jugador 2'}
           </Text>
         </View>
-      )}
+      </View>
 
       <View style={styles.liveBoard}>
-        {/* Marcador global */}
         <View style={styles.setsCounter}>
           <Text style={styles.setsCountNum}>{p1Sets}</Text>
           <Text style={styles.setsCountLabel}>SETS</Text>
           <Text style={styles.setsCountNum}>{p2Sets}</Text>
         </View>
 
-        {/* Detalle de sets */}
         <View style={styles.setsDetail}>
-          {displaySets.map((s, i) => (
+          {completedSets.map((s, i) => (
             <View key={i} style={styles.setDetailRow}>
-              <Text
-                style={[styles.setDetailScore, s.player1 > s.player2 && styles.setDetailWinner]}
-              >
+              <Text style={[styles.setDetailScore, s.player1 > s.player2 && styles.setDetailWinner]}>
                 {s.player1}
               </Text>
               <Text style={styles.setDetailSep}>-</Text>
-              <Text
-                style={[styles.setDetailScore, s.player2 > s.player1 && styles.setDetailWinner]}
-              >
+              <Text style={[styles.setDetailScore, s.player2 > s.player1 && styles.setDetailWinner]}>
                 {s.player2}
               </Text>
             </View>
           ))}
         </View>
 
-        {/* Estado */}
+        <View style={styles.gameScoreBox}>
+          <Text style={styles.gameScoreLabel}>
+            {inSuperTiebreak ? 'Super tie-break' : inTiebreak ? 'Tie-break' : 'Juego'}
+          </Text>
+          <Text style={styles.gameScoreValue}>
+            {inTiebreak || inSuperTiebreak
+              ? `${points.player1} - ${points.player2}`
+              : `${gamePointLabel(points, 1, deuceRule)} - ${gamePointLabel(points, 2, deuceRule)}`}
+          </Text>
+          {!inSuperTiebreak && (
+            <Text style={styles.gameScoreGames}>
+              Games: {games.player1}-{games.player2}
+            </Text>
+          )}
+        </View>
+
         <View style={styles.liveIndicator}>
           <View style={styles.liveDot} />
-          <Text style={styles.liveText}>
-            {connected ? 'Transmisión en vivo' : 'Reconectando...'}
-          </Text>
+          <Text style={styles.liveText}>{connected ? 'Transmisión en vivo' : 'Reconectando...'}</Text>
         </View>
       </View>
 
-      <View style={styles.matchInfo}>
-        <Text style={styles.matchInfoTitle}>Partido #{matchId.slice(0, 8)}</Text>
-        <Text style={styles.matchInfoSub}>Los datos se actualizan automáticamente</Text>
-      </View>
+      {isReferee ? (
+        <View style={styles.refereeControls}>
+          <View style={styles.pointBtnRow}>
+            <TouchableOpacity style={styles.pointBtn} onPress={() => addPoint(1)}>
+              <Text style={styles.pointBtnText}>
+                +1 {match?.player1?.displayName || 'Jugador 1'}
+              </Text>
+            </TouchableOpacity>
+            <TouchableOpacity style={styles.pointBtn} onPress={() => addPoint(2)}>
+              <Text style={styles.pointBtnText}>
+                +1 {match?.player2?.displayName || 'Jugador 2'}
+              </Text>
+            </TouchableOpacity>
+          </View>
+          <View style={styles.pointBtnRow}>
+            <TouchableOpacity style={styles.undoBtn} onPress={undoPoint}>
+              <Ionicons name="arrow-undo-outline" size={16} color={colors.ink300} />
+              <Text style={styles.undoBtnText}>Deshacer</Text>
+            </TouchableOpacity>
+            <TouchableOpacity style={styles.finishBtn} onPress={finishMatch}>
+              <Ionicons name="flag-outline" size={16} color={colors.white} />
+              <Text style={styles.finishBtnText}>Finalizar partido</Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+      ) : (
+        <View style={styles.matchInfo}>
+          <Text style={styles.matchInfoTitle}>Partido #{matchId.slice(0, 8)}</Text>
+          <Text style={styles.matchInfoSub}>Los datos se actualizan automáticamente</Text>
+        </View>
+      )}
     </View>
   )
 }
@@ -414,58 +336,24 @@ const styles = StyleSheet.create({
     borderRadius: 8,
   },
   scroll: { flex: 1 },
-  // Referee
-  setCard: { margin: 12, backgroundColor: colors.ink700, borderRadius: 20, padding: 20 },
-  setHeader: { flexDirection: 'row', justifyContent: 'space-between', marginBottom: 16 },
-  setTitle: { fontSize: 16, fontWeight: '700', color: colors.white },
-  removeSetText: { color: colors.referee500, fontSize: 13 },
-  setRow: { flexDirection: 'row', alignItems: 'center', gap: 12 },
-  playerScore: { flex: 1, alignItems: 'center', gap: 10 },
-  playerLabel: { fontSize: 13, color: colors.ink300, fontWeight: '600', textAlign: 'center' },
-  setVs: { fontSize: 14, color: colors.ink600, fontWeight: '700' },
-  scoreControl: { flexDirection: 'row', alignItems: 'center', gap: 12 },
-  scoreBtn: {
-    width: 44,
-    height: 44,
-    borderRadius: 22,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  scoreBtnInc: { backgroundColor: colors.court600 },
-  scoreBtnDec: { backgroundColor: colors.ink600 },
-  scoreBtnDisabled: { opacity: 0.4 },
-  scoreBtnText: { color: colors.white, fontSize: 22, fontWeight: '700', lineHeight: 26 },
-  scoreValue: {
-    fontSize: 36,
-    fontWeight: '900',
-    color: colors.white,
-    minWidth: 50,
-    textAlign: 'center',
-  },
-  addSetBtn: {
-    margin: 12,
-    borderWidth: 1.5,
-    borderColor: colors.ink600,
-    borderRadius: 14,
-    paddingVertical: 12,
-    alignItems: 'center',
-    borderStyle: 'dashed',
-  },
-  addSetText: { color: colors.ink400, fontSize: 14, fontWeight: '600' },
-  updateBtn: {
-    margin: 12,
+  formatRow: {
     flexDirection: 'row',
-    gap: 8,
-    backgroundColor: colors.court600,
-    borderRadius: 14,
-    paddingVertical: 14,
-    alignItems: 'center',
     justifyContent: 'center',
+    gap: 8,
+    paddingTop: 12,
   },
-  updateBtnDisabled: { opacity: 0.5 },
-  updateBtnText: { color: colors.white, fontSize: 15, fontWeight: '700' },
+  formatBadge: {
+    fontSize: 11,
+    fontWeight: '700',
+    color: colors.ink300,
+    backgroundColor: colors.ink700,
+    borderRadius: 8,
+    paddingHorizontal: 10,
+    paddingVertical: 4,
+  },
+  // Referee
   finishBtn: {
-    marginHorizontal: 12,
+    flex: 1,
     flexDirection: 'row',
     gap: 8,
     backgroundColor: colors.referee600,
@@ -475,6 +363,29 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   finishBtnText: { color: colors.white, fontSize: 15, fontWeight: '700' },
+  refereeControls: { paddingHorizontal: 12, paddingBottom: 24, gap: 10 },
+  pointBtnRow: { flexDirection: 'row', gap: 10 },
+  pointBtn: {
+    flex: 1,
+    backgroundColor: colors.court600,
+    borderRadius: 14,
+    paddingVertical: 16,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  pointBtnText: { color: colors.white, fontSize: 14, fontWeight: '700' },
+  undoBtn: {
+    flexDirection: 'row',
+    gap: 6,
+    borderWidth: 1.5,
+    borderColor: colors.ink600,
+    borderRadius: 14,
+    paddingVertical: 14,
+    paddingHorizontal: 18,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  undoBtnText: { color: colors.ink300, fontSize: 14, fontWeight: '600' },
   // Spectator
   spectatorNamesRow: {
     flexDirection: 'row',
@@ -484,14 +395,19 @@ const styles = StyleSheet.create({
     paddingHorizontal: 20,
     paddingTop: 12,
   },
+  spectatorNameWrap: { flex: 1, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 6 },
+  serverDot: { width: 7, height: 7, borderRadius: 3.5, backgroundColor: colors.court500 },
   spectatorName: {
-    flex: 1,
     fontSize: 14,
     fontWeight: '700',
     color: colors.white,
     textAlign: 'center',
   },
   spectatorVs: { fontSize: 12, color: colors.ink400, fontWeight: '700' },
+  gameScoreBox: { alignItems: 'center', marginBottom: 20 },
+  gameScoreLabel: { fontSize: 12, color: colors.ink400, fontWeight: '700', letterSpacing: 1 },
+  gameScoreValue: { fontSize: 40, fontWeight: '900', color: colors.white, marginTop: 4 },
+  gameScoreGames: { fontSize: 13, color: colors.ink300, marginTop: 4 },
   liveBoard: { padding: 24, alignItems: 'center' },
   setsCounter: { flexDirection: 'row', alignItems: 'center', gap: 24, marginBottom: 24 },
   setsCountNum: { fontSize: 80, fontWeight: '900', color: colors.white },

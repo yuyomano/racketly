@@ -1,0 +1,51 @@
+{
+  "Live": {
+    "entry": {
+      "title": "Marcador en vivo",
+      "subtitle": "Escanea el QR o pega el enlace/ID del partido",
+      "placeholder": "ID o enlace del partido",
+      "viewButton": "Ver marcador",
+      "emptyError": "Ingresa un ID o enlace de partido"
+    },
+    "match": {
+      "backToEntry": "Buscar otro partido",
+      "loadError": "No se pudo cargar el partido",
+      "notFound": "Partido no encontrado",
+      "vs": "vs",
+      "serving": "Saca",
+      "setsLabel": "Sets",
+      "gameLabel": "Juego",
+      "tiebreakLabel": "Tie-break",
+      "superTiebreakLabel": "Super tie-break",
+      "formatLabel": "Modalidad",
+      "deuceRuleLabel": "Avances",
+      "liveTag": "EN VIVO",
+      "connecting": "Conectando…",
+      "reconnecting": "Reconectando…",
+      "waitingToStart": "El partido aún no ha comenzado",
+      "showQrButton": "Mostrar QR",
+      "hideQrButton": "Ocultar QR",
+      "qrHint": "Escanea para ver este partido en vivo",
+      "shareLinkCopied": "Enlace copiado",
+      "copyLinkButton": "Copiar enlace",
+      "refereeTag": "Árbitro",
+      "startConfigTitle": "Configurar partido",
+      "startConfigHint": "Elige cómo se juegan los avances y quién saca primero antes de arrancar",
+      "initialServerLabel": "Saca primero",
+      "startButton": "Iniciar marcador",
+      "pointButton": "+1 punto",
+      "undoButton": "Deshacer último punto",
+      "finishButton": "Finalizar partido",
+      "finishConfirm": "¿Finalizar el partido con el marcador actual?",
+      "matchFinished": "Partido finalizado",
+      "eloChangesTitle": "Cambios de ELO",
+      "actionError": "No se pudo registrar la acción",
+      "configError": "No se pudo guardar la configuración"
+    },
+    "deuceRule": {
+      "advantage": "Avance normal",
+      "golden_point": "Punto de oro",
+      "star_point": "Star point"
+    }
+  }
+}

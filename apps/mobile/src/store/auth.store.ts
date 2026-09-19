@@ -18,6 +18,7 @@ interface AuthState {
   logout: () => Promise<void>
   loadStoredAuth: () => Promise<void>
   updateProfile: (profile: PlayerProfile) => void
+  updateUser: (partial: Partial<User>) => Promise<void>
 }
 
 export const useAuthStore = create<AuthState>((set) => ({
@@ -67,4 +68,13 @@ export const useAuthStore = create<AuthState>((set) => ({
     set((state) => ({
       user: state.user ? { ...state.user, profile } : null,
     })),
+
+  updateUser: async (partial) => {
+    set((state) => {
+      if (!state.user) return {}
+      const user = { ...state.user, ...partial }
+      SecureStore.setItemAsync('user', JSON.stringify(user))
+      return { user }
+    })
+  },
 }))

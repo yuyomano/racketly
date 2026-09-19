@@ -57,7 +57,7 @@ const COUNTRY_OPTIONS = [
 ]
 
 export function EditProfileScreen({ navigation }: { navigation: any }) {
-  const { user, updateProfile } = useAuthStore()
+  const { user, updateProfile, updateUser } = useAuthStore()
   const profile = user?.profile
   const qc = useQueryClient()
 
@@ -81,7 +81,7 @@ export function EditProfileScreen({ navigation }: { navigation: any }) {
 
   const mutation = useMutation({
     mutationFn: async () => {
-      const [profileRes] = await Promise.all([
+      const [profileRes, meRes] = await Promise.all([
         profileApi.updateProfile({
           displayName,
           bio,
@@ -96,11 +96,12 @@ export function EditProfileScreen({ navigation }: { navigation: any }) {
         }),
         authApi.updateAccount({ phone: phone || null, birthDate: birthDate || null }),
       ])
-      return profileRes
+      return { profileRes, meRes }
     },
-    onSuccess: (res) => {
-      // Actualiza el store con los nuevos datos del perfil
-      updateProfile(res.data.data)
+    onSuccess: ({ profileRes, meRes }) => {
+      // Actualiza el store con los nuevos datos del perfil y de la cuenta (telefono, fecha de nacimiento)
+      updateProfile(profileRes.data.data)
+      updateUser({ phone: meRes.data.data.phone, birthDate: meRes.data.data.birthDate })
       qc.invalidateQueries({ queryKey: ['profile'] })
       Alert.alert('Perfil actualizado', 'Tus cambios se guardaron correctamente.', [
         { text: 'OK', onPress: () => navigation.goBack() },

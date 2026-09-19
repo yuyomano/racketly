@@ -164,7 +164,7 @@ router.post('/invite', async (req: Request, res: Response, next: NextFunction) =
         playerProfile: {
           create: {
             displayName: name.trim(),
-            country: '',
+            country: 'DO',
             city: '',
             sport: sport ?? 'padel',
             eloPadel: INITIAL_ELO,
@@ -508,7 +508,7 @@ router.post('/google', async (req: Request, res: Response, next: NextFunction) =
           playerProfile: {
             create: {
               displayName,
-              country: '',
+              country: 'DO',
               city: '',
               sport: 'padel',
               eloPadel: INITIAL_ELO,

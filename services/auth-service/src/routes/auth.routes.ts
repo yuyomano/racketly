@@ -301,6 +301,7 @@ router.post(
       })
 
       if (!user) throw new AppError('Credenciales incorrectas', 401)
+      if (user.deletedAt) throw new AppError('Credenciales incorrectas', 401)
       if (!user.passwordHash)
         throw new AppError('Esta cuenta usa Google Sign-In. Inicia sesión con Google.', 400)
 
@@ -563,11 +564,22 @@ router.patch('/me', authenticate, async (req: Request, res: Response, next: Next
       documentNumber,
       birthDate,
       pushToken,
+      pushEnabled,
+      units,
+      language,
+      profileVisibility,
     } = req.body
     const userId = req.user!.userId
 
     const user = await prisma.user.findUnique({ where: { id: userId } })
     if (!user) throw new AppError('Usuario no encontrado', 404)
+
+    if (units !== undefined && !['km', 'mi'].includes(units))
+      throw new AppError('units inválido', 400)
+    if (language !== undefined && !['es', 'en'].includes(language))
+      throw new AppError('language inválido', 400)
+    if (profileVisibility !== undefined && !['public', 'private'].includes(profileVisibility))
+      throw new AppError('profileVisibility inválido', 400)
 
     const updateData: Record<string, unknown> = {}
 
@@ -594,6 +606,10 @@ router.patch('/me', authenticate, async (req: Request, res: Response, next: Next
       updateData.documentNumber = documentNumber ? encryptPII(documentNumber) : null
     if (birthDate !== undefined) updateData.birthDate = birthDate ? encryptPII(birthDate) : null
     if (pushToken !== undefined) updateData.pushToken = pushToken || null
+    if (pushEnabled !== undefined) updateData.pushEnabled = !!pushEnabled
+    if (units !== undefined) updateData.units = units
+    if (language !== undefined) updateData.language = language
+    if (profileVisibility !== undefined) updateData.profileVisibility = profileVisibility
 
     if (Object.keys(updateData).length === 0) {
       return res.json({ success: true, message: 'Sin cambios' })
@@ -612,6 +628,10 @@ router.patch('/me', authenticate, async (req: Request, res: Response, next: Next
         documentNumber: true,
         birthDate: true,
         pushToken: true,
+        pushEnabled: true,
+        units: true,
+        language: true,
+        profileVisibility: true,
       },
     })
 
@@ -624,6 +644,50 @@ router.patch('/me', authenticate, async (req: Request, res: Response, next: Next
         birthDate: decryptPII(updated.birthDate),
       },
     })
+  } catch (err) {
+    return next(err)
+  }
+})
+
+// DELETE /api/auth/me — baja de cuenta (soft delete: anonimiza PII, revoca sesiones,
+// nunca borra la fila — evita romper FKs de reservas/torneos/posts históricos ya jugados).
+router.delete('/me', authenticate, async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const { password } = req.body
+    const userId = req.user!.userId
+    const user = await prisma.user.findUnique({ where: { id: userId } })
+    if (!user) throw new AppError('Usuario no encontrado', 404)
+    if (user.deletedAt) throw new AppError('Esta cuenta ya fue eliminada', 400)
+
+    if (user.passwordHash) {
+      if (!password) throw new AppError('Se requiere la contraseña para eliminar la cuenta', 400)
+      const isMatch = await bcrypt.compare(password, user.passwordHash)
+      if (!isMatch) throw new AppError('Contraseña incorrecta', 401)
+    }
+
+    await prisma.$transaction([
+      prisma.user.update({
+        where: { id: userId },
+        data: {
+          email: `deleted+${userId}@racketly.invalid`,
+          passwordHash: null,
+          googleId: null,
+          phone: null,
+          documentNumber: null,
+          documentType: null,
+          birthDate: null,
+          avatarUrl: null,
+          pushToken: null,
+          deletedAt: new Date(),
+        },
+      }),
+      prisma.refreshToken.updateMany({
+        where: { userId, revokedAt: null },
+        data: { revokedAt: new Date() },
+      }),
+    ])
+
+    return res.json({ success: true, message: 'Cuenta eliminada' })
   } catch (err) {
     return next(err)
   }
@@ -658,6 +722,10 @@ router.get('/me', authenticate, async (req: Request, res: Response, next: NextFu
         birthDate: decryptPII(user.birthDate),
         avatarUrl: user.avatarUrl,
         subscriptionTier: user.subscriptionTier,
+        pushEnabled: user.pushEnabled,
+        units: user.units,
+        language: user.language,
+        profileVisibility: user.profileVisibility,
         playerProfile: user.playerProfile,
         instructorProfile: user.instructorProfile,
         createdAt: user.createdAt,

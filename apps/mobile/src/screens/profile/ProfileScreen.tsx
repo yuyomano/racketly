@@ -35,10 +35,21 @@ export function ProfileScreen({ navigation }: { navigation: any }) {
     <ScrollView style={styles.container}>
       {/* Header */}
       <View style={styles.header}>
-        <TouchableOpacity style={styles.editBtn} onPress={() => navigation.navigate('EditProfile')}>
-          <Ionicons name="pencil" size={13} color={colors.white} />
-          <Text style={styles.editBtnText}>Editar</Text>
-        </TouchableOpacity>
+        <View style={styles.headerActions}>
+          <TouchableOpacity
+            style={styles.editBtn}
+            onPress={() => navigation.navigate('EditProfile')}
+          >
+            <Ionicons name="pencil" size={13} color={colors.white} />
+            <Text style={styles.editBtnText}>Editar</Text>
+          </TouchableOpacity>
+          <TouchableOpacity
+            style={styles.settingsBtn}
+            onPress={() => navigation.navigate('Settings')}
+          >
+            <Ionicons name="settings-outline" size={16} color={colors.white} />
+          </TouchableOpacity>
+        </View>
         <View style={styles.avatarContainer}>
           <Ionicons name="person" size={36} color={colors.white} />
         </View>
@@ -84,29 +95,6 @@ export function ProfileScreen({ navigation }: { navigation: any }) {
         </Text>
       </View>
 
-      {/* Subscription */}
-      <View style={styles.subscriptionCard}>
-        <View style={styles.subTitleRow}>
-          <Ionicons
-            name={user?.subscriptionTier === 'free' ? 'pricetag-outline' : 'star'}
-            size={14}
-            color={user?.subscriptionTier === 'free' ? colors.ink500 : colors.trophy600}
-          />
-          <Text style={styles.subTitle}>
-            {user?.subscriptionTier === 'free' ? 'Plan Gratuito' : `Plan ${user?.subscriptionTier}`}
-          </Text>
-        </View>
-        {user?.subscriptionTier === 'free' && (
-          <TouchableOpacity
-            style={styles.upgradeBtn}
-            onPress={() => navigation.navigate('Premium')}
-          >
-            <Text style={styles.upgradeBtnText}>Mejorar a Premium</Text>
-            <Ionicons name="arrow-forward" size={14} color={colors.white} />
-          </TouchableOpacity>
-        )}
-      </View>
-
       {/* Menu */}
       <View style={styles.menu}>
         {menuItems.map((item, i) => (
@@ -150,9 +138,9 @@ const menuItems: {
   { icon: 'trophy-outline', label: 'Mis torneos', route: 'MyTournaments' },
   { icon: 'people-outline', label: 'Find a Partner', route: 'FindPartner', tab: 'Torneos' },
   { icon: 'ribbon-outline', label: 'Insignias y logros', route: 'Badges' },
-  { icon: 'stats-chart-outline', label: 'Estadísticas detalladas' },
-  { icon: 'notifications-outline', label: 'Notificaciones' },
-  { icon: 'settings-outline', label: 'Configuración' },
+  { icon: 'stats-chart-outline', label: 'Estadísticas detalladas', route: 'DetailedStats' },
+  { icon: 'notifications-outline', label: 'Notificaciones', route: 'Notifications' },
+  { icon: 'settings-outline', label: 'Configuración', route: 'Settings' },
 ]
 
 const styles = StyleSheet.create({
@@ -164,10 +152,15 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     paddingHorizontal: spacing.xl,
   },
-  editBtn: {
+  headerActions: {
     position: 'absolute',
     top: 60,
     right: spacing.xl,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.sm,
+  },
+  editBtn: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: spacing.xs,
@@ -175,6 +168,14 @@ const styles = StyleSheet.create({
     borderRadius: radius.full,
     paddingHorizontal: spacing.md,
     paddingVertical: spacing.xs + 2,
+  },
+  settingsBtn: {
+    width: 30,
+    height: 30,
+    borderRadius: radius.full,
+    backgroundColor: 'rgba(255,255,255,0.12)',
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   editBtnText: { color: colors.white, fontSize: fontSize.sm, fontWeight: '600' },
   avatarContainer: {
@@ -235,27 +236,6 @@ const styles = StyleSheet.create({
   },
   progressFill: { height: 8, backgroundColor: colors.court600, borderRadius: 4 },
   progressText: { fontSize: fontSize.xs, color: colors.ink400 },
-  subscriptionCard: {
-    marginHorizontal: spacing.lg,
-    backgroundColor: colors.white,
-    borderRadius: radius.lg,
-    padding: spacing.lg,
-    borderWidth: 1,
-    borderColor: colors.ink100,
-  },
-  subTitleRow: { flexDirection: 'row', alignItems: 'center', gap: 6 },
-  subTitle: { fontSize: fontSize.base, fontWeight: '700', color: colors.textPrimary },
-  upgradeBtn: {
-    flexDirection: 'row',
-    justifyContent: 'center',
-    alignItems: 'center',
-    gap: spacing.xs,
-    marginTop: spacing.sm + 2,
-    backgroundColor: colors.court600,
-    borderRadius: radius.sm + 2,
-    paddingVertical: spacing.sm + 2,
-  },
-  upgradeBtnText: { color: colors.white, fontWeight: '700', fontSize: fontSize.sm },
   menu: {
     margin: spacing.lg,
     backgroundColor: colors.white,

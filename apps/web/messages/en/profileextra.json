@@ -1,0 +1,39 @@
+{
+  "ProfileStats": {
+    "backLink": "Back to profile",
+    "title": "Detailed stats",
+    "performance": "Performance",
+    "played": "Played",
+    "won": "Won",
+    "lost": "Lost",
+    "winRate": "Win rate",
+    "eloTrendPadel": "Padel ELO trend",
+    "eloTrendPickleball": "Pickleball ELO trend",
+    "noMatches": "Play your first match to see your progress"
+  },
+  "ProfileNotifications": {
+    "backLink": "Back to profile",
+    "title": "Notifications",
+    "markAll": "Mark all read",
+    "empty": "You'll see alerts about courts, rivals and tournaments here"
+  },
+  "ProfileSettings": {
+    "backLink": "Back to profile",
+    "title": "Settings",
+    "language": "Language",
+    "languages": { "es": "Español", "en": "English" },
+    "push": "Push notifications",
+    "pushHelper": "Get alerts about courts, rivals and tournaments",
+    "units": "Distance units",
+    "unitsOptions": { "km": "Kilometers", "mi": "Miles" },
+    "privateProfile": "Private profile",
+    "privateProfileHelper": "Only you can see your profile, stats and activity",
+    "logout": "Log out",
+    "deleteAccount": "Delete account",
+    "deleteAccountHelper": "Your personal data will be permanently anonymized. This cannot be undone.",
+    "confirmPassword": "Confirm your password",
+    "cancel": "Cancel",
+    "saveError": "Couldn't save the change",
+    "deleteError": "Couldn't delete your account. Check your password."
+  }
+}

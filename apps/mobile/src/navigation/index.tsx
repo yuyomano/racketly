@@ -40,6 +40,9 @@ import { AcademyScreen } from '../screens/academy/AcademyScreen'
 import { ProfileScreen } from '../screens/profile/ProfileScreen'
 import { EditProfileScreen } from '../screens/profile/EditProfileScreen'
 import { BadgesScreen } from '../screens/profile/BadgesScreen'
+import { DetailedStatsScreen } from '../screens/profile/DetailedStatsScreen'
+import { NotificationsScreen } from '../screens/profile/NotificationsScreen'
+import { SettingsScreen } from '../screens/profile/SettingsScreen'
 
 const Tab = createBottomTabNavigator()
 const Stack = createNativeStackNavigator()
@@ -161,6 +164,9 @@ function ProfileStack() {
       <Stack.Screen name="MyTournaments" component={MyTournamentsScreen} />
       <Stack.Screen name="TournamentDetail" component={TournamentDetailScreen} />
       <Stack.Screen name="Badges" component={BadgesScreen} />
+      <Stack.Screen name="DetailedStats" component={DetailedStatsScreen} />
+      <Stack.Screen name="Notifications" component={NotificationsScreen} />
+      <Stack.Screen name="Settings" component={SettingsScreen} />
     </Stack.Navigator>
   )
 }

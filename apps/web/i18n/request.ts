@@ -29,6 +29,7 @@ const NAMESPACE_FILES = [
   'gear',
   'academy',
   'profile',
+  'profileextra',
   'auth',
   'community',
   'mymemberships',

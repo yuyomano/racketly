@@ -9,7 +9,6 @@ import {
   Loader2,
   AlertCircle,
   Trophy,
-  Target,
   Zap,
   MapPin,
   Camera,
@@ -18,6 +17,9 @@ import {
   Ribbon,
   Wallet,
   ChevronRight,
+  Settings,
+  Bell,
+  BarChart3,
 } from 'lucide-react'
 import { eloToCategory, xpForNextLevel } from '@racketly/utils'
 import { Card } from '@/components/ui/Card'
@@ -61,19 +63,28 @@ async function fetchStats(userId: string, fallbackError: string): Promise<Profil
   return data.data
 }
 
-async function fetchPhone(): Promise<string> {
+type MeData = { phone: string; birthDate: string; subscriptionTier: string }
+
+async function fetchMe(): Promise<MeData> {
   const res = await fetch('/api/auth/me')
   const data = await res.json()
-  if (!res.ok) return ''
-  return data.data?.phone ?? ''
+  if (!res.ok) return { phone: '', birthDate: '', subscriptionTier: 'free' }
+  return {
+    phone: data.data?.phone ?? '',
+    birthDate: data.data?.birthDate ?? '',
+    subscriptionTier: data.data?.subscriptionTier ?? 'free',
+  }
 }
 
 const QUICK_LINKS: { href: string; key: string; icon: typeof CalendarDays }[] = [
   { href: '/booking/mine', key: 'myBookings', icon: CalendarDays },
+  { href: '/memberships/mine', key: 'myMemberships', icon: Wallet },
   { href: '/tournaments/mine', key: 'myTournaments', icon: Trophy },
   { href: '/find-a-partner/mine', key: 'findPartner', icon: Handshake },
-  { href: '/memberships/mine', key: 'myMemberships', icon: Wallet },
   { href: '/badges', key: 'badges', icon: Ribbon },
+  { href: '/profile/stats', key: 'detailedStats', icon: BarChart3 },
+  { href: '/profile/notifications', key: 'notifications', icon: Bell },
+  { href: '/profile/settings', key: 'settings', icon: Settings },
 ]
 
 export function ProfileClient({
@@ -98,9 +109,9 @@ export function ProfileClient({
     initialData: initial ?? undefined,
   })
 
-  const { data: phone } = useQuery({
-    queryKey: ['profile', userId, 'phone'],
-    queryFn: fetchPhone,
+  const { data: me } = useQuery({
+    queryKey: ['profile', userId, 'me'],
+    queryFn: fetchMe,
   })
 
   const [form, setForm] = useState(() => ({
@@ -114,7 +125,8 @@ export function ProfileClient({
     instagramHandle: data?.profile.instagramHandle ?? '',
     whatsapp: data?.profile.whatsapp ?? '',
     plusCode: data?.profile.plusCode ?? '',
-    phone: phone ?? '',
+    phone: me?.phone ?? '',
+    birthDate: me?.birthDate ?? '',
   }))
 
   function startEdit() {
@@ -130,7 +142,8 @@ export function ProfileClient({
         instagramHandle: data.profile.instagramHandle ?? '',
         whatsapp: data.profile.whatsapp ?? '',
         plusCode: data.profile.plusCode ?? '',
-        phone: phone ?? '',
+        phone: me?.phone ?? '',
+        birthDate: me?.birthDate ?? '',
       })
     setEditing(true)
   }
@@ -153,7 +166,7 @@ export function ProfileClient({
 
   const saveMutation = useMutation({
     mutationFn: async () => {
-      const { phone: phoneValue, ...profileForm } = form
+      const { phone: phoneValue, birthDate: birthDateValue, ...profileForm } = form
       const [profileRes, meRes] = await Promise.all([
         fetch('/api/profile', {
           method: 'PUT',
@@ -170,7 +183,7 @@ export function ProfileClient({
         fetch('/api/auth/me', {
           method: 'PATCH',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ phone: phoneValue || null }),
+          body: JSON.stringify({ phone: phoneValue || null, birthDate: birthDateValue || null }),
         }),
       ])
       const profileData = await profileRes.json()
@@ -202,7 +215,7 @@ export function ProfileClient({
 
   return (
     <div className="space-y-6 max-w-2xl mx-auto">
-      <Card className="p-6">
+      <Card className={editing ? 'p-6' : 'p-6 bg-court-900 border-court-900'}>
         <div className="flex items-start justify-between gap-4">
           <div className="flex items-center gap-4">
             <div className="relative w-16 h-16 shrink-0">
@@ -245,36 +258,82 @@ export function ProfileClient({
               />
             </div>
             <div>
-              <h1 className="text-xl font-black text-ink-900 tracking-tight">
+              <h1
+                className={`text-xl font-black tracking-tight ${editing ? 'text-ink-900' : 'text-white'}`}
+              >
                 {profile.displayName}
               </h1>
-              <p className="flex items-center gap-1 text-sm text-ink-400 mt-0.5">
+              <p
+                className={`flex items-center gap-1 text-sm mt-0.5 ${editing ? 'text-ink-400' : 'text-court-200'}`}
+              >
                 <MapPin className="w-3.5 h-3.5" /> {profile.city}, {profile.country}
               </p>
-              <p className="text-xs text-ink-400 mt-0.5">{email}</p>
+              <p className={`text-xs mt-0.5 ${editing ? 'text-ink-400' : 'text-court-300'}`}>
+                {email}
+              </p>
             </div>
           </div>
           {!editing && (
-            <button
-              onClick={startEdit}
-              className="flex items-center gap-1.5 text-xs font-semibold text-ink-500 hover:text-ink-700 bg-ink-50 hover:bg-ink-100 rounded-lg px-3 py-2 transition-colors shrink-0"
-            >
-              <Pencil className="w-3.5 h-3.5" /> {t('editButton')}
-            </button>
+            <div className="flex items-center gap-2 shrink-0">
+              <button
+                onClick={startEdit}
+                className="flex items-center gap-1.5 text-xs font-semibold text-white bg-white/10 hover:bg-white/20 rounded-lg px-3 py-2 transition-colors"
+              >
+                <Pencil className="w-3.5 h-3.5" /> {t('editButton')}
+              </button>
+              <Link
+                href="/profile/settings"
+                className="flex items-center justify-center w-9 h-9 text-white bg-white/10 hover:bg-white/20 rounded-lg transition-colors"
+                title={t('quickLinks.settings')}
+              >
+                <Settings className="w-4 h-4" />
+              </Link>
+            </div>
           )}
         </div>
 
-        {profile.bio && !editing && <p className="text-sm text-ink-500 mt-4">{profile.bio}</p>}
+        {profile.bio && !editing && <p className="text-sm text-court-100 mt-4">{profile.bio}</p>}
+
+        {!editing && (
+          <div className="grid grid-cols-3 gap-3 mt-4">
+            <div className="bg-white/10 rounded-xl px-3 py-3 text-center">
+              <p className="text-xl font-black text-white">{profile.eloPadel}</p>
+              <p className="text-[11px] text-court-200 mt-0.5">{t('stats.eloPadel')}</p>
+            </div>
+            <div className="bg-court-500 rounded-xl px-3 py-3 text-center">
+              <p className="text-xl font-black text-white">{category}</p>
+              <p className="text-[11px] text-court-50 mt-0.5">{t('stats.category')}</p>
+            </div>
+            <div className="bg-white/10 rounded-xl px-3 py-3 text-center">
+              <p className="text-xl font-black text-white">{profile.eloPickleball}</p>
+              <p className="text-[11px] text-court-200 mt-0.5">{t('stats.eloPickleball')}</p>
+            </div>
+          </div>
+        )}
+
+        {!editing && (
+          <p className="flex items-center gap-1.5 text-xs font-semibold text-court-100 mt-3">
+            <BarChart3 className="w-3.5 h-3.5" />
+            {t('matches.summary', {
+              played: stats.totalMatches,
+              winRate: stats.winRate,
+            })}
+          </p>
+        )}
 
         <div className="flex items-center gap-1.5 flex-wrap mt-4">
-          <Badge tone="violet">{t('categoryBadge', { category })}</Badge>
+          {editing && <Badge tone="violet">{t('categoryBadge', { category })}</Badge>}
           {(profile.sport === 'padel' || profile.sport === 'both') && (
-            <span className="flex items-center gap-1 text-[11px] font-semibold text-ink-500 bg-ink-50 rounded-full px-2.5 py-1">
+            <span
+              className={`flex items-center gap-1 text-[11px] font-semibold rounded-full px-2.5 py-1 ${editing ? 'text-ink-500 bg-ink-50' : 'text-white bg-white/10'}`}
+            >
               <PadelIcon size={13} /> {t('sports.padel')}
             </span>
           )}
           {(profile.sport === 'pickleball' || profile.sport === 'both') && (
-            <span className="flex items-center gap-1 text-[11px] font-semibold text-ink-500 bg-ink-50 rounded-full px-2.5 py-1">
+            <span
+              className={`flex items-center gap-1 text-[11px] font-semibold rounded-full px-2.5 py-1 ${editing ? 'text-ink-500 bg-ink-50' : 'text-white bg-white/10'}`}
+            >
               <PickleballIcon size={13} /> {t('sports.pickleball')}
             </span>
           )}
@@ -412,6 +471,17 @@ export function ProfileClient({
             </div>
             <div>
               <label className="block text-xs font-semibold text-ink-600 mb-1.5">
+                {t('form.birthDateLabel')}
+              </label>
+              <input
+                type="date"
+                value={form.birthDate}
+                onChange={(e) => setForm({ ...form, birthDate: e.target.value })}
+                className="w-full border border-ink-200 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-court-500/40"
+              />
+            </div>
+            <div>
+              <label className="block text-xs font-semibold text-ink-600 mb-1.5">
                 {t('form.instagramLabel')}
               </label>
               <input
@@ -459,21 +529,6 @@ export function ProfileClient({
         )}
       </Card>
 
-      <div className="grid grid-cols-2 gap-4">
-        <Card className="p-5">
-          <p className="flex items-center gap-1.5 text-xs font-semibold text-ink-400 uppercase tracking-wide">
-            <Trophy className="w-3.5 h-3.5" /> {t('stats.eloPadel')}
-          </p>
-          <p className="text-2xl font-black text-ink-900 mt-1.5">{profile.eloPadel}</p>
-        </Card>
-        <Card className="p-5">
-          <p className="flex items-center gap-1.5 text-xs font-semibold text-ink-400 uppercase tracking-wide">
-            <Trophy className="w-3.5 h-3.5" /> {t('stats.eloPickleball')}
-          </p>
-          <p className="text-2xl font-black text-ink-900 mt-1.5">{profile.eloPickleball}</p>
-        </Card>
-      </div>
-
       <Card className="p-6">
         <p className="flex items-center gap-1.5 text-xs font-semibold text-ink-400 uppercase tracking-wide mb-2">
           <Zap className="w-3.5 h-3.5" /> {t('stats.level', { level: profile.level })}
@@ -484,30 +539,6 @@ export function ProfileClient({
         <p className="text-xs text-ink-400 mt-1.5">
           {t('stats.xpProgress', { current: profile.xpPoints, total: xp.next })}
         </p>
-      </Card>
-
-      <Card className="p-6">
-        <p className="flex items-center gap-1.5 text-xs font-semibold text-ink-400 uppercase tracking-wide mb-3">
-          <Target className="w-3.5 h-3.5" /> {t('matches.title')}
-        </p>
-        <div className="grid grid-cols-4 gap-3 text-center">
-          <div>
-            <p className="text-xl font-black text-ink-900">{stats.totalMatches}</p>
-            <p className="text-[11px] text-ink-400 mt-0.5">{t('matches.played')}</p>
-          </div>
-          <div>
-            <p className="text-xl font-black text-court-600">{stats.wins}</p>
-            <p className="text-[11px] text-ink-400 mt-0.5">{t('matches.won')}</p>
-          </div>
-          <div>
-            <p className="text-xl font-black text-red-500">{stats.losses}</p>
-            <p className="text-[11px] text-ink-400 mt-0.5">{t('matches.lost')}</p>
-          </div>
-          <div>
-            <p className="text-xl font-black text-ink-900">{stats.winRate}%</p>
-            <p className="text-[11px] text-ink-400 mt-0.5">{t('matches.winRate')}</p>
-          </div>
-        </div>
       </Card>
 
       <Card className="overflow-hidden">

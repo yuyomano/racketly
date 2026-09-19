@@ -1,0 +1,39 @@
+{
+  "ProfileStats": {
+    "backLink": "Volver al perfil",
+    "title": "Estadísticas detalladas",
+    "performance": "Rendimiento",
+    "played": "Jugados",
+    "won": "Ganados",
+    "lost": "Perdidos",
+    "winRate": "Efectividad",
+    "eloTrendPadel": "Evolución ELO Pádel",
+    "eloTrendPickleball": "Evolución ELO Pickleball",
+    "noMatches": "Juega tu primer partido para ver tu progreso"
+  },
+  "ProfileNotifications": {
+    "backLink": "Volver al perfil",
+    "title": "Notificaciones",
+    "markAll": "Marcar todas",
+    "empty": "Aquí verás alertas sobre canchas, rivales y torneos"
+  },
+  "ProfileSettings": {
+    "backLink": "Volver al perfil",
+    "title": "Configuración",
+    "language": "Idioma",
+    "languages": { "es": "Español", "en": "English" },
+    "push": "Notificaciones push",
+    "pushHelper": "Recibe alertas de canchas, rivales y torneos",
+    "units": "Unidades de distancia",
+    "unitsOptions": { "km": "Kilómetros", "mi": "Millas" },
+    "privateProfile": "Perfil privado",
+    "privateProfileHelper": "Solo tú puedes ver tu perfil, estadísticas y actividad",
+    "logout": "Cerrar sesión",
+    "deleteAccount": "Eliminar cuenta",
+    "deleteAccountHelper": "Se anonimizarán tus datos personales de forma permanente. No podrás deshacer esta acción.",
+    "confirmPassword": "Confirma tu contraseña",
+    "cancel": "Cancelar",
+    "saveError": "No se pudo guardar el cambio",
+    "deleteError": "No se pudo eliminar la cuenta. Revisa tu contraseña."
+  }
+}

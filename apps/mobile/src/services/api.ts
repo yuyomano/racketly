@@ -54,6 +54,19 @@ export const authApi = {
   updatePushToken: (pushToken: string) => api.patch('/api/auth/me', { pushToken }),
   updateAccount: (data: { phone?: string | null; birthDate?: string | null }) =>
     api.patch('/api/auth/me', data),
+  updateSettings: (data: {
+    language?: 'es' | 'en'
+    units?: 'km' | 'mi'
+    pushEnabled?: boolean
+    profileVisibility?: 'public' | 'private'
+  }) => api.patch('/api/auth/me', data),
+  deleteAccount: (password?: string) => api.delete('/api/auth/me', { data: { password } }),
+}
+
+export const notificationsApi = {
+  list: () => api.get('/api/notifications'),
+  markRead: (id: string) => api.patch(`/api/notifications/${id}/read`),
+  markAllRead: () => api.patch('/api/notifications/read-all'),
 }
 
 export const profileApi = {

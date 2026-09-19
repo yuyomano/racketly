@@ -25,6 +25,7 @@
       "phoneLabel": "Phone",
       "instagramLabel": "Instagram",
       "whatsappLabel": "WhatsApp",
+      "birthDateLabel": "Date of birth",
       "plusCodeLabel": "Location (Plus Code)",
       "changePhoto": "Change photo",
       "cancel": "Cancel",
@@ -52,22 +53,22 @@
     "stats": {
       "eloPadel": "Padel ELO",
       "eloPickleball": "Pickleball ELO",
+      "category": "Category",
       "level": "Level {level}",
       "xpProgress": "{current} / {total} XP"
     },
     "matches": {
-      "title": "Matches",
-      "played": "Played",
-      "won": "Won",
-      "lost": "Lost",
-      "winRate": "Win rate"
+      "summary": "{played} matches played · {winRate}% win rate"
     },
     "quickLinks": {
       "myBookings": "My bookings",
+      "myMemberships": "My memberships",
       "myTournaments": "My tournaments",
       "findPartner": "Find a partner",
-      "myMemberships": "My memberships",
-      "badges": "Badges & achievements"
+      "badges": "Badges & achievements",
+      "detailedStats": "Detailed stats",
+      "notifications": "Notifications",
+      "settings": "Settings"
     }
   }
 }

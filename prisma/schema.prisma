@@ -209,22 +209,27 @@ enum ClubAdminRole {
 // ═══════════════════════════════════════════════════════════════════════════════
 
 model User {
-  id               String           @id @default(cuid())
-  email            String           @unique
-  phone            String?
-  firstName        String?
-  lastName         String?
-  documentType     String? // DNI, Pasaporte, CE, NIT
-  documentNumber   String?
-  birthDate        String? // cifrado (AES-256-GCM vía @racketly/utils encryptPII), no un Date real
-  passwordHash     String? // nullable para usuarios que se registran con Google
-  googleId         String?          @unique
-  avatarUrl        String? // foto de perfil de Google
-  subscriptionTier SubscriptionTier @default(free)
-  stripeCustomerId String?
-  pushToken        String? // Expo push token
-  createdAt        DateTime         @default(now())
-  updatedAt        DateTime         @updatedAt
+  id                String           @id @default(cuid())
+  email             String           @unique
+  phone             String?
+  firstName         String?
+  lastName          String?
+  documentType      String? // DNI, Pasaporte, CE, NIT
+  documentNumber    String?
+  birthDate         String? // cifrado (AES-256-GCM vía @racketly/utils encryptPII), no un Date real
+  passwordHash      String? // nullable para usuarios que se registran con Google
+  googleId          String?          @unique
+  avatarUrl         String? // foto de perfil de Google
+  subscriptionTier  SubscriptionTier @default(free)
+  stripeCustomerId  String?
+  pushToken         String? // Expo push token
+  pushEnabled       Boolean          @default(true)
+  units             String           @default("km") // "km" | "mi"
+  language          String           @default("es") // "es" | "en"
+  profileVisibility String           @default("public") // "public" | "private"
+  deletedAt         DateTime? // soft delete — set por DELETE /api/auth/me, nunca se borra la fila
+  createdAt         DateTime         @default(now())
+  updatedAt         DateTime         @updatedAt
 
   // Relaciones
   playerProfile             PlayerProfile?

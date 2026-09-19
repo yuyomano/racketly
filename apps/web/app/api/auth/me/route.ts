@@ -20,3 +20,15 @@ export async function PATCH(req: NextRequest) {
   const data = await res.json()
   return NextResponse.json(data, { status: res.status })
 }
+
+export async function DELETE(req: NextRequest) {
+  const user = await getSessionUser()
+  if (!user) return NextResponse.json({ error: 'No autenticado' }, { status: 401 })
+  const body = await req.json().catch(() => ({}))
+  const res = await gatewayFetch('/api/auth/me', {
+    method: 'DELETE',
+    body: JSON.stringify(body),
+  })
+  const data = await res.json()
+  return NextResponse.json(data, { status: res.status })
+}

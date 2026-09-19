@@ -165,12 +165,19 @@ export interface SetScore {
 
 // ─── User & Profiles ─────────────────────────────────────────────────────────
 
+export type Units = 'km' | 'mi'
+export type ProfileVisibility = 'public' | 'private'
+
 export interface User {
   id: string
   email: string
   phone?: string
   birthDate?: string
   subscriptionTier: SubscriptionTier
+  language?: string
+  units?: Units
+  pushEnabled?: boolean
+  profileVisibility?: ProfileVisibility
   createdAt: string
   updatedAt: string
 }

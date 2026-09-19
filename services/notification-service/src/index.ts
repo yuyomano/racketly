@@ -9,6 +9,7 @@ import { createPgAdapter } from '@racketly/utils/prisma-adapter'
 import { distanceKm } from '@racketly/utils'
 import { initSentry, Sentry } from '@racketly/utils/observability'
 import { errorHandler } from './middleware/error.middleware'
+import { notificationsRouter } from './routes/notifications.routes'
 
 const prisma = new PrismaClient({ adapter: createPgAdapter() })
 
@@ -216,6 +217,8 @@ app.post('/api/notifications/smart-alert', async (req, res, next) => {
     return next(err)
   }
 })
+
+app.use('/api/notifications', notificationsRouter)
 
 app.use(errorHandler)
 

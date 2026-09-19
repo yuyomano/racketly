@@ -19,6 +19,7 @@ import {
   UserPlus,
   Award,
   Wallet,
+  Trophy,
 } from 'lucide-react'
 import { Card } from '@/components/ui/Card'
 import { Badge, type BadgeTone } from '@/components/ui/Badge'
@@ -27,6 +28,7 @@ import { Modal } from '@/components/ui/Modal'
 import { Button } from '@/components/ui/Button'
 import { useToast } from '@/components/ui/Toast'
 import { cn, formatCurrency } from '@/lib/utils'
+import { MatchScoreModal } from './MatchScoreModal'
 
 const STRIPE_PUBLISHABLE_KEY = process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY
 let stripePromise: Promise<Stripe | null> | null = null
@@ -123,6 +125,7 @@ export function MyBookingsClient({ userId }: { userId: string }) {
 
   const [payTarget, setPayTarget] = useState<{ booking: Booking; player: Player } | null>(null)
   const [editBooking, setEditBooking] = useState<Booking | null>(null)
+  const [matchBooking, setMatchBooking] = useState<Booking | null>(null)
 
   const leaveMutation = useMutation({
     mutationFn: async (bookingId: string) => {
@@ -212,6 +215,7 @@ export function MyBookingsClient({ userId }: { userId: string }) {
                 : []
             const canEdit = isActive && b.isOwnerBooking
             const canLeave = tab === 'upcoming' && !b.isOwnerBooking && b.status !== 'cancelled'
+            const canReportMatch = b.status === 'completed' && (b.isOwnerBooking || !!myPlayer)
             const st = STATUS_LABEL[b.status]
             return (
               <Card
@@ -309,6 +313,14 @@ export function MyBookingsClient({ userId }: { userId: string }) {
                       <LogOut className="w-3.5 h-3.5" /> {t('leaveButton')}
                     </button>
                   )}
+                  {canReportMatch && (
+                    <button
+                      onClick={() => setMatchBooking(b)}
+                      className="flex items-center gap-1 text-xs font-semibold text-court-700 bg-court-50 hover:bg-court-100 rounded-lg px-3 py-2 transition-colors"
+                    >
+                      <Trophy className="w-3.5 h-3.5" /> {t('matchButton')}
+                    </button>
+                  )}
                 </div>
               </Card>
             )
@@ -366,6 +378,17 @@ export function MyBookingsClient({ userId }: { userId: string }) {
           />
         )}
       </Modal>
+
+      {matchBooking && (
+        <MatchScoreModal
+          key={matchBooking.id}
+          bookingId={matchBooking.id}
+          players={matchBooking.players ?? []}
+          userId={userId}
+          t={t}
+          onClose={() => setMatchBooking(null)}
+        />
+      )}
     </div>
   )
 }

@@ -127,7 +127,26 @@
       "payModalTitle": "Pagar reserva",
       "payModalAmountFor": "A pagar por {name}",
       "payModalPayButton": "Pagar ahora",
-      "payModalDevModeHint": "Modo de prueba — el club aún no configuró un método de cobro real. Este botón simula el pago."
+      "payModalDevModeHint": "Modo de prueba — el club aún no configuró un método de cobro real. Este botón simula el pago.",
+      "matchButton": "Registrar resultado",
+      "matchModalTitle": "Resultado del partido",
+      "matchTeamsLabel": "Equipos",
+      "matchTeam1": "Equipo 1",
+      "matchTeam2": "Equipo 2",
+      "matchSetsLabel": "Marcador por set",
+      "matchSetLabel": "Set {number}",
+      "matchAddSet": "Agregar set",
+      "matchSubmitButton": "Guardar resultado",
+      "matchReportError": "No se pudo registrar el resultado",
+      "matchReportedToast": "Resultado registrado",
+      "matchPendingHint": "Esperando que el rival confirme el resultado",
+      "matchConfirmButton": "Confirmar",
+      "matchDisputeButton": "Objetar",
+      "matchConfirmError": "No se pudo confirmar el resultado",
+      "matchDisputeError": "No se pudo objetar el resultado",
+      "matchConfirmedToast": "Resultado confirmado",
+      "matchDisputedToast": "Resultado objetado — puedes registrarlo de nuevo",
+      "cancel": "Cancelar"
     }
   }
 }

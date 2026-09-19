@@ -127,7 +127,26 @@
       "payModalTitle": "Pay booking",
       "payModalAmountFor": "Amount for {name}",
       "payModalPayButton": "Pay now",
-      "payModalDevModeHint": "Test mode — the club hasn't set up real payment collection yet. This button simulates the payment."
+      "payModalDevModeHint": "Test mode — the club hasn't set up real payment collection yet. This button simulates the payment.",
+      "matchButton": "Report score",
+      "matchModalTitle": "Match result",
+      "matchTeamsLabel": "Teams",
+      "matchTeam1": "Team 1",
+      "matchTeam2": "Team 2",
+      "matchSetsLabel": "Score by set",
+      "matchSetLabel": "Set {number}",
+      "matchAddSet": "Add set",
+      "matchSubmitButton": "Save result",
+      "matchReportError": "Couldn't report the result",
+      "matchReportedToast": "Result reported",
+      "matchPendingHint": "Waiting for the opponent to confirm the result",
+      "matchConfirmButton": "Confirm",
+      "matchDisputeButton": "Dispute",
+      "matchConfirmError": "Couldn't confirm the result",
+      "matchDisputeError": "Couldn't dispute the result",
+      "matchConfirmedToast": "Result confirmed",
+      "matchDisputedToast": "Result disputed — you can report it again",
+      "cancel": "Cancel"
     }
   }
 }

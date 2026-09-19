@@ -592,6 +592,17 @@ function EditPlayersModal({
   const [guestName, setGuestName] = useState('')
   const [error, setError] = useState('')
   const [saving, setSaving] = useState(false)
+  const [payNow, setPayNow] = useState<Set<string>>(new Set())
+  const [payQueue, setPayQueue] = useState<Player[]>([])
+
+  function togglePayNow(key: string) {
+    setPayNow((prev) => {
+      const next = new Set(prev)
+      if (next.has(key)) next.delete(key)
+      else next.add(key)
+      return next
+    })
+  }
 
   useEffect(() => {
     const timer = setTimeout(() => setQuery(search), 400)
@@ -634,6 +645,12 @@ function EditPlayersModal({
   }
   function removePlayer(id: string) {
     setPlayers((prev) => prev.filter((p) => p.id !== id))
+    setPayNow((prev) => {
+      if (!prev.has(id)) return prev
+      const next = new Set(prev)
+      next.delete(id)
+      return next
+    })
   }
 
   async function save() {
@@ -644,15 +661,28 @@ function EditPlayersModal({
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          players: players.map((p) => ({
-            ...(p.isGuest ? {} : { userId: p.id }),
-            name: p.name,
-          })),
+          players: [
+            ...(owner ? [{ userId: owner.userId, name: owner.name }] : []),
+            ...players.map((p) => ({
+              ...(p.isGuest ? {} : { userId: p.id }),
+              name: p.name,
+            })),
+          ],
         }),
       })
       const data = await res.json()
       if (!res.ok) throw new Error(data.error ?? t('editError'))
-      onSaved()
+      const updatedPlayers: Player[] = data.data?.players ?? []
+      const queue = updatedPlayers.filter((p) => {
+        if (p.paymentStatus !== 'pending' || p.coveredBy) return false
+        const key = p.isOwner ? 'owner' : p.userId
+        return !!key && payNow.has(key)
+      })
+      if (queue.length > 0) {
+        setPayQueue(queue)
+      } else {
+        onSaved()
+      }
     } catch (e: any) {
       setError(e.message || t('editError'))
     } finally {
@@ -660,10 +690,36 @@ function EditPlayersModal({
     }
   }
 
+  function onQueuedPaid() {
+    setPayQueue((prev) => {
+      const rest = prev.slice(1)
+      if (rest.length === 0) onSaved()
+      return rest
+    })
+  }
+
   const PAYMENT_ICON: Record<string, React.ReactNode> = {
     paid: <CheckCircle2 className="w-3.5 h-3.5 text-court-600" />,
     courtesy: <Gift className="w-3.5 h-3.5 text-trophy-600" />,
     pending: <Clock className="w-3.5 h-3.5 text-trophy-500" />,
+  }
+
+  if (payQueue.length > 0) {
+    return (
+      <div className="space-y-4">
+        <p className="text-xs font-semibold text-court-700 bg-court-50 rounded-xl px-3 py-2 text-center">
+          {t('payingCountLabel', { count: payQueue.length })}
+        </p>
+        <PayModal
+          key={payQueue[0].userId ?? payQueue[0].guestId}
+          bookingId={booking.id}
+          player={payQueue[0]}
+          currency={booking.currency}
+          t={t}
+          onPaid={onQueuedPaid}
+        />
+      </div>
+    )
   }
 
   return (
@@ -692,16 +748,28 @@ function EditPlayersModal({
             <span className="text-sm font-semibold text-ink-800">
               {owner.name} <span className="text-ink-400 font-normal">· {t('ownerLabel')}</span>
             </span>
-            <span title={t(`editPayment_${owner.paymentStatus ?? 'pending'}`)}>
-              {owner.coveredBy ? (
-                owner.coveredBy === 'membership' ? (
-                  <Award className="w-3.5 h-3.5 text-court-700" />
-                ) : (
-                  <Wallet className="w-3.5 h-3.5 text-court-700" />
-                )
-              ) : (
-                PAYMENT_ICON[owner.paymentStatus ?? 'pending']
+            <span className="flex items-center gap-2">
+              {!owner.coveredBy && owner.paymentStatus === 'pending' && (
+                <label className="flex items-center gap-1 text-xs font-semibold text-court-700 cursor-pointer">
+                  <input
+                    type="checkbox"
+                    checked={payNow.has('owner')}
+                    onChange={() => togglePayNow('owner')}
+                  />
+                  {t('payNow')}
+                </label>
               )}
+              <span title={t(`editPayment_${owner.paymentStatus ?? 'pending'}`)}>
+                {owner.coveredBy ? (
+                  owner.coveredBy === 'membership' ? (
+                    <Award className="w-3.5 h-3.5 text-court-700" />
+                  ) : (
+                    <Wallet className="w-3.5 h-3.5 text-court-700" />
+                  )
+                ) : (
+                  PAYMENT_ICON[owner.paymentStatus ?? 'pending']
+                )}
+              </span>
             </span>
           </div>
         )}
@@ -718,6 +786,16 @@ function EditPlayersModal({
                 {p.isGuest && <span className="text-ink-400 font-normal"> · {t('guestTag')}</span>}
               </span>
               <div className="flex items-center gap-2">
+                {!p.isGuest && (!existing || existing.paymentStatus === 'pending') && (
+                  <label className="flex items-center gap-1 text-xs font-semibold text-court-700 cursor-pointer">
+                    <input
+                      type="checkbox"
+                      checked={payNow.has(p.id)}
+                      onChange={() => togglePayNow(p.id)}
+                    />
+                    {t('payNow')}
+                  </label>
+                )}
                 {existing?.coveredBy ? (
                   existing.coveredBy === 'membership' ? (
                     <Award className="w-3.5 h-3.5 text-court-700" />
@@ -752,6 +830,11 @@ function EditPlayersModal({
         </button>
       )}
 
+      {payNow.size > 0 && (
+        <p className="text-xs font-semibold text-court-700 text-center">
+          {t('payingCountLabel', { count: payNow.size })}
+        </p>
+      )}
       <Button onClick={save} disabled={saving} className="w-full">
         {saving ? <Loader2 className="w-4 h-4 animate-spin" /> : t('editSaveButton')}
       </Button>

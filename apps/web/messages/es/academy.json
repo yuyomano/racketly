@@ -61,7 +61,17 @@
       "emptyAction": "Ver cursos",
       "lessonsCount": "{count, plural, one {# lección} other {# lecciones}}",
       "instructorLessonsLabel": "{instructor} · {lessons}",
-      "errorFetch": "Error al cargar tus cursos"
+      "errorFetch": "Error al cargar tus cursos",
+      "coursesTitle": "Cursos",
+      "classesTitle": "Clases con profesor",
+      "emptyClassesTitle": "No tienes clases reservadas",
+      "emptyClassesDescription": "Reserva una clase con un profesor en la Academia.",
+      "errorFetchClasses": "Error al cargar tus clases",
+      "durationLabel": "{minutes} min",
+      "cancelClassButton": "Cancelar",
+      "classCancelledBadge": "Cancelada",
+      "classCancelledToast": "Clase cancelada",
+      "errorCancelClass": "No se pudo cancelar la clase"
     }
   }
 }

@@ -61,7 +61,17 @@
       "emptyAction": "Browse courses",
       "lessonsCount": "{count, plural, one {# lesson} other {# lessons}}",
       "instructorLessonsLabel": "{instructor} · {lessons}",
-      "errorFetch": "Failed to load your courses"
+      "errorFetch": "Failed to load your courses",
+      "coursesTitle": "Courses",
+      "classesTitle": "Classes with an instructor",
+      "emptyClassesTitle": "You have no booked classes",
+      "emptyClassesDescription": "Book a class with an instructor in the Academy.",
+      "errorFetchClasses": "Failed to load your classes",
+      "durationLabel": "{minutes} min",
+      "cancelClassButton": "Cancel",
+      "classCancelledBadge": "Cancelled",
+      "classCancelledToast": "Class cancelled",
+      "errorCancelClass": "Could not cancel the class"
     }
   }
 }

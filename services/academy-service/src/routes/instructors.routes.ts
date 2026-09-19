@@ -44,6 +44,80 @@ router.get('/:id/sessions', async (req: Request, res: Response, next: NextFuncti
   }
 })
 
+// GET /api/instructors/sessions/mine — clases reservadas con instructor del usuario
+router.get(
+  '/sessions/mine',
+  requireAuth,
+  async (req: Request, res: Response, next: NextFunction) => {
+    try {
+      const userId = req.userId!
+
+      const bookings = await prisma.instructorSessionBooking.findMany({
+        where: { userId, status: 'active' },
+        include: { session: { include: { instructor: true } } },
+        orderBy: { session: { date: 'asc' } },
+      })
+
+      const clubIds = [...new Set(bookings.map((b) => b.session.clubId).filter(Boolean))] as string[]
+      const clubs = clubIds.length
+        ? await prisma.club.findMany({
+            where: { id: { in: clubIds } },
+            select: { id: true, name: true, city: true },
+          })
+        : []
+      const clubById = new Map(clubs.map((c) => [c.id, c]))
+
+      const data = bookings.map((b) => ({
+        id: b.id,
+        session: {
+          ...b.session,
+          club: b.session.clubId ? (clubById.get(b.session.clubId) ?? null) : null,
+        },
+      }))
+
+      return res.json({ success: true, data })
+    } catch (err) {
+      return next(err)
+    }
+  }
+)
+
+// DELETE /api/instructors/sessions/:id/book — cancelar la reserva de una clase
+router.delete(
+  '/sessions/:id/book',
+  requireAuth,
+  async (req: Request, res: Response, next: NextFunction) => {
+    try {
+      const userId = req.userId!
+
+      await prisma.$transaction(async (tx) => {
+        const existing = await tx.instructorSessionBooking.findUnique({
+          where: { sessionId_userId: { sessionId: req.params.id, userId } },
+        })
+        if (!existing || existing.status !== 'active')
+          throw new AppError('No tienes una reserva activa en esta sesión', 404)
+
+        await tx.instructorSessionBooking.update({
+          where: { id: existing.id },
+          data: { status: 'cancelled' },
+        })
+
+        const activeCount = await tx.instructorSessionBooking.count({
+          where: { sessionId: req.params.id, status: 'active' },
+        })
+        await tx.instructorSession.update({
+          where: { id: req.params.id },
+          data: { bookedCount: activeCount },
+        })
+      })
+
+      return res.json({ success: true })
+    } catch (err) {
+      return next(err)
+    }
+  }
+)
+
 // POST /api/instructors/sessions/:id/book
 // ponytail: sin cobro todavía — pricePerPerson queda solo como referencia hasta que se
 // integre un flujo de pago para clases de instructor (ver comentario en el modelo).

@@ -1,5 +1,6 @@
 'use client'
 
+import { useState } from 'react'
 import Link from 'next/link'
 import { useTranslations, useLocale } from 'next-intl'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
@@ -8,6 +9,7 @@ import { Card } from '@/components/ui/Card'
 import { Badge, type BadgeTone } from '@/components/ui/Badge'
 import { EmptyState } from '@/components/ui/EmptyState'
 import { useToast } from '@/components/ui/Toast'
+import { cn } from '@/lib/utils'
 
 type MyTournament = {
   id: string
@@ -44,6 +46,7 @@ export function MyTournamentsClient({ userId }: { userId: string }) {
   const locale = useLocale()
   const queryClient = useQueryClient()
   const toast = useToast()
+  const [tab, setTab] = useState<'active' | 'finished'>('active')
   const { data: tournaments, isLoading } = useQuery({
     queryKey: ['tournaments', 'mine', userId],
     queryFn: () => fetchMyTournaments(userId, t('loadError')),
@@ -74,6 +77,10 @@ export function MyTournamentsClient({ userId }: { userId: string }) {
     onError: (e: Error) => toast.error(e.message),
   })
 
+  const filtered = (tournaments ?? []).filter((tour) =>
+    tab === 'active' ? tour.isActive : !tour.isActive
+  )
+
   return (
     <div className="space-y-6">
       <Link
@@ -84,6 +91,26 @@ export function MyTournamentsClient({ userId }: { userId: string }) {
       </Link>
 
       <h1 className="text-xl font-black text-ink-900 tracking-tight">{t('title')}</h1>
+
+      <div className="flex border border-ink-200 rounded-xl overflow-hidden w-fit">
+        {(
+          [
+            ['active', t('tabActive')],
+            ['finished', t('tabFinished')],
+          ] as const
+        ).map(([v, l]) => (
+          <button
+            key={v}
+            onClick={() => setTab(v)}
+            className={cn(
+              'px-4 py-2 text-sm font-semibold transition-colors',
+              tab === v ? 'bg-court-600 text-white' : 'bg-white text-ink-500 hover:bg-ink-50'
+            )}
+          >
+            {l}
+          </button>
+        ))}
+      </div>
 
       {isLoading ? (
         <div className="flex items-center justify-center py-16 text-ink-400">
@@ -103,9 +130,14 @@ export function MyTournamentsClient({ userId }: { userId: string }) {
             </Link>
           }
         />
+      ) : filtered.length === 0 ? (
+        <EmptyState
+          icon={Trophy}
+          title={tab === 'active' ? t('emptyActiveTitle') : t('emptyFinishedTitle')}
+        />
       ) : (
         <div className="space-y-3">
-          {tournaments.map((tour) => {
+          {filtered.map((tour) => {
             const st = STATUS_LABEL[tour.status]
             const canWithdraw = tour.status === 'open' || tour.status === 'draft'
             return (
